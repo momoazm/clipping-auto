@@ -1,9 +1,9 @@
 name: Daily MrBeast clipping
 
 # Runs on a SELF-HOSTED runner (your PC). YouTube blocks video DOWNLOADS from GitHub's
-# cloud datacenter IPs, so the fetch must happen from a residential IP. The runner must
-# be installed + running on your machine (Settings -> Actions -> Runners -> New runner).
-# Trade-off vs cloud: your PC has to be on when the schedule fires.
+# cloud datacenter IPs, so the fetch must happen from a residential IP. Steps use
+# PowerShell (Windows PowerShell 5.1, always present) — not bash, which on this machine
+# resolves to a broken WSL bash.
 
 on:
   schedule:
@@ -25,11 +25,11 @@ on:
         default: ""
 
 permissions:
-  contents: write   # to push the updated clipped_history.json
+  contents: write
 
 defaults:
   run:
-    shell: bash      # Git Bash (present with Git for Windows)
+    shell: powershell
 
 jobs:
   clip-and-upload:
@@ -42,9 +42,11 @@ jobs:
 
       - name: Python venv + deps
         run: |
-          if [ ! -d .venv ]; then python -m venv .venv; fi
-          .venv/Scripts/python -m pip install --upgrade pip
-          .venv/Scripts/python -m pip install -r requirements.txt
+          if (-not (Test-Path ".venv")) { python -m venv .venv }
+          $py = Join-Path (Get-Location) ".venv\Scripts\python.exe"
+          & $py -m pip install --upgrade pip
+          & $py -m pip install -r requirements.txt
+          if ($LASTEXITCODE -ne 0) { exit 1 }
 
       - name: Materialize secrets
         env:
@@ -52,25 +54,32 @@ jobs:
           YT_TOKEN_JSON: ${{ secrets.YT_TOKEN_JSON }}
           YOUTUBE_COOKIES: ${{ secrets.YOUTUBE_COOKIES }}
         run: |
-          printf '%s' "$API_ENV" > API.env
-          printf '%s' "$YT_TOKEN_JSON" > token.json
-          test -s API.env   || { echo "::error::API_ENV secret is empty"; exit 1; }
-          test -s token.json || { echo "::error::YT_TOKEN_JSON secret is empty"; exit 1; }
-          # Cookies are optional on a residential IP (downloads work without them).
-          if [ -n "$YOUTUBE_COOKIES" ]; then printf '%s' "$YOUTUBE_COOKIES" > cookies.txt; fi
+          $root = Get-Location
+          [System.IO.File]::WriteAllText("$root\API.env", $env:API_ENV)
+          [System.IO.File]::WriteAllText("$root\token.json", $env:YT_TOKEN_JSON)
+          if (-not (Test-Path "API.env")   -or (Get-Item "API.env").Length   -eq 0) { Write-Host "::error::API_ENV secret is empty"; exit 1 }
+          if (-not (Test-Path "token.json") -or (Get-Item "token.json").Length -eq 0) { Write-Host "::error::YT_TOKEN_JSON secret is empty"; exit 1 }
+          if ($env:YOUTUBE_COOKIES) { [System.IO.File]::WriteAllText("$root\cookies.txt", $env:YOUTUBE_COOKIES) }
 
       - name: Regenerate SFX + music beds
         run: |
-          .venv/Scripts/python tools/build_sfx.py
-          .venv/Scripts/python tools/build_music.py
+          $py = Join-Path (Get-Location) ".venv\Scripts\python.exe"
+          & $py tools\build_sfx.py
+          & $py tools\build_music.py
 
       - name: Run daily clipping
+        env:
+          IN_PRIVACY: ${{ inputs.privacy }}
+          IN_DRYRUN: ${{ inputs.dry_run }}
+          IN_LIMIT: ${{ inputs.limit }}
         run: |
-          ARGS="--privacy ${{ inputs.privacy || 'public' }}"
-          if [ "${{ inputs.dry_run }}" = "true" ]; then ARGS="$ARGS --dry-run"; fi
-          if [ -n "${{ inputs.limit }}" ]; then ARGS="$ARGS --limit ${{ inputs.limit }}"; fi
-          echo "run_daily.py $ARGS"
-          .venv/Scripts/python run_daily.py $ARGS
+          $py = Join-Path (Get-Location) ".venv\Scripts\python.exe"
+          $argv = @("--privacy", $(if ($env:IN_PRIVACY) { $env:IN_PRIVACY } else { "public" }))
+          if ($env:IN_DRYRUN -eq "true") { $argv += "--dry-run" }
+          if ($env:IN_LIMIT) { $argv += @("--limit", $env:IN_LIMIT) }
+          Write-Host "run_daily.py $argv"
+          & $py run_daily.py @argv
+          if ($LASTEXITCODE -ne 0) { exit 1 }
 
       - name: Commit updated history
         if: ${{ inputs.dry_run != 'true' }}
@@ -78,9 +87,10 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add state/clipped_history.json
-          if git diff --staged --quiet; then
-            echo "No history change to commit."
-          else
+          git diff --staged --quiet
+          if ($LASTEXITCODE -ne 0) {
             git commit -m "chore: update clipped history [skip ci]"
             git push
-          fi
+          } else {
+            Write-Host "No history change to commit."
+          }
