@@ -20,6 +20,7 @@ Prints JSON: {"video_id","url","title","channel","reason"}  (or {"error": ...}).
 """
 import argparse
 import json
+import os
 
 from _common import emit, fail, REPO_ROOT
 
@@ -51,7 +52,11 @@ def channel_latest(url, depth):
         "quiet": True, "no_warnings": True, "noprogress": True,
         "extract_flat": "in_playlist", "skip_download": True,
         "playlist_items": f"1:{max(1, depth)}",
+        "extractor_args": {"youtube": {"player_client": ["default", "web_safari", "mweb"]}},
     }
+    cookie_file = os.environ.get("YT_COOKIES_FILE") or str(REPO_ROOT / "cookies.txt")
+    if os.path.isfile(cookie_file):
+        opts["cookiefile"] = cookie_file
     with YoutubeDL(opts) as ydl:
         info = ydl.extract_info(url, download=False)
     out = []

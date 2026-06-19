@@ -16,7 +16,7 @@ Prints JSON: {"path","title","duration","width","height","url","id"}
 import argparse
 import os
 
-from _common import load_env, emit, fail, ffmpeg_bin, tmp_path, FFmpegMissing
+from _common import load_env, emit, fail, ffmpeg_bin, tmp_path, FFmpegMissing, REPO_ROOT
 
 
 def main():
@@ -53,7 +53,16 @@ def main():
         "noprogress": True,
         "ffmpeg_location": ffmpeg_dir,
         "overwrites": True,
+        # Alternate player clients help dodge YouTube's datacenter-IP bot wall.
+        "extractor_args": {"youtube": {"player_client": ["default", "web_safari", "mweb"]}},
     }
+
+    # On cloud/datacenter IPs (e.g. GitHub Actions) YouTube demands "confirm you're not
+    # a bot". Authenticated cookies fix it: drop a Netscape cookies.txt at the project
+    # root (or point YT_COOKIES_FILE at one). Absent locally -> normal residential use.
+    cookie_file = os.environ.get("YT_COOKIES_FILE") or str(REPO_ROOT / "cookies.txt")
+    if os.path.isfile(cookie_file):
+        ydl_opts["cookiefile"] = cookie_file
 
     try:
         with YoutubeDL(ydl_opts) as ydl:

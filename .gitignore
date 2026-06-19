@@ -4,6 +4,7 @@ API.env
 credentials.json
 token.json
 token.*.json
+cookies.txt
 # python
 .venv/
 __pycache__/

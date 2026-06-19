@@ -53,11 +53,19 @@ jobs:
         env:
           API_ENV: ${{ secrets.API_ENV }}
           YT_TOKEN_JSON: ${{ secrets.YT_TOKEN_JSON }}
+          YOUTUBE_COOKIES: ${{ secrets.YOUTUBE_COOKIES }}
         run: |
           printf '%s' "$API_ENV" > API.env
           printf '%s' "$YT_TOKEN_JSON" > token.json
           test -s API.env   || { echo "::error::API_ENV secret is empty"; exit 1; }
           test -s token.json || { echo "::error::YT_TOKEN_JSON secret is empty"; exit 1; }
+          # YouTube bot-gates datacenter IPs; authenticated cookies are required to download.
+          if [ -n "$YOUTUBE_COOKIES" ]; then
+            printf '%s' "$YOUTUBE_COOKIES" > cookies.txt
+            echo "cookies.txt written ($(wc -l < cookies.txt) lines)"
+          else
+            echo "::warning::No YOUTUBE_COOKIES secret set — yt-dlp downloads will likely fail the bot check."
+          fi
 
       - name: Regenerate SFX + music beds (gitignored / regenerable)
         run: |

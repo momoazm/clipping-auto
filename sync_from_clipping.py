@@ -17,10 +17,12 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 SRC = HERE.parent / "clipping"
 
-# Shared pipeline tools pulled from ../clipping/tools. NOTE: _common.py is deliberately
-# excluded — this copy's version has the standalone API.env lookup.
+# Shared pipeline tools pulled from ../clipping/tools. NOTE: _common.py AND
+# download_video.py are deliberately excluded — this copy's _common has the standalone
+# API.env lookup, and its download_video has the cloud cookie/bot-bypass tweak. Re-add
+# them by hand if you ever want clipping/'s versions.
 TOOLS = [
-    "download_video.py", "probe_video.py", "transcribe_video.py", "select_clips.py",
+    "probe_video.py", "transcribe_video.py", "select_clips.py",
     "reframe_crop.py", "build_captions.py", "build_sfx.py", "build_music.py",
     "plan_effects.py", "render_clip.py", "upload_youtube.py", "youtube_auth_setup.py",
 ]
