@@ -52,14 +52,16 @@ jobs:
         env:
           API_ENV: ${{ secrets.API_ENV }}
           YT_TOKEN_JSON: ${{ secrets.YT_TOKEN_JSON }}
-          YOUTUBE_COOKIES: ${{ secrets.YOUTUBE_COOKIES }}
         run: |
           $root = Get-Location
           [System.IO.File]::WriteAllText("$root\API.env", $env:API_ENV)
           [System.IO.File]::WriteAllText("$root\token.json", $env:YT_TOKEN_JSON)
           if (-not (Test-Path "API.env")   -or (Get-Item "API.env").Length   -eq 0) { Write-Host "::error::API_ENV secret is empty"; exit 1 }
           if (-not (Test-Path "token.json") -or (Get-Item "token.json").Length -eq 0) { Write-Host "::error::YT_TOKEN_JSON secret is empty"; exit 1 }
-          if ($env:YOUTUBE_COOKIES) { [System.IO.File]::WriteAllText("$root\cookies.txt", $env:YOUTUBE_COOKIES) }
+          # NOTE: no cookies on this self-hosted/residential runner — with cookies yt-dlp
+          # switches to the PO-token-gated web client and gets no formats; cookieless uses
+          # the android_vr client which serves formats fine. Remove any stale cookies.txt.
+          if (Test-Path "$root\cookies.txt") { Remove-Item "$root\cookies.txt" -Force }
 
       - name: Regenerate SFX + music beds
         run: |
