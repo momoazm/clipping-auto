@@ -1,4 +1,17 @@
 {
   "_note": "Source videos already clipped (so the daily job never repeats one). run_daily.py appends a record per processed source. This file is COMMITTED back by the GitHub Action after each run.",
-  "clipped": []
+  "clipped": [
+    {
+      "source_id": "__fmDj0ZJ1Q",
+      "source_title": "50 YouTube Legends Fight For $1,000,000",
+      "channel": "MrBeast",
+      "date": "2026-06-20",
+      "clip_video_ids": [
+        "q_qJ03uW850",
+        "1EJ3kPpTrso",
+        "1BqFGjNq2p0",
+        "raNgHvJvrK0"
+      ]
+    }
+  ]
 }
