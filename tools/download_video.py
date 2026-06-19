@@ -55,6 +55,10 @@ def main():
         "noprogress": True,
         "ffmpeg_location": ffmpeg_dir,
         "overwrites": True,
+        # Server-side fix: from datacenter IPs the default web client now returns NO
+        # formats (YouTube "PO token" gating) -> "Requested format is not available".
+        # The "tv" client still serves downloadable formats without a PO token.
+        "extractor_args": {"youtube": {"player_client": ["tv", "web_safari", "default"]}},
     }
 
     # On cloud/datacenter IPs (e.g. GitHub Actions) YouTube demands "confirm you're not
