@@ -1,0 +1,4 @@
+{
+  "_note": "Source videos already clipped (so the daily job never repeats one). run_daily.py appends a record per processed source. This file is COMMITTED back by the GitHub Action after each run.",
+  "clipped": []
+}

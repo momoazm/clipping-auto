@@ -1,0 +1,48 @@
+{
+  "_source": "Sampled directly from brand/logo.png and brand/brandguidelines.png pixel data (the guideline image's printed CMYK/RGB labels were illegible/garbled, so colors were color-picked from the actual rendered swatches and logo artwork instead).",
+  "name": "MOMO",
+  "colors": {
+    "navy": "#0B1622",
+    "navy_light": "#142233",
+    "gold": "#C9A96C",
+    "gold_light": "#E5CE93",
+    "gold_dark": "#A8804A",
+    "scarab_red": "#A33B37",
+    "nile_teal": "#2E7C8C",
+    "sterling_silver": "#B5B5B5",
+    "text_on_dark": "#F2E9D8",
+    "text_on_gold": "#14202C"
+  },
+  "fonts": {
+    "display": {
+      "family": "Cinzel",
+      "google_font": "Cinzel",
+      "fallback_stack": "Georgia, 'Times New Roman', serif",
+      "note": "Monumental/Egyptian-feeling serif matching the guideline's bold display sample. Declared via mj-font for clients that honor web fonts (Gmail, Apple Mail, Outlook.com); falls back to the serif stack on Outlook desktop and other clients that ignore @font-face."
+    },
+    "body": {
+      "family": "Poppins",
+      "google_font": "Poppins",
+      "fallback_stack": "Helvetica, Arial, sans-serif",
+      "note": "Clean modern sans matching the guideline's regular body sample, same web-font/fallback caveat as display."
+    }
+  },
+  "logo": {
+    "path": "brand/logo.png",
+    "clearspace_ratio": 0.25,
+    "note": "Maintain clear space around the logo of at least 25% of its rendered height on all sides (approximate default — the guideline's clearspace diagram wasn't numerically legible at source resolution)."
+  },
+  "button": {
+    "shape": "pill",
+    "border_radius_px": 28,
+    "background_color": "#C9A96C",
+    "text_color": "#14202C",
+    "note": "Matches the guideline's gold pill-shaped 'EXPLORE' CTA button. Maps directly to MJML mj-button border-radius/background-color/color."
+  },
+  "icon_style": {
+    "style": "line",
+    "color": "#C9A96C",
+    "weight": "thin",
+    "note": "Simple thin gold line icons for section markers/bullets, matching the guideline's iconography row."
+  }
+}

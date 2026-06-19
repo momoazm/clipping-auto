@@ -1,0 +1,86 @@
+name: Daily MrBeast clipping
+
+on:
+  schedule:
+    - cron: "0 13 * * *"   # daily ~13:00 UTC (change to taste)
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run (build clips but do NOT really upload)"
+        type: boolean
+        default: false
+      privacy:
+        description: "Upload privacy"
+        type: choice
+        options: [public, unlisted, private]
+        default: public
+      limit:
+        description: "Max clips this run (blank = config default of 6)"
+        type: string
+        default: ""
+
+permissions:
+  contents: write   # to push the updated clipped_history.json
+
+jobs:
+  clip-and-upload:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install system deps (ffmpeg + libGL for OpenCV)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg libgl1 libglib2.0-0
+
+      - name: Install caption font (Anton)
+        run: |
+          mkdir -p ~/.fonts
+          cp brand/fonts/*.ttf ~/.fonts/ || true
+          fc-cache -f
+
+      - name: Install Python deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Materialize secrets
+        env:
+          API_ENV: ${{ secrets.API_ENV }}
+          YT_TOKEN_JSON: ${{ secrets.YT_TOKEN_JSON }}
+        run: |
+          printf '%s' "$API_ENV" > API.env
+          printf '%s' "$YT_TOKEN_JSON" > token.json
+          test -s API.env   || { echo "::error::API_ENV secret is empty"; exit 1; }
+          test -s token.json || { echo "::error::YT_TOKEN_JSON secret is empty"; exit 1; }
+
+      - name: Regenerate SFX + music beds (gitignored / regenerable)
+        run: |
+          python tools/build_sfx.py
+          python tools/build_music.py
+
+      - name: Run daily clipping
+        run: |
+          ARGS="--privacy ${{ inputs.privacy || 'public' }}"
+          if [ "${{ inputs.dry_run }}" = "true" ]; then ARGS="$ARGS --dry-run"; fi
+          if [ -n "${{ inputs.limit }}" ]; then ARGS="$ARGS --limit ${{ inputs.limit }}"; fi
+          echo "run_daily.py $ARGS"
+          python run_daily.py $ARGS
+
+      - name: Commit updated history
+        if: ${{ inputs.dry_run != 'true' }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add state/clipped_history.json
+          if git diff --staged --quiet; then
+            echo "No history change to commit."
+          else
+            git commit -m "chore: update clipped history [skip ci]"
+            git push
+          fi

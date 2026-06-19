@@ -1,0 +1,57 @@
+{
+  "_note": "Caption style presets for build_captions.py. Mechanics modeled on top clipping accounts: bold display font, 2-4 words on screen at once, the currently-spoken word highlighted, thick outline for legibility over any footage, lower-third placement. Colors are #RRGGBB; build_captions.py converts them to ASS &HBBGGRR&. 'highlight' may be the literal string 'theme_gold' to pull brand/theme.json colors.gold.",
+  "default_style": "hormozi",
+  "styles": {
+    "hormozi": {
+      "description": "Classic viral look: UPPERCASE, white words, active word in yellow, fat black stroke.",
+      "font": "Anton",
+      "font_size": 120,
+      "uppercase": true,
+      "primary_color": "#FFFFFF",
+      "highlight_color": "#FFE100",
+      "outline_color": "#000000",
+      "outline_px": 8,
+      "shadow_px": 3,
+      "bold": true,
+      "words_per_screen": 3,
+      "position": "lower-third",
+      "margin_v_px": 360,
+      "pop_scale": 1.12,
+      "animation": "word-highlight"
+    },
+    "brand": {
+      "description": "Same mechanics as hormozi but the active word uses the brand gold from theme.json.",
+      "font": "Montserrat",
+      "font_size": 110,
+      "uppercase": true,
+      "primary_color": "#F2E9D8",
+      "highlight_color": "theme_gold",
+      "outline_color": "#0B1622",
+      "outline_px": 7,
+      "shadow_px": 3,
+      "bold": true,
+      "words_per_screen": 3,
+      "position": "lower-third",
+      "margin_v_px": 360,
+      "pop_scale": 1.1,
+      "animation": "word-highlight"
+    },
+    "clean": {
+      "description": "Minimal sentence-level captions, no per-word highlight. Good for talking-head explainers.",
+      "font": "Montserrat",
+      "font_size": 84,
+      "uppercase": false,
+      "primary_color": "#FFFFFF",
+      "highlight_color": "#FFFFFF",
+      "outline_color": "#000000",
+      "outline_px": 5,
+      "shadow_px": 2,
+      "bold": true,
+      "words_per_screen": 6,
+      "position": "lower-third",
+      "margin_v_px": 320,
+      "pop_scale": 1.0,
+      "animation": "none"
+    }
+  }
+}

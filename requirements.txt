@@ -1,0 +1,15 @@
+# clipping/ — viral short-form clipping pipeline.
+# API-first + ffmpeg/OpenCV by design: no torch / mediapipe / faster-whisper,
+# which have no wheels for Python 3.14 yet. Transcription is the Groq Whisper API.
+# ffmpeg is a SYSTEM binary (winget install Gyan.FFmpeg), not a pip package.
+python-dotenv>=1.0
+httpx>=0.27
+groq>=0.11
+yt-dlp>=2024.0
+opencv-python>=4.10
+numpy>=1.26
+google-api-python-client>=2.140
+google-auth-oauthlib>=1.2
+google-auth-httplib2>=0.2
+# Optional safety net: a pip-bundled ffmpeg binary used only if one isn't on PATH.
+imageio-ffmpeg>=0.5

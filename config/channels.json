@@ -1,0 +1,16 @@
+{
+  "_note": "MrBeast source channels in SUBSCRIBER-RANK (priority) order. find_source_video.py picks the newest UNCLIPPED upload from the highest-priority channel that has one; if no channel has a brand-new upload it falls back to popular_fallback IDs, then to a deeper recent-backlog scan. Edit freely (add language/other channels, reorder, extend popular_fallback).",
+  "clips_per_day": 6,
+  "scan_depth": 25,
+  "target_secs": 60,
+  "max_secs": 120,
+  "channels": [
+    {"name": "MrBeast", "url": "https://www.youtube.com/@MrBeast/videos"},
+    {"name": "MrBeast Gaming", "url": "https://www.youtube.com/@MrBeastGaming/videos"},
+    {"name": "Beast Reacts", "url": "https://www.youtube.com/@BeastReacts/videos"},
+    {"name": "More MrBeast", "url": "https://www.youtube.com/@MoreMrBeast/videos"}
+  ],
+  "popular_fallback": [
+    "0e3GPea1Tyg"
+  ]
+}
