@@ -7,7 +7,7 @@ name: Daily MrBeast clipping
 
 on:
   schedule:
-    - cron: "0 13 * * *"   # daily ~13:00 UTC (change to taste)
+    - cron: "0 10 * * *"   # 10:00 UTC = 1:00 PM local (UTC+3)
   workflow_dispatch:
     inputs:
       dry_run:
