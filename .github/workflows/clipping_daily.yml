@@ -1,5 +1,10 @@
 name: Daily MrBeast clipping
 
+# Runs on a SELF-HOSTED runner (your PC). YouTube blocks video DOWNLOADS from GitHub's
+# cloud datacenter IPs, so the fetch must happen from a residential IP. The runner must
+# be installed + running on your machine (Settings -> Actions -> Runners -> New runner).
+# Trade-off vs cloud: your PC has to be on when the schedule fires.
+
 on:
   schedule:
     - cron: "0 13 * * *"   # daily ~13:00 UTC (change to taste)
@@ -22,32 +27,24 @@ on:
 permissions:
   contents: write   # to push the updated clipped_history.json
 
+defaults:
+  run:
+    shell: bash      # Git Bash (present with Git for Windows)
+
 jobs:
   clip-and-upload:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          clean: false   # keep .venv / wheel cache between runs for speed
 
-      - name: Install system deps (ffmpeg + libGL for OpenCV)
+      - name: Python venv + deps
         run: |
-          sudo apt-get update
-          sudo apt-get install -y ffmpeg libgl1 libglib2.0-0
-
-      - name: Install caption font (Anton)
-        run: |
-          mkdir -p ~/.fonts
-          cp brand/fonts/*.ttf ~/.fonts/ || true
-          fc-cache -f
-
-      - name: Install Python deps
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          if [ ! -d .venv ]; then python -m venv .venv; fi
+          .venv/Scripts/python -m pip install --upgrade pip
+          .venv/Scripts/python -m pip install -r requirements.txt
 
       - name: Materialize secrets
         env:
@@ -59,18 +56,13 @@ jobs:
           printf '%s' "$YT_TOKEN_JSON" > token.json
           test -s API.env   || { echo "::error::API_ENV secret is empty"; exit 1; }
           test -s token.json || { echo "::error::YT_TOKEN_JSON secret is empty"; exit 1; }
-          # YouTube bot-gates datacenter IPs; authenticated cookies are required to download.
-          if [ -n "$YOUTUBE_COOKIES" ]; then
-            printf '%s' "$YOUTUBE_COOKIES" > cookies.txt
-            echo "cookies.txt written ($(wc -l < cookies.txt) lines)"
-          else
-            echo "::warning::No YOUTUBE_COOKIES secret set — yt-dlp downloads will likely fail the bot check."
-          fi
+          # Cookies are optional on a residential IP (downloads work without them).
+          if [ -n "$YOUTUBE_COOKIES" ]; then printf '%s' "$YOUTUBE_COOKIES" > cookies.txt; fi
 
-      - name: Regenerate SFX + music beds (gitignored / regenerable)
+      - name: Regenerate SFX + music beds
         run: |
-          python tools/build_sfx.py
-          python tools/build_music.py
+          .venv/Scripts/python tools/build_sfx.py
+          .venv/Scripts/python tools/build_music.py
 
       - name: Run daily clipping
         run: |
@@ -78,7 +70,7 @@ jobs:
           if [ "${{ inputs.dry_run }}" = "true" ]; then ARGS="$ARGS --dry-run"; fi
           if [ -n "${{ inputs.limit }}" ]; then ARGS="$ARGS --limit ${{ inputs.limit }}"; fi
           echo "run_daily.py $ARGS"
-          python run_daily.py $ARGS
+          .venv/Scripts/python run_daily.py $ARGS
 
       - name: Commit updated history
         if: ${{ inputs.dry_run != 'true' }}
