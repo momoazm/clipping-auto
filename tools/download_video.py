@@ -44,7 +44,9 @@ def main():
 
     h = args.max_height
     ydl_opts = {
-        "format": f"bv*[height<={h}][ext=mp4]+ba[ext=m4a]/b[height<={h}][ext=mp4]/b[height<={h}]/b",
+        # Relaxed selector: best video<=h + best audio (any codec; merged to mp4), then
+        # progressively looser fallbacks ending in plain "b" so it always resolves.
+        "format": f"bv*[height<={h}]+ba/b[height<={h}]/bv*+ba/b",
         "merge_output_format": "mp4",
         "outtmpl": out_base + ".%(ext)s",
         "noplaylist": True,
@@ -53,8 +55,6 @@ def main():
         "noprogress": True,
         "ffmpeg_location": ffmpeg_dir,
         "overwrites": True,
-        # Alternate player clients help dodge YouTube's datacenter-IP bot wall.
-        "extractor_args": {"youtube": {"player_client": ["default", "web_safari", "mweb"]}},
     }
 
     # On cloud/datacenter IPs (e.g. GitHub Actions) YouTube demands "confirm you're not
