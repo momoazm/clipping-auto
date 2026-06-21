@@ -7,11 +7,11 @@ name: Daily MrBeast clipping
 
 on:
   schedule:
-    # Once a day at 06:00 UTC. GitHub creates exactly one run per day; the
-    # self-hosted runner picks it up the next time it is online (i.e. when you
-    # are logged in). A queued run waits up to ~24h for the runner, so if the
-    # laptop is off it still runs at your next login that day.
-    - cron: "0 6 * * *"
+    # 21:00 UTC == 00:00 Arab Standard Time (UTC+3), i.e. local midnight. GitHub
+    # creates exactly one run per day; the self-hosted runner is woken at local
+    # midnight to pick it up (see the "run-once-awake" scheduled task on the PC).
+    # A queued run waits up to ~24h for the runner as a fallback.
+    - cron: "0 21 * * *"
   workflow_dispatch:   # manual — trigger from Actions -> Run workflow
     inputs:
       dry_run:
