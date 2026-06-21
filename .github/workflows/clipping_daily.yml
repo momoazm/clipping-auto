@@ -67,6 +67,23 @@ jobs:
           # the android_vr client which serves formats fine. Remove any stale cookies.txt.
           if (Test-Path "$root\cookies.txt") { Remove-Item "$root\cookies.txt" -Force }
 
+      - name: Ensure full ffmpeg on PATH
+        # The pipeline needs the system ffmpeg (Gyan full build: libmp3lame for
+        # music MP3s, libass for caption burning). Without it, _common.ffmpeg_bin()
+        # falls back to imageio_ffmpeg, which lazily downloads its own binary on
+        # first use -- a flaky network step that broke the music build. Put the real
+        # ffmpeg on PATH for every later step (or fail loudly if it's missing).
+        run: |
+          $ff = (Get-Command ffmpeg -ErrorAction SilentlyContinue).Source
+          if (-not $ff) {
+            $c = Get-ChildItem "$env:LOCALAPPDATA\Microsoft\WinGet\Packages" -Recurse -Filter ffmpeg.exe -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($c) { $ff = $c.FullName }
+          }
+          if (-not $ff) { Write-Host "::error::ffmpeg not found on the runner. Install it: winget install Gyan.FFmpeg"; exit 1 }
+          $dir = Split-Path $ff
+          Add-Content -Path $env:GITHUB_PATH -Value $dir
+          Write-Host "Using ffmpeg: $ff"
+
       - name: Regenerate SFX + music beds
         run: |
           $py = Join-Path (Get-Location) ".venv\Scripts\python.exe"
