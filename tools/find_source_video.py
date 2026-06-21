@@ -75,9 +75,6 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", default=None)
     ap.add_argument("--history", default=None)
-    ap.add_argument("--exclude", default="",
-                    help="Comma-separated video IDs to also skip (e.g. sources already "
-                         "tried this run), on top of the permanent history file.")
     args = ap.parse_args()
 
     cfg_path = args.config or str(REPO_ROOT / "config" / "channels.json")
@@ -89,7 +86,6 @@ def main():
         return
 
     done = history_ids(load_json(hist_path, {"clipped": []}))
-    done |= {v.strip() for v in (args.exclude or "").split(",") if v.strip()}
     channels = cfg.get("channels", [])
     depth = int(cfg.get("scan_depth", 25))
     errors = {}
