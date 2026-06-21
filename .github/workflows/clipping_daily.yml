@@ -100,9 +100,20 @@ jobs:
           $argv = @("--privacy", $(if ($env:IN_PRIVACY) { $env:IN_PRIVACY } else { "public" }))
           if ($env:IN_DRYRUN -eq "true") { $argv += "--dry-run" }
           if ($env:IN_LIMIT) { $argv += @("--limit", $env:IN_LIMIT) }
-          Write-Host "run_daily.py $argv"
-          & $py run_daily.py @argv
-          if ($LASTEXITCODE -ne 0) { exit 1 }
+          # Keep the machine awake for the whole (slow) run. On this laptop runner an
+          # idle sleep mid-run disconnects the runner and GitHub cancels the job
+          # (KeyboardInterrupt / "operation was canceled"). SetThreadExecutionState with
+          # ES_CONTINUOUS|ES_SYSTEM_REQUIRED blocks idle sleep while this helper lives;
+          # the finally{} stops it so normal sleep resumes. (Closing the lid still
+          # sleeps -- keep the lid open and plugged in.)
+          $awake = Start-Process $py -ArgumentList "-c","import ctypes,time; ctypes.windll.kernel32.SetThreadExecutionState(0x80000001); time.sleep(86400)" -PassThru -WindowStyle Hidden
+          try {
+            Write-Host "run_daily.py $argv"
+            & $py run_daily.py @argv
+            if ($LASTEXITCODE -ne 0) { exit 1 }
+          } finally {
+            Stop-Process -Id $awake.Id -Force -ErrorAction SilentlyContinue
+          }
 
       - name: Commit updated history
         if: ${{ inputs.dry_run != 'true' }}
