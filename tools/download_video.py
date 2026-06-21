@@ -44,9 +44,16 @@ def main():
 
     h = args.max_height
     ydl_opts = {
-        # Relaxed selector: best video<=h + best audio (any codec; merged to mp4), then
-        # progressively looser fallbacks ending in plain "b" so it always resolves.
-        "format": f"bv*[height<={h}]+ba/b[height<={h}]/bv*+ba/b",
+        # PREFER H.264 (avc1): on this low-RAM (~4GB) self-hosted runner, AV1/VP9
+        # software decode is so CPU/memory-heavy that reframe_crop's decode pass gets
+        # OOM-killed (no traceback, just exit 1). avc1 decodes far lighter (and HW-
+        # accelerated), so force it first, then fall back to any codec so it always
+        # resolves. ba* avoids the Opus-in-mp4 edge case by preferring m4a audio.
+        "format": (
+            f"bv*[height<={h}][vcodec^=avc1]+ba[ext=m4a]/"
+            f"b[height<={h}][vcodec^=avc1]/"
+            f"bv*[height<={h}]+ba/b[height<={h}]/bv*+ba/b"
+        ),
         "merge_output_format": "mp4",
         "outtmpl": out_base + ".%(ext)s",
         "noplaylist": True,
