@@ -96,45 +96,75 @@ def main():
         clips_per_day = min(clips_per_day, args.limit)
     target = int(cfg.get("target_secs", 60))
     maxs = int(cfg.get("max_secs", 120))
+    max_video_attempts = int(cfg.get("max_video_attempts", 5))
 
     summary = {"date": datetime.date.today().isoformat(), "dry_run": args.dry_run,
                "uploaded": [], "errors": []}
 
-    # 1. Pick a source video (no quota). A clean "nothing new" is not an error.
-    try:
-        src = run_tool("find_source_video.py")
-    except Exception as e:
-        log("no source video to clip today:", e)
-        summary["status"] = "no_source"
-        summary["detail"] = str(e)
-        print(json.dumps(summary, indent=2))
-        return
+    # Retry loop: try multiple videos if download/pipeline fails.
+    video_attempts = 0
+    attempted_videos = []
+    last_error = None
 
-    log("source:", src["video_id"], "-", src.get("title"), f"({src['reason']})")
-    summary["source"] = src
+    while video_attempts < max_video_attempts:
+        video_attempts += 1
+        
+        # 1. Pick a source video (no quota). A clean "nothing new" is not an error.
+        try:
+            src = run_tool("find_source_video.py")
+        except Exception as e:
+            log("no source video to clip today:", e)
+            summary["status"] = "no_source"
+            summary["detail"] = str(e)
+            print(json.dumps(summary, indent=2))
+            return
 
-    try:
-        ensure_sfx()
-        src_path = str(TMP / "source.mp4")
-        dl = run_tool("download_video.py", "--url", src["url"], "--out", src_path)
-        src_path = dl.get("path", src_path)
-        src_title = src.get("title") or dl.get("title") or "MrBeast"
-        summary["source_title"] = src_title
+        video_id = src["video_id"]
+        if video_id in attempted_videos:
+            log(f"video {video_id} already attempted, skipping...")
+            continue
 
-        probe = run_tool("probe_video.py", "--in", src_path)
-        if not probe.get("has_audio"):
-            raise RuntimeError("source has no audio track; cannot caption.")
+        attempted_videos.append(video_id)
+        log(f"attempt {video_attempts}: source {video_id} - {src.get('title')} ({src['reason']})")
+        summary["source"] = src
 
-        run_tool("transcribe_video.py", "--in", src_path)
-        sel = run_tool("select_clips.py", "--count", clips_per_day,
-                       "--target-secs", target, "--max-secs", maxs)
-        clips = sel.get("clips", [])
-        log(f"selected {len(clips)} clips via {sel.get('provider')}")
-        summary["selected"] = len(clips)
-    except Exception as e:
-        log("pipeline setup failed:", e)
+        try:
+            ensure_sfx()
+            src_path = str(TMP / "source.mp4")
+            dl = run_tool("download_video.py", "--url", src["url"], "--out", src_path)
+            src_path = dl.get("path", src_path)
+            src_title = src.get("title") or dl.get("title") or "MrBeast"
+            summary["source_title"] = src_title
+
+            probe = run_tool("probe_video.py", "--in", src_path)
+            if not probe.get("has_audio"):
+                raise RuntimeError("source has no audio track; cannot caption.")
+
+            run_tool("transcribe_video.py", "--in", src_path)
+            sel = run_tool("select_clips.py", "--count", clips_per_day,
+                           "--target-secs", target, "--max-secs", maxs)
+            clips = sel.get("clips", [])
+            log(f"selected {len(clips)} clips via {sel.get('provider')}")
+            summary["selected"] = len(clips)
+            
+            # Success! Break out of retry loop.
+            break
+            
+        except Exception as e:
+            last_error = str(e)
+            log(f"attempt {video_attempts} failed: {e}")
+            summary["attempt_errors"] = summary.get("attempt_errors", [])
+            summary["attempt_errors"].append({
+                "video_id": video_id,
+                "error": last_error
+            })
+            continue
+
+    # If all attempts failed, exit with error.
+    if video_attempts >= max_video_attempts or len(clips) == 0:
+        log("all video attempts failed or no clips selected")
         summary["status"] = "error"
-        summary["detail"] = str(e)
+        summary["detail"] = last_error or "exhausted all video attempts"
         print(json.dumps(summary, indent=2))
         sys.exit(1)
 
