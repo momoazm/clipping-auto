@@ -10,7 +10,7 @@ base tag set if every provider fails (never blocks an upload).
 
 Usage:
     python tools/generate_hashtags.py --title "<source title>" --hook "<clip hook>" \
-        [--snippet "<transcript snippet>"] [--max 18]
+        [--snippet "<transcript snippet>"] [--max 30]
 
 Prints JSON: {"hashtags": ["tag1", ...], "provider": "groq"|...|null}
 """
@@ -21,12 +21,21 @@ import re
 from _common import load_env, emit
 import select_clips as sc
 
-BASE = ["shorts", "mrbeast", "viral", "fyp"]
+# Broad, evergreen discovery tags that apply to every MrBeast Short. Kept ahead of the
+# LLM's content-specific tags in the merge so a Short is always well-tagged even if the
+# LLM chain fails; the LLM tags below add the niche-correct relevance on top.
+BASE = [
+    "shorts", "youtubeshorts", "shortsfeed", "shortsvideo", "viral", "viralshorts",
+    "trending", "trendingshorts", "fyp", "foryou", "foryoupage", "mrbeast",
+    "mrbeastshorts", "beast", "challenge", "money", "funny", "entertainment",
+]
 
-PROMPT = """Generate 12-18 YouTube HASHTAGS for a short vertical clip.
+PROMPT = """Generate 18-26 YouTube HASHTAGS for a short vertical clip.
 Rules: lowercase; letters/numbers only (no '#', no spaces, no punctuation); each a single
-word or compound word; no duplicates. Mix BROAD discovery tags (shorts, viral, fyp, trending)
-with SPECIFIC tags about the actual content/people/topic below.
+word or compound word; no duplicates. Mix BROAD discovery tags (shorts, viral, fyp, trending,
+youtubeshorts) with MANY SPECIFIC tags about the actual content/people/topic/challenge below
+(names of people, the challenge type, prizes, locations, emotions, reactions). Prefer specific,
+relevant tags over generic filler.
 
 Source video title: {title}
 Clip hook line: {hook}
@@ -44,7 +53,7 @@ def main():
     ap.add_argument("--title", default="")
     ap.add_argument("--hook", default="")
     ap.add_argument("--snippet", default="")
-    ap.add_argument("--max", type=int, default=18)
+    ap.add_argument("--max", type=int, default=30)
     args = ap.parse_args()
 
     load_env()

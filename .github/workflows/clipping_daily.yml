@@ -84,10 +84,13 @@ jobs:
           Add-Content -Path $env:GITHUB_PATH -Value $dir
           Write-Host "Using ffmpeg: $ff"
 
-      - name: Regenerate SFX + music beds
+      - name: Prepare background-music bed
+        # SFX are disabled (render runs with --no-sfx), so we no longer build them.
+        # The background bed is the audio extracted from config.background_music_url
+        # (run_daily also does this via resolve_music_bed; doing it here surfaces a
+        # download failure as its own step). build_music.py stays as the synth fallback.
         run: |
           $py = Join-Path (Get-Location) ".venv\Scripts\python.exe"
-          & $py tools\build_sfx.py
           & $py tools\build_music.py
 
       - name: Run daily clipping

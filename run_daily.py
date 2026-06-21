@@ -71,14 +71,85 @@ def load_json(path, default):
         return default
 
 
-def ensure_sfx():
-    """Regenerate the SFX pack if it's missing (it's gitignored / regenerable)."""
-    sfx_dir = HERE / "config" / "sfx"
-    if not list(sfx_dir.glob("*.wav")):
+def resolve_music_bed(cfg):
+    """Ensure the background-music bed exists and return the --music value render uses.
+
+    The user's chosen background sound: if config sets `background_music_url`, extract
+    that track's audio into config/music/bg.mp3 and use it on EVERY clip. The bed is
+    gitignored and regenerated each run (the download works on the residential self-
+    hosted runner). Falls back to the synthesized beds (build_music.py + "auto") if no
+    URL is set or extraction fails.
+    """
+    music_dir = HERE / "config" / "music"
+    url = (cfg.get("background_music_url") or "").strip()
+    if url:
+        bed = music_dir / "bg.mp3"
+        if not bed.is_file():
+            try:
+                run_tool("extract_bg_audio.py", "--url", url, "--out", str(bed))
+            except Exception as e:
+                log("extract_bg_audio failed; will try a synthesized bed:", e)
+        if bed.is_file():
+            return str(bed)
+    # Fallback: synthesized beds (regenerated if missing).
+    if not list(music_dir.glob("*.mp3")):
         try:
-            run_tool("build_sfx.py")
+            run_tool("build_music.py")
         except Exception as e:
-            log("build_sfx failed (clips will render without SFX):", e)
+            log("build_music failed (clips will render without music):", e)
+    return "auto"
+
+
+def append_history(src, src_title, clip_video_ids, date):
+    """Append one processed-source record to the permanent no-repeat history file."""
+    hist = load_json(HISTORY, {"clipped": []})
+    if isinstance(hist, list):
+        hist = {"clipped": hist}
+    hist.setdefault("clipped", []).append({
+        "source_id": src["video_id"], "source_title": src_title,
+        "channel": src.get("channel"), "date": date,
+        "clip_video_ids": clip_video_ids,
+    })
+    with open(HISTORY, "w", encoding="utf-8") as f:
+        json.dump(hist, f, ensure_ascii=False, indent=2)
+
+
+def process_clip(clip, slot, src_path, src_title, music_arg, maxs, privacy, dry_run):
+    """Render + upload a single clip. Returns the upload dict (with _title); raises on
+    any step failure so the caller can skip just this clip."""
+    n = f"{slot:02d}"
+    start, end = clip["start"], clip["end"]
+    emph = ",".join(clip.get("emphasis_words") or [])
+    hook = clip.get("suggested_title") or clip.get("hook") or src_title
+    reframed = str(TMP / f"reframed_{n}.mp4")
+    cues = str(TMP / f"cues_{n}.json")
+    caps = str(TMP / f"caps_{n}.ass")
+    short = str(TMP / f"short_{n}.mp4")
+
+    run_tool("reframe_crop.py", "--in", src_path, "--start", start, "--end", end, "--out", reframed)
+    run_tool("plan_effects.py", "--start", start, "--end", end, "--emphasis", emph, "--out", cues)
+    run_tool("build_captions.py", "--start", start, "--end", end,
+             "--style", "hormozi", "--hook", hook, "--out", caps)
+    # Every clip gets the chosen background-music bed; SFX are disabled (--no-sfx) per
+    # user pref. Visual punch-ins from --cues are kept.
+    run_tool("render_clip.py", "--in", reframed, "--captions", caps,
+             "--cues", cues, "--out", short, "--max-secs", maxs,
+             "--music", music_arg, "--no-sfx")
+    tags = run_tool("generate_hashtags.py", "--title", src_title,
+                    "--hook", clip.get("hook") or hook, "--snippet", clip.get("hook") or "")
+    hashtags = tags.get("hashtags", [])
+    # YouTube ignores ALL description hashtags if there are more than 15, so cap the
+    # visible #tags at 15 while still passing the full enriched set to the tags metadata.
+    desc_tags = hashtags[:15]
+    desc = (clip.get("hook") or "") + "\n\n" + " ".join("#" + t for t in desc_tags)
+    up_args = ["upload_youtube.py", "--video", short, "--title", hook,
+               "--description", desc, "--tags", ",".join(hashtags) or "shorts",
+               "--privacy", privacy]
+    if not dry_run:
+        up_args.append("--confirm")
+    up = run_tool(*up_args)
+    up["_title"] = hook
+    return up
 
 
 def main():
@@ -91,140 +162,119 @@ def main():
 
     TMP.mkdir(parents=True, exist_ok=True)
     cfg = load_json(CONFIG, {})
-    clips_per_day = int(cfg.get("clips_per_day", 6))
+    target_clips = int(cfg.get("clips_per_day", 6))   # the "jobs" to finish each run
     if args.limit:
-        clips_per_day = min(clips_per_day, args.limit)
+        target_clips = min(target_clips, args.limit)
     target = int(cfg.get("target_secs", 60))
     maxs = int(cfg.get("max_secs", 120))
-    max_video_attempts = int(cfg.get("max_video_attempts", 5))
+    # Keep pulling fresh source videos until target_clips clips are actually uploaded.
+    # One video may yield only a few usable clips (or some fail), so allow several.
+    max_sources = int(cfg.get("max_source_attempts", max(target_clips, 8)))
 
     summary = {"date": datetime.date.today().isoformat(), "dry_run": args.dry_run,
-               "uploaded": [], "errors": []}
+               "target_clips": target_clips, "sources": [], "uploaded": [], "errors": []}
 
-    # Retry loop: try multiple videos if download/pipeline fails.
-    video_attempts = 0
-    attempted_videos = []
+    music_arg = resolve_music_bed(cfg)
+    summary["music"] = Path(music_arg).name if music_arg != "auto" else "auto"
+
+    jobs_done = 0      # successful clips (real uploads, or dry-run previews)
+    slot = 0           # global clip index -> unique .tmp filenames across sources
+    processed = []     # source ids tried this run (skip on re-pick, success OR fail)
     last_error = None
 
-    while video_attempts < max_video_attempts:
-        video_attempts += 1
-        
-        # 1. Pick a source video (no quota). A clean "nothing new" is not an error.
+    while jobs_done < target_clips and len(processed) < max_sources:
+        # 1. Pick a fresh source (skips history + anything already tried this run).
         try:
-            src = run_tool("find_source_video.py")
+            src = run_tool("find_source_video.py", "--exclude", ",".join(processed))
         except Exception as e:
-            log("no source video to clip today:", e)
-            summary["status"] = "no_source"
-            summary["detail"] = str(e)
-            print(json.dumps(summary, indent=2))
-            return
+            if jobs_done == 0:
+                log("no source video to clip today:", e)
+                summary["status"] = "no_source"
+                summary["detail"] = str(e)
+                print(json.dumps(summary, indent=2))
+                return
+            log("no more source videos available:", e)
+            break
 
         video_id = src["video_id"]
-        if video_id in attempted_videos:
-            log(f"video {video_id} already attempted, skipping...")
-            continue
+        if video_id in processed:        # safety net (--exclude should prevent this)
+            log(f"source {video_id} already tried this run; stopping.")
+            break
+        processed.append(video_id)
+        summary["sources"].append(src)
+        log(f"source {len(processed)}/{max_sources}: {video_id} - {src.get('title')} "
+            f"({src['reason']}) | {jobs_done}/{target_clips} clips so far")
 
-        attempted_videos.append(video_id)
-        log(f"attempt {video_attempts}: source {video_id} - {src.get('title')} ({src['reason']})")
-        summary["source"] = src
-
+        # 2. Fetch + transcribe + select only as many clips as we still need.
         try:
-            ensure_sfx()
             src_path = str(TMP / "source.mp4")
             dl = run_tool("download_video.py", "--url", src["url"], "--out", src_path)
             src_path = dl.get("path", src_path)
             src_title = src.get("title") or dl.get("title") or "MrBeast"
-            summary["source_title"] = src_title
 
             probe = run_tool("probe_video.py", "--in", src_path)
             if not probe.get("has_audio"):
                 raise RuntimeError("source has no audio track; cannot caption.")
 
             run_tool("transcribe_video.py", "--in", src_path)
-            sel = run_tool("select_clips.py", "--count", clips_per_day,
+            need = target_clips - jobs_done
+            sel = run_tool("select_clips.py", "--count", need,
                            "--target-secs", target, "--max-secs", maxs)
             clips = sel.get("clips", [])
-            log(f"selected {len(clips)} clips via {sel.get('provider')}")
-            summary["selected"] = len(clips)
-            
-            # Success! Break out of retry loop.
-            break
-            
+            log(f"selected {len(clips)} clips via {sel.get('provider')} (needed {need})")
         except Exception as e:
             last_error = str(e)
-            log(f"attempt {video_attempts} failed: {e}")
-            summary["attempt_errors"] = summary.get("attempt_errors", [])
-            summary["attempt_errors"].append({
-                "video_id": video_id,
-                "error": last_error
-            })
-            continue
+            log(f"source {video_id} failed before clipping: {e}")
+            summary["errors"].append({"source": video_id, "error": last_error})
+            continue   # try the next source; not recorded in permanent history
 
-    # If all attempts failed, exit with error.
-    if video_attempts >= max_video_attempts or len(clips) == 0:
-        log("all video attempts failed or no clips selected")
-        summary["status"] = "error"
-        summary["detail"] = last_error or "exhausted all video attempts"
-        print(json.dumps(summary, indent=2))
-        sys.exit(1)
-
-    uploaded_ids = []
-    for idx, clip in enumerate(clips, start=1):
-        n = f"{idx:02d}"
-        start, end = clip["start"], clip["end"]
-        emph = ",".join(clip.get("emphasis_words") or [])
-        hook = clip.get("suggested_title") or clip.get("hook") or src_title
-        reframed = str(TMP / f"reframed_{n}.mp4")
-        cues = str(TMP / f"cues_{n}.json")
-        caps = str(TMP / f"caps_{n}.ass")
-        short = str(TMP / f"short_{n}.mp4")
-        try:
-            run_tool("reframe_crop.py", "--in", src_path, "--start", start, "--end", end, "--out", reframed)
-            run_tool("plan_effects.py", "--start", start, "--end", end, "--emphasis", emph, "--out", cues)
-            run_tool("build_captions.py", "--start", start, "--end", end,
-                     "--style", "hormozi", "--hook", hook, "--out", caps)
-            run_tool("render_clip.py", "--in", reframed, "--captions", caps,
-                     "--cues", cues, "--out", short, "--max-secs", maxs)
-            tags = run_tool("generate_hashtags.py", "--title", src_title,
-                            "--hook", clip.get("hook") or hook, "--snippet", clip.get("hook") or "")
-            hashtags = tags.get("hashtags", [])
-            desc = (clip.get("hook") or "") + "\n\n" + " ".join("#" + t for t in hashtags)
-            up_args = ["upload_youtube.py", "--video", short, "--title", hook,
-                       "--description", desc, "--tags", ",".join(hashtags) or "shorts",
-                       "--privacy", args.privacy]
-            if not args.dry_run:
-                up_args.append("--confirm")
-            up = run_tool(*up_args)
+        # 3. Render + upload each clip until this source runs out or we hit target.
+        clip_ids = []
+        for clip in clips:
+            if jobs_done >= target_clips:
+                break
+            slot += 1
+            try:
+                up = process_clip(clip, slot, src_path, src_title, music_arg,
+                                  maxs, args.privacy, args.dry_run)
+            except Exception as e:
+                log(f"clip {slot:02d} FAILED:", e)
+                summary["errors"].append({"clip": f"{slot:02d}", "error": str(e)})
+                continue
+            jobs_done += 1
+            title = up.get("_title")
             if args.dry_run:
-                log(f"clip {n}: DRY preview -> channel {up.get('channel_title')}")
-                summary["uploaded"].append({"clip": n, "preview": True, "title": hook})
+                log(f"clip {slot:02d}: DRY preview -> channel {up.get('channel_title')}")
+                summary["uploaded"].append({"clip": f"{slot:02d}", "preview": True, "title": title})
             else:
-                uploaded_ids.append(up.get("video_id"))
-                log(f"clip {n}: uploaded {up.get('url')}")
-                summary["uploaded"].append({"clip": n, "video_id": up.get("video_id"),
-                                            "url": up.get("url"), "title": hook})
-        except Exception as e:
-            log(f"clip {n} FAILED:", e)
-            summary["errors"].append({"clip": n, "error": str(e)})
-            continue
+                clip_ids.append(up.get("video_id"))
+                log(f"clip {slot:02d}: uploaded {up.get('url')}  [{jobs_done}/{target_clips}]")
+                summary["uploaded"].append({"clip": f"{slot:02d}", "video_id": up.get("video_id"),
+                                            "url": up.get("url"), "title": title})
 
-    # Record the source as processed so it's never repeated (skip on dry-run).
-    if not args.dry_run:
-        hist = load_json(HISTORY, {"clipped": []})
-        if isinstance(hist, list):
-            hist = {"clipped": hist}
-        hist.setdefault("clipped", []).append({
-            "source_id": src["video_id"], "source_title": src_title,
-            "channel": src.get("channel"), "date": summary["date"],
-            "clip_video_ids": uploaded_ids,
-        })
-        with open(HISTORY, "w", encoding="utf-8") as f:
-            json.dump(hist, f, ensure_ascii=False, indent=2)
-        log(f"history updated: {src['video_id']} (+{len(uploaded_ids)} clips)")
+        # 4. Record this source so it's never repeated (only if it produced clips).
+        if not args.dry_run and clip_ids:
+            append_history(src, src_title, clip_ids, summary["date"])
+            log(f"history updated: {video_id} (+{len(clip_ids)} clips)")
 
-    summary["status"] = "ok"
+        # Dry-run validates one source; don't spin through the whole catalog.
+        if args.dry_run:
+            break
+
     summary["uploaded_count"] = len([u for u in summary["uploaded"] if not u.get("preview")])
+    summary["jobs_done"] = jobs_done
+    if jobs_done >= target_clips:
+        summary["status"] = "ok"
+    elif jobs_done > 0:
+        summary["status"] = "partial"
+        summary["detail"] = (f"only {jobs_done}/{target_clips} clips after "
+                             f"{len(processed)} source(s); {last_error or 'sources exhausted'}")
+    else:
+        summary["status"] = "error"
+        summary["detail"] = last_error or "no clips produced"
     print(json.dumps(summary, indent=2))
+    if jobs_done == 0:
+        sys.exit(1)
 
 
 if __name__ == "__main__":
