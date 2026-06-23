@@ -6,7 +6,7 @@ from EITHER:
   - a clipping/credentials.json file downloaded from Google Cloud Console.
 
 Run once, standalone; opens a browser for consent. This project keeps its OWN token.json
-inside clipping/ (separate from the Gmail OAuth used by the newsletter/competitor projects).
+inside clipping/ (separate from the Gmail OAuth used by the newsletter project).
 
 Scopes requested:
   - youtube.upload   (publish videos)

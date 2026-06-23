@@ -19,8 +19,8 @@ approval. The governing SOP is
 before running the pipeline**; it owns the canonical tool-call sequence, edge cases,
 and a living "Lessons learned" log.
 
-> Sibling WAT projects in this repo: `newsletter/` and `competitor/` (same tool
-> conventions, same shared root `API.env`). Don't edit them from here.
+> Sibling WAT project in this repo: `newsletter/` (same tool conventions, same shared
+> root `API.env`). Don't edit it from here.
 
 ### Environment setup
 ```bash
