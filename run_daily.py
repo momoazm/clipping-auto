@@ -94,8 +94,8 @@ def main():
     clips_per_day = int(cfg.get("clips_per_day", 6))
     if args.limit:
         clips_per_day = min(clips_per_day, args.limit)
-    target = int(cfg.get("target_secs", 60))
-    maxs = int(cfg.get("max_secs", 120))
+    target = int(cfg.get("target_secs", 35))
+    maxs = int(cfg.get("max_secs", 60))
     max_video_attempts = int(cfg.get("max_video_attempts", 5))
 
     summary = {"date": datetime.date.today().isoformat(), "dry_run": args.dry_run,

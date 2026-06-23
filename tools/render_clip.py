@@ -23,7 +23,7 @@ upstream (silence_jumpcut.py + a regenerated caption timeline), not here.
 Usage:
     python tools/render_clip.py --in .tmp/reframed_01.mp4 [--captions .tmp/caps_01.ass] \
         [--cues .tmp/cues_01.json] [--out .tmp/short_01.mp4] [--speed 1.1] \
-        [--music auto|config/music/bed.mp3] [--music-volume 0.18] [--max-secs 120]
+        [--music auto|config/music/bed.mp3] [--music-volume 0.18] [--max-secs 60]
 
 Prints JSON: {"path","duration","width","height","byte_size","speed","captions",
               "music","sfx_count","punch_ins"}
@@ -117,7 +117,7 @@ def main():
     parser.add_argument("--music-volume", type=float, default=0.18)
     parser.add_argument("--no-sfx", action="store_true", help="Ignore SFX cues even if --cues given")
     parser.add_argument("--no-punch", action="store_true", help="Ignore punch-ins even if --cues given")
-    parser.add_argument("--max-secs", type=float, default=120.0)
+    parser.add_argument("--max-secs", type=float, default=60.0)
     args = parser.parse_args()
 
     load_env()

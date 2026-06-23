@@ -15,7 +15,7 @@ set; one that errors or is rate-limited is skipped). A whole-chain failure surfa
 
 Usage:
     python tools/select_clips.py [--transcript .tmp/transcript.json] [--count 3] \
-        [--target-secs 45] [--max-secs 59] [--out .tmp/clips.json]
+        [--target-secs 35] [--max-secs 60] [--out .tmp/clips.json]
 
 Prints JSON: {"provider","count","clips":[{...}]}  and writes the same clips to --out.
 """
@@ -26,18 +26,32 @@ import os
 from _common import load_env, emit, fail, tmp_path
 
 SYSTEM = (
-    "You are a viral short-form video editor who clips long videos into YouTube "
-    "Shorts / TikToks. You pick the moments most likely to stop the scroll."
+    "You are a world-class viral short-form editor who turns long videos into YouTube "
+    "Shorts / TikToks. You think in terms of retention: the first 2 seconds decide whether "
+    "the viewer swipes away, and completion rate is the #1 algorithm signal, so every clip "
+    "must open on the single most scroll-stopping instant and never sag."
 )
 
 PROMPT_TMPL = """From the transcript below, choose the {count} BEST standalone clips for vertical Shorts.
 
-Rules for each clip:
-- Must START on a strong hook (a bold claim, question, surprising or emotional line) within its first ~3 seconds.
-- Must be a self-contained thought that makes sense without the rest of the video.
-- Target length about {target} seconds; HARD MAX {maxs} seconds. Never exceed the max.
-- Prefer surprising, emotional, controversial, funny, or highly actionable moments.
+The hook is the most important factor for virality. For each clip:
+- It MUST open on the most scroll-stopping line in the FIRST ~1.5 seconds — no setup, no slow
+  intro, no "so basically". Start ON the payoff/tension, not the run-up to it.
+- The strongest hooks here are: a curiosity gap (a question the viewer needs answered), high
+  stakes or a big number ("$1,000,000", "last person to leave"), a shocking/surprising turn,
+  visible conflict or competition, or a raw emotional peak. Pick the moment with the most of these.
+- It must be a self-contained thought that makes sense with NO prior context.
+- Cut cleanly: don't start mid-word or end before the payoff lands. End on a punchline,
+  resolution, or a cliffhanger that rewards finishing (which lifts completion + loops).
+- Target length about {target} seconds; HARD MAX {maxs} seconds. Shorter, tighter clips finish
+  more often — prefer the tightest cut that still delivers the full moment; never exceed the max.
 - Clips must not overlap each other.
+
+For each clip also write:
+- "hook": the verbatim opening line(s) the clip starts on.
+- "suggested_title": a curiosity-driven title (<=80 chars) that makes the click feel mandatory —
+  tease the payoff, don't spoil it.
+- "emphasis_words": the 2-4 highest-impact words/numbers in the clip (drive caption pop + zoom).
 
 The transcript is timestamped lines as [start-end] text (seconds):
 {body}
@@ -204,8 +218,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--transcript", default=None)
     parser.add_argument("--count", type=int, default=3)
-    parser.add_argument("--target-secs", type=int, default=45)
-    parser.add_argument("--max-secs", type=int, default=59)
+    parser.add_argument("--target-secs", type=int, default=35)
+    parser.add_argument("--max-secs", type=int, default=60)
     parser.add_argument("--out", default=None)
     args = parser.parse_args()
 

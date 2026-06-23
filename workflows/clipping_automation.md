@@ -13,7 +13,9 @@ Opus style): strong 3-second hook, big legible captions, on-brand highlight colo
 - **Source video** path (`--in`). Any ffmpeg-readable file with an audio track.
 - **How many clips** (`--count`, default 3).
 - **Caption style** (`--style`): `hormozi` (default), `brand`, or `clean`.
-- **Target / max length** (`--target-secs` 45, `--max-secs` 59). Never exceed 59 s.
+- **Target / max length** (`--target-secs` 35, `--max-secs` 60). Never exceed 60 s — Shorts
+  completion rate (the #1 algorithm signal) peaks at 15–60 s, so clips are capped there.
+  `run_daily.py` reads these from `config/channels.json` (`target_secs` / `max_secs`).
 - **Speed** ramp (optional, `--speed`, e.g. 1.1). Default 1.0.
 - **Music bed** (optional): a file in `config/music/`.
 - **Privacy**: `public` (user's choice). Title/description hints from the user or the
@@ -38,7 +40,7 @@ JSON object to stdout — parse it before moving on. Intermediates land in `.tmp
    → writes `.tmp/transcript.json`. Long videos are auto-chunked.
 
 3. **Select clips** (LLM virality scoring):
-   `python tools/select_clips.py --count 3 --target-secs 45`
+   `python tools/select_clips.py --count 3 --target-secs 35 --max-secs 60`
    → writes `.tmp/clips.json` with `[{start,end,hook,reason,virality_score,
    suggested_title,emphasis_words}]`, snapped to word boundaries and clamped < 60 s.
    Show the user the proposed clips (hook + score) before rendering all of them.
@@ -52,7 +54,7 @@ JSON object to stdout — parse it before moving on. Intermediates land in `.tmp
    c. **Render** the final Short:
       `python tools/render_clip.py --in .tmp/reframed_01.mp4 --captions .tmp/caps_01.ass \
        --out .tmp/short_01.mp4 [--speed 1.1] [--music config/music/<bed>.mp3]`
-      → 1080×1920, ≤59 s, H.264/AAC, faststart.
+      → 1080×1920, ≤60 s, H.264/AAC, faststart.
 
 5. **Preview + confirmation gate (mandatory).** Show the user the rendered file
    path(s) and the resolved upload details by running the uploader as a DRY RUN
@@ -73,7 +75,7 @@ JSON object to stdout — parse it before moving on. Intermediates land in `.tmp
   `Gyan.FFmpeg` (full build, has libass) and retry.
 - **Groq audio size limit** → `transcribe_video` auto-chunks by file size and shifts
   timestamps; no action needed, but very long videos take longer.
-- **LLM returns a span > 59 s or off-boundary** → `select_clips` snaps to words and
+- **LLM returns a span > 60 s or off-boundary** → `select_clips` snaps to words and
   hard-clamps to `--max-secs`. Overlapping clips are de-duplicated (higher score wins).
 - **No face detected / source already vertical** → `reframe_crop` falls back to a
   blurred letterbox (see its `note`); the clip still renders.
@@ -105,10 +107,14 @@ JSON object to stdout — parse it before moving on. Intermediates land in `.tmp
 - **Upload safety (2026-06-18):** `upload_youtube.py` refuses to publish without
   `--confirm` and otherwise prints a dry-run preview. Use the dry run as the gate gesture.
 - **render_clip truncation gotcha (2026-06-18):** `render_clip.py` defaults to
-  `--max-secs 59` and silently trims longer clips. When clips may exceed 59 s (user
-  wanted ≤2 min), pass `--max-secs 120`. The reframe + captions are full length; only
-  the final mux truncates, so re-rendering with the right `--max-secs` (reusing the
+  `--max-secs 59` and silently trims longer clips. The reframe + captions are full length;
+  only the final mux truncates, so re-rendering with a different `--max-secs` (reusing the
   existing `reframed_*.mp4`) is cheap.
+- **Clip length → 35 s target / 60 s cap (2026-06-24):** dropped from 60 s/120 s. The earlier
+  ≤2 min was for email-review delivery; now clips auto-publish as Shorts, where completion rate
+  (the #1 algorithm signal) peaks at 15–60 s, so 60–120 s clips were tanking reach. Set in
+  `config/channels.json` (`target_secs` 35, `max_secs` 60); `run_daily.py` passes both to
+  `select_clips` and `render_clip`. Data: OpusClip 2026 analysis of 13.5M+ clips.
 - **Reframe lag → zero-phase smoothing (2026-06-18):** first run's pan felt laggy. A
   causal EMA always trails the subject. Fixed by running the EMA forward+backward
   (zero phase) in `reframe_crop.build_pan_commands`, raising `CMD_FPS` to 15 and
@@ -123,6 +129,24 @@ JSON object to stdout — parse it before moving on. Intermediates land in `.tmp
   which is what made the crop hop between people. (c) `CMD_FPS` → 30 (per-frame
   keyframes, no staircase stutter), `DETECT_FPS` → 6, `DETECT_WIDTH` → 640. Still
   hardest on fast-cut multi-person content; best on talking-head/podcast.
+- **Reframe v3: active-speaker selection + segment cuts (2026-06-23):** the v2 tracker
+  framed the *biggest/nearest* face, not the *talker* — so on multi-person MrBeast
+  footage it locked onto the wrong person, and when the pick jumped between two people
+  the pan **glided through the empty gap** between them. Fixes in `reframe_crop.py`:
+  (a) **active-speaker score from lip motion** — `_lip_activity` diffs each face's mouth
+  ROI frame-to-frame and subtracts eye-ROI (head) motion so turning your head ≠ talking;
+  uses YuNet's mouth/eye landmarks (Haar approximates ROIs from the bbox thirds).
+  Selection composite = `0.6*lip + 0.3*area + 0.1*score`, so the talker wins even when
+  smaller. (b) **hysteresis** (`SWITCH_MARGIN`/`SWITCH_HOLD`) — a challenger must beat the
+  tracked face for 2 straight samples to steal the frame, killing single-frame flicker to
+  a bystander. (c) **segment-aware pan** — `choose_track` emits a new `segment` on a
+  subject change / scene cut; `build_pan_commands` snaps (hard cut) between segments and
+  zero-phase-smooths only *within* a shot, so the crop never drifts through dead space.
+  If lip motion can't be measured (no landmarks / no cross-frame match) selection degrades
+  to the old prominence pick, so it never regresses below v2. Pure selection/pan logic is
+  unit-tested (speaker-over-bigger, no dead-zone glide on cuts, hysteresis, nearby-glide);
+  real multi-person footage still wants an eyeball on the next run. `emit` now also reports
+  `cuts` (number of shot changes the tracker made).
 - **Transcription accuracy (2026-06-18):** captions were weak on noisy/crowd audio.
   Switched default model to `whisper-large-v3` (was `-turbo`) and added a light audio
   pre-clean (`highpass=f=90,dynaudnorm`) in `transcribe_video.extract_audio`. Override
@@ -132,6 +156,6 @@ JSON object to stdout — parse it before moving on. Intermediates land in `.tmp
 - **Email delivery (2026-06-18):** user wants finished clips emailed (not uploaded).
   Full-res 1080×1920 clips are far over Gmail's 25 MB limit, so compress to ~720p
   (`scale=-2:1280`, CRF 30) and batch attachments under ~22 MB/message (multiple emails
-  as needed). Reuse the `competitor/` Gmail sender (its `token.json` has `gmail.send`;
+  as needed). Reuse the `newsletter/` Gmail sender (its `token.json` has `gmail.send`;
   clipping has no Gmail OAuth). Gmail uploads on a slow uplink time out — set a long
   `socket` timeout and retry. Keep the originals in `.tmp/` for posting/upload.
