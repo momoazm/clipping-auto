@@ -71,6 +71,12 @@ files are gitignored.
    `render_clip.py` (burn captions, uniform speed, ducked music, loudnorm, final format).
 5. `upload_youtube.py` — the **only irreversible step**. Dry-run preview without
    `--confirm`; publishes only with `--confirm`.
+6. `upload_instagram.py` (optional, auto-enabled) — when `IG_ACCESS_TOKEN` +
+   `IG_USER_ID` are present in `API.env`, `run_daily.py` also hosts the rendered clip
+   at a public URL (`host_public.py`) and publishes it as an Instagram Reel after each
+   real YouTube upload. No flag needed — detected at runtime so the GitHub Actions
+   workflow file never needs editing (the `API_ENV` secret already lands in `API.env`
+   verbatim). An IG failure is logged but never undoes the YouTube upload.
 
 ### Hard rules specific to this project
 - **Branding is not optional.** The `brand` caption style and the `theme_gold` highlight

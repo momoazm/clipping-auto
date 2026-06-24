@@ -159,3 +159,19 @@ JSON object to stdout — parse it before moving on. Intermediates land in `.tmp
   as needed). Reuse the `newsletter/` Gmail sender (its `token.json` has `gmail.send`;
   clipping has no Gmail OAuth). Gmail uploads on a slow uplink time out — set a long
   `socket` timeout and retry. Keep the originals in `.tmp/` for posting/upload.
+- **Instagram, second account, same Meta token (2026-06-24):** ported `host_public.py`
+  + `upload_instagram.py` from `ranking shorts` unchanged (both are account-agnostic —
+  driven entirely by `IG_ACCESS_TOKEN`/`IG_USER_ID`/`IG_API_BASE` env vars). A Meta
+  System User token isn't tied to one IG account — it can reach *any* Page/IG account
+  explicitly assigned to that System User in Business Settings. So the same
+  `IG_ACCESS_TOKEN` used for `ranking shorts`' `@rank_ingshorts` is reused here for a
+  **second, distinct** Instagram account; only `IG_USER_ID` differs (a Page can only
+  link one IG account, so the second account needed its own new Page, also assigned to
+  the System User). `run_daily.py` auto-enables IG the same way `rank_autopost.py`
+  does: no `--platforms` flag, no workflow `.yml` edit — it just checks whether
+  `IG_ACCESS_TOKEN`/`IG_USER_ID` landed in `API.env` (which here come from the single
+  `API_ENV` GitHub secret, rewritten to include them) and publishes each real clip
+  upload as a Reel too, gated in its own try/except so an IG failure never undoes the
+  YouTube upload. See the `ranking shorts` Instagram memory for the Business-Settings
+  asset-assignment steps (Pages → Instagram accounts → System Users, all four must be
+  assigned) — same recipe, different Page/IG account this time.

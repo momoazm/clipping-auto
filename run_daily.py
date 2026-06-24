@@ -17,6 +17,7 @@ Usage:
 import argparse
 import datetime
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -26,6 +27,18 @@ TOOLS = HERE / "tools"
 TMP = HERE / ".tmp"
 CONFIG = HERE / "config" / "channels.json"
 HISTORY = HERE / "state" / "clipped_history.json"
+
+# Load this project's own API.env (CI writes it from the API_ENV secret) so this process --
+# not just the subprocess tools -- can see IG_ACCESS_TOKEN/IG_USER_ID and decide whether to
+# also publish each clip to Instagram. No workflow .yml edit needed: whatever lands in the
+# API_ENV secret is already written verbatim to API.env by the existing "Materialize secrets"
+# step, so adding the two IG lines there is enough.
+try:
+    from dotenv import load_dotenv
+    load_dotenv(HERE / "API.env")
+except ImportError:
+    pass
+IG_ENABLED = bool(os.environ.get("IG_ACCESS_TOKEN")) and bool(os.environ.get("IG_USER_ID"))
 
 
 def log(*a):
@@ -201,8 +214,22 @@ def main():
             else:
                 uploaded_ids.append(up.get("video_id"))
                 log(f"clip {n}: uploaded {up.get('url')}")
-                summary["uploaded"].append({"clip": n, "video_id": up.get("video_id"),
-                                            "url": up.get("url"), "title": hook})
+                entry = {"clip": n, "video_id": up.get("video_id"),
+                         "url": up.get("url"), "title": hook}
+                summary["uploaded"].append(entry)
+                if IG_ENABLED:
+                    # IG can't take a local file -> host the mp4 at a PUBLIC url, then
+                    # publish it as a Reel. A failure here must not undo the YouTube
+                    # upload that already succeeded, so it's its own try/except.
+                    try:
+                        host = run_tool("host_public.py", "--video", short)
+                        ig = run_tool("upload_instagram.py", "--video-url", host["url"],
+                                      "--caption", desc, "--confirm")
+                        entry["instagram_media_id"] = ig.get("media_id")
+                        log(f"clip {n}: Instagram -> {ig.get('media_id')}")
+                    except Exception as e:
+                        log(f"clip {n}: Instagram FAILED (YouTube upload still kept): {e}")
+                        summary.setdefault("instagram_errors", []).append({"clip": n, "error": str(e)})
         except Exception as e:
             log(f"clip {n} FAILED:", e)
             summary["errors"].append({"clip": n, "error": str(e)})
