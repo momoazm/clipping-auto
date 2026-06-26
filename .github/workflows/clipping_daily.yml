@@ -43,6 +43,7 @@ jobs:
           Invoke-Expression "& '$py' -m pip install -r requirements.txt"
           if ($LASTEXITCODE -ne 0) { exit 1 }
 
+      # --- UNIFIED UTF-8 SECRET MATERIALIZATION ---
       - name: Materialize secrets
         env:
           API_ENV: ${{ secrets.API_ENV }}
@@ -52,14 +53,18 @@ jobs:
           ZERNIO_YOUTUBE_ID: ${{ secrets.ZERNIO_YOUTUBE_ID }}
         run: |
           $root = Get-Location
-          # Rebuild your main environment file containing your legacy/AI configurations
-          [System.IO.File]::WriteAllText("$root\API.env", $env:API_ENV)
           
-          # Safely append your exact Zernio keys to the bottom of the environment file
-          $zernio_lines = "`nZERNIO_API=$($env:ZERNIO_API)`nZERNIO_INSTAGRAM_ID=$($env:ZERNIO_INSTAGRAM_ID)`nZERNIO_YOUTUBE_ID=$($env:ZERNIO_YOUTUBE_ID)"
-          Add-Content -Path "$root\API.env" -Value $zernio_lines
+          # Combine your legacy keys and new Zernio keys cleanly into a single string variable
+          $b1 = $env:API_ENV
+          $b2 = "ZERNIO_API=$($env:ZERNIO_API)"
+          $b3 = "ZERNIO_INSTAGRAM_ID=$($env:ZERNIO_INSTAGRAM_ID)"
+          $b4 = "ZERNIO_YOUTUBE_ID=$($env:ZERNIO_YOUTUBE_ID)"
+          $full_env = -join($b1, "`r`n", $b2, "`r`n", $b3, "`r`n", $b4)
           
-          [System.IO.File]::WriteAllText("$root\token.json", $env:YT_TOKEN_JSON)
+          # Write the complete environment block using a single uniform UTF8 encoding pass
+          [System.IO.File]::WriteAllText("$root\API.env", $full_env, [System.Text.Encoding]::UTF8)
+          [System.IO.File]::WriteAllText("$root\token.json", $env:YT_TOKEN_JSON, [System.Text.Encoding]::UTF8)
+          
           if (-not (Test-Path "API.env")   -or (Get-Item "API.env").Length   -eq 0) { Write-Host "::error::API_ENV secret is empty"; exit 1 }
           if (-not (Test-Path "token.json") -or (Get-Item "token.json").Length -eq 0) { Write-Host "::error::YT_TOKEN_JSON secret is empty"; exit 1 }
           if (Test-Path "$root\cookies.txt") { Remove-Item "$root\cookies.txt" -Force }
