@@ -1,18 +1,9 @@
 name: Daily MrBeast clipping
 
-# Runs on a SELF-HOSTED runner (your PC). YouTube blocks video DOWNLOADS from GitHub's
-# cloud datacenter IPs, so the fetch must happen from a residential IP. Steps use
-# PowerShell (Windows PowerShell 5.1, always present) — not bash, which on this machine
-# resolves to a broken WSL bash.
-
 on:
   schedule:
-    # 21:00 UTC == 00:00 Arab Standard Time (UTC+3), i.e. local midnight. GitHub
-    # creates exactly one run per day; the self-hosted runner is woken at local
-    # midnight to pick it up (see the "run-once-awake" scheduled task on the PC).
-    # A queued run waits up to ~24h for the runner as a fallback.
     - cron: "0 21 * * *"
-  workflow_dispatch:   # manual — trigger from Actions -> Run workflow
+  workflow_dispatch:
     inputs:
       dry_run:
         description: "Dry run (build clips but do NOT really upload)"
@@ -42,7 +33,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          clean: false   # keep .venv / wheel cache between runs for speed
+          clean: false
 
       - name: Python venv + deps
         run: |
@@ -56,32 +47,24 @@ jobs:
         env:
           API_ENV: ${{ secrets.API_ENV }}
           YT_TOKEN_JSON: ${{ secrets.YT_TOKEN_JSON }}
-          # --- ADDED NEW ZERNIO SECRETS HERE ---
-          ZERNIO_API: ${{ secrets.ZERNIO_API }}
+          # --- FIXED: Mapped to ZERNIO_API_KEY for the script ---
+          ZERNIO_API_KEY: ${{ secrets.ZERNIO_API }}
           ZERNIO_INSTAGRAM_ID: ${{ secrets.ZERNIO_INSTAGRAM_ID }}
           ZERNIO_YOUTUBE_ID: ${{ secrets.ZERNIO_YOUTUBE_ID }}
         run: |
           $root = Get-Location
           [System.IO.File]::WriteAllText("$root\API.env", $env:API_ENV)
           
-          # Append the new Zernio secrets to the API.env file
-          $zernio_lines = "`nZERNIO_API=$($env:ZERNIO_API)`nZERNIO_INSTAGRAM_ID=$($env:ZERNIO_INSTAGRAM_ID)`nZERNIO_YOUTUBE_ID=$($env:ZERNIO_YOUTUBE_ID)"
+          # Appending with the correct _KEY variable name
+          $zernio_lines = "`nZERNIO_API_KEY=$($env:ZERNIO_API_KEY)`nZERNIO_INSTAGRAM_ID=$($env:ZERNIO_INSTAGRAM_ID)`nZERNIO_YOUTUBE_ID=$($env:ZERNIO_YOUTUBE_ID)"
           Add-Content -Path "$root\API.env" -Value $zernio_lines
           
           [System.IO.File]::WriteAllText("$root\token.json", $env:YT_TOKEN_JSON)
           if (-not (Test-Path "API.env")   -or (Get-Item "API.env").Length   -eq 0) { Write-Host "::error::API_ENV secret is empty"; exit 1 }
           if (-not (Test-Path "token.json") -or (Get-Item "token.json").Length -eq 0) { Write-Host "::error::YT_TOKEN_JSON secret is empty"; exit 1 }
-          # NOTE: no cookies on this self-hosted/residential runner — with cookies yt-dlp
-          # switches to the PO-token-gated web client and gets no formats; cookieless uses
-          # the android_vr client which serves formats fine. Remove any stale cookies.txt.
           if (Test-Path "$root\cookies.txt") { Remove-Item "$root\cookies.txt" -Force }
 
       - name: Ensure full ffmpeg on PATH
-        # The pipeline needs the system ffmpeg (Gyan full build: libmp3lame for
-        # music MP3s, libass for caption burning). Without it, _common.ffmpeg_bin()
-        # falls back to imageio_ffmpeg, which lazily downloads its own binary on
-        # first use -- a flaky network step that broke the music build. Put the real
-        # ffmpeg on PATH for every later step (or fail loudly if it's missing).
         run: |
           $ff = (Get-Command ffmpeg -ErrorAction SilentlyContinue).Source
           if (-not $ff) {
@@ -104,8 +87,7 @@ jobs:
           IN_PRIVACY: ${{ inputs.privacy }}
           IN_DRYRUN: ${{ inputs.dry_run }}
           IN_LIMIT: ${{ inputs.limit }}
-          # --- MAP SECRETS TO RUNTIME ENV HERE ---
-          ZERNIO_API: ${{ secrets.ZERNIO_API }}
+          ZERNIO_API_KEY: ${{ secrets.ZERNIO_API }}
           ZERNIO_INSTAGRAM_ID: ${{ secrets.ZERNIO_INSTAGRAM_ID }}
           ZERNIO_YOUTUBE_ID: ${{ secrets.ZERNIO_YOUTUBE_ID }}
         run: |
@@ -113,12 +95,7 @@ jobs:
           $argv = @("--privacy", $(if ($env:IN_PRIVACY) { $env:IN_PRIVACY } else { "public" }))
           if ($env:IN_DRYRUN -eq "true") { $argv += "--dry-run" }
           if ($env:IN_LIMIT) { $argv += @("--limit", $env:IN_LIMIT) }
-          # Keep the machine awake for the whole (slow) run. On this laptop runner an
-          # idle sleep mid-run disconnects the runner and GitHub cancels the job
-          # (KeyboardInterrupt / "operation was canceled"). SetThreadExecutionState with
-          # ES_CONTINUOUS|ES_SYSTEM_REQUIRED blocks idle sleep while this helper lives;
-          # the finally{} stops it so normal sleep resumes. (Closing the lid still
-          # sleeps -- keep the lid open and plugged in.)
+          
           $awake = Start-Process $py -ArgumentList "-c","import ctypes,time; ctypes.windll.kernel32.SetThreadExecutionState(0x80000001); time.sleep(86400)" -PassThru -WindowStyle Hidden
           try {
             $argsStr = $argv -join " "
