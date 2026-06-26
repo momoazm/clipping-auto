@@ -2,37 +2,35 @@ name: Daily Clipping Automation
 
 on:
   schedule:
-    - cron: '0 12 * * *' # Runs daily at 12:00 UTC
+    - cron: '0 12 * * *'
   workflow_dispatch:
+
+defaults:
+  run:
+    shell: powershell
 
 jobs:
   run-pipeline:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-          cache: 'pip'
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install requests python-dotenv
 
-      # --- THIS STEP GRABS REPO SECRETS AND WRITES THEM INTO API.ENV ---
+      # --- POWERSHELL COMPATIBLE WINDOWS SECRET WRITER ---
       - name: Materialize secrets
         env:
           ZERNIO_API: ${{ secrets.ZERNIO_API }}
           ZERNIO_INSTAGRAM_ID: ${{ secrets.ZERNIO_INSTAGRAM_ID }}
           ZERNIO_YOUTUBE_ID: ${{ secrets.ZERNIO_YOUTUBE_ID }}
         run: |
-          echo "ZERNIO_API=$ZERNIO_API" > API.env
-          echo "ZERNIO_INSTAGRAM_ID=$ZERNIO_INSTAGRAM_ID" >> API.env
-          echo "ZERNIO_YOUTUBE_ID=$ZERNIO_YOUTUBE_ID" >> API.env
+          "ZERNIO_API=$env:ZERNIO_API" | Out-File -FilePath API.env -Encoding utf8
+          "ZERNIO_INSTAGRAM_ID=$env:ZERNIO_INSTAGRAM_ID" | Out-File -FilePath API.env -Append -Encoding utf8
+          "ZERNIO_YOUTUBE_ID=$env:ZERNIO_YOUTUBE_ID" | Out-File -FilePath API.env -Append -Encoding utf8
 
       - name: Execute Automation Pipeline
         run: python run_daily.py
