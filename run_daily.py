@@ -29,16 +29,15 @@ CONFIG = HERE / "config" / "channels.json"
 HISTORY = HERE / "state" / "clipped_history.json"
 
 # Load this project's own API.env (CI writes it from the API_ENV secret) so this process --
-# not just the subprocess tools -- can see IG_ACCESS_TOKEN/IG_USER_ID and decide whether to
-# also publish each clip to Instagram. No workflow .yml edit needed: whatever lands in the
-# API_ENV secret is already written verbatim to API.env by the existing "Materialize secrets"
-# step, so adding the two IG lines there is enough.
+# not just the subprocess tools -- can see Zernio credentials.
 try:
     from dotenv import load_dotenv
     load_dotenv(HERE / "API.env")
 except ImportError:
     pass
-IG_ENABLED = bool(os.environ.get("IG_ACCESS_TOKEN")) and bool(os.environ.get("IG_USER_ID"))
+
+# --- UPDATED FOR YOUR EXACT ZERNIO SECRETS ---
+IG_ENABLED = bool(os.environ.get("ZERNIO_API")) and bool(os.environ.get("ZERNIO_INSTAGRAM_ID"))
 
 
 def log(*a):
@@ -218,9 +217,6 @@ def main():
                          "url": up.get("url"), "title": hook}
                 summary["uploaded"].append(entry)
                 if IG_ENABLED:
-                    # IG can't take a local file -> host the mp4 at a PUBLIC url, then
-                    # publish it as a Reel. A failure here must not undo the YouTube
-                    # upload that already succeeded, so it's its own try/except.
                     try:
                         host = run_tool("host_public.py", "--video", short)
                         ig = run_tool("upload_instagram.py", "--video-url", host["url"],
