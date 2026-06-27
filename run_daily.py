@@ -68,14 +68,9 @@ def ensure_sfx():
         except Exception as e:
             log("build_sfx failed:", e)
 
-
-# ==========================================
-# ISOLATED INSTAGRAM UPLOAD FUNCTION
-# ==========================================
 def attempt_instagram_upload(short_path, caption, clip_num, summary_dict, entry_dict):
-    """Isolated logic to prevent try/except indentation crashes in the main loop."""
+    """Isolated Instagram logic that won't crash the main pipeline."""
     log(f"DEBUG: IG_ENABLED = {IG_ENABLED} | API = {bool(os.environ.get('ZERNIO_API'))} | IG_ID = {bool(os.environ.get('ZERNIO_INSTAGRAM_ID'))}")
-    
     if not IG_ENABLED:
         log(f"clip {clip_num}: Instagram upload skipped (IG_ENABLED is False)")
         return
@@ -148,6 +143,7 @@ def main():
         hook = clip.get("suggested_title") or clip.get("hook") or "Clip"
         short = str(TMP / f"short_{n}.mp4")
         
+        # 1. Process the video (if this fails, skip to next clip)
         try:
             reframed = str(TMP/f"reframed_{n}.mp4")
             cues = str(TMP/f"cues_{n}.json")
@@ -157,29 +153,36 @@ def main():
             run_tool("plan_effects.py", "--start", clip["start"], "--end", clip["end"], "--emphasis", ",".join(clip.get("emphasis_words", [])), "--out", cues)
             run_tool("build_captions.py", "--start", clip["start"], "--end", clip["end"], "--style", "hormozi", "--hook", hook, "--out", caps)
             run_tool("render_clip.py", "--in", reframed, "--captions", caps, "--cues", cues, "--out", short, "--max-secs", maxs)
-            
-            tags = run_tool("generate_hashtags.py", "--title", src_title, "--hook", hook, "--snippet", hook)
-            up_args = ["upload_youtube.py", "--video", short, "--title", hook, "--description", hook, "--tags", ",".join(tags.get("hashtags", [])), "--privacy", args.privacy]
-            if not args.dry_run:
-                up_args.append("--confirm")
-            
-            up = run_tool(*up_args)
-            
-            if args.dry_run:
-                summary["uploaded"].append({"clip": n, "preview": True})
-                continue
-                
-            uploaded_ids.append(up.get("video_id"))
-            entry = {"clip": n, "video_id": up.get("video_id")}
-            
-            # Instagram upload is now safely called as a single line
-            attempt_instagram_upload(short, hook, n, summary, entry)
-                    
-            summary["uploaded"].append(entry)
-            
         except Exception as e:
-            log(f"clip {n} FAILED:", e)
+            log(f"clip {n} RENDER FAILED:", e)
             continue
+            
+        tags = run_tool("generate_hashtags.py", "--title", src_title, "--hook", hook, "--snippet", hook)
+        up_args = ["upload_youtube.py", "--video", short, "--title", hook, "--description", hook, "--tags", ",".join(tags.get("hashtags", [])), "--privacy", args.privacy]
+        if not args.dry_run:
+            up_args.append("--confirm")
+        
+        entry = {"clip": n}
+        
+        # 2. Try YouTube (If this fails, log it but keep going!)
+        try:
+            up = run_tool(*up_args)
+            if not args.dry_run:
+                yt_id = up.get("video_id")
+                uploaded_ids.append(yt_id)
+                entry["video_id"] = yt_id
+        except Exception as e:
+            log(f"clip {n} YOUTUBE FAILED:", e)
+            entry["youtube_error"] = str(e)
+            
+        if args.dry_run:
+            summary["uploaded"].append({"clip": n, "preview": True})
+            continue
+            
+        # 3. Try Instagram (This will now run even if YouTube fails)
+        attempt_instagram_upload(short, hook, n, summary, entry)
+        
+        summary["uploaded"].append(entry)
 
     if not args.dry_run and uploaded_ids:
         hist = load_json(HISTORY, {"clipped": []})
