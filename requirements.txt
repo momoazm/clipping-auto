@@ -13,3 +13,4 @@ google-auth-oauthlib>=1.2
 google-auth-httplib2>=0.2
 # Optional safety net: a pip-bundled ffmpeg binary used only if one isn't on PATH.
 imageio-ffmpeg>=0.5
+zernio-sdk
