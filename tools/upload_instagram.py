@@ -2,11 +2,21 @@ import argparse
 import json
 import sys
 import os
+from pathlib import Path
+
+# Ensure the project root is in the path to load environment variables
+HERE = Path(__file__).resolve().parent.parent
+try:
+    from dotenv import load_dotenv
+    load_dotenv(HERE / "API.env")
+except ImportError:
+    pass
 
 try:
     from zernio import Zernio
 except ImportError:
-    sys.exit("zernio-sdk is not installed. Please add it to requirements.txt")
+    print(json.dumps({"error": "zernio-sdk is not installed. Add 'zernio-sdk' to requirements.txt"}))
+    sys.exit(1)
 
 def main():
     parser = argparse.ArgumentParser()
@@ -15,25 +25,31 @@ def main():
     parser.add_argument("--confirm", action="store_true", help="Actually post")
     args = parser.parse_args()
 
+    # Extract secrets from environment
     api_key = os.environ.get("ZERNIO_API")
     ig_id = os.environ.get("ZERNIO_INSTAGRAM_ID")
 
     if not api_key or not ig_id:
-        sys.exit("ZERNIO_API or ZERNIO_INSTAGRAM_ID is missing from your environment variables.")
+        print(json.dumps({"error": "ZERNIO_API or ZERNIO_INSTAGRAM_ID missing from environment"}))
+        sys.exit(1)
 
     if not args.confirm:
         print(json.dumps({"media_id": "dry_run_instagram_skipped"}))
         return
 
     try:
-        # 1. Initialize the official Zernio client
+        # 1. Initialize the Zernio client
         client = Zernio(api_key=api_key)
 
-        # 2. Upload the local video directly to Zernio's media library
-        upload_result = client.media.upload(args.video)
-        media_url = upload_result["publicUrl"]
+        # 2. Upload the local video file directly
+        # Note: The SDK handles the multipart/form-data upload automatically
+        upload_result = client.media.upload(file_path=args.video)
+        
+        # 3. Retrieve the media URL from the upload response
+        # Adjust the key (e.g., 'publicUrl' or 'id') based on your specific SDK version output
+        media_url = upload_result.get("publicUrl") or upload_result.get("url")
 
-        # 3. Publish to Instagram using the uploaded media
+        # 4. Publish to Instagram
         post = client.posts.create(
             content=args.caption,
             media_urls=[media_url],
@@ -41,11 +57,11 @@ def main():
             publish_now=True
         )
 
-        # Print success JSON so your pipeline log catches it
-        print(json.dumps({"media_id": "posted_successfully"}))
+        print(json.dumps({"media_id": post.get("id", "posted_successfully")}))
 
     except Exception as e:
-        sys.exit(f"Zernio API Error: {str(e)}")
+        print(json.dumps({"error": f"Zernio SDK Error: {str(e)}"}))
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
