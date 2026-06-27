@@ -1,66 +1,51 @@
 import argparse
 import json
-import os
 import sys
-from pathlib import Path
+import os
 
 try:
-    import requests
+    from zernio import Zernio
 except ImportError:
-    print(json.dumps({"error": "The 'requests' library is missing from the runtime environment."}))
-    sys.exit(1)
-
-HERE = Path(__file__).resolve().parent.parent
-try:
-    from dotenv import load_dotenv
-    load_dotenv(HERE / "API.env")
-except ImportError:
-    pass
+    sys.exit("zernio-sdk is not installed. Please add it to requirements.txt")
 
 def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--video-url", required=True, help="Public URL of the hosted video asset")
-    ap.add_argument("--caption", default="", help="Text content and hashtags for the Reel")
-    ap.add_argument("--confirm", action="store_true")
-    args = ap.parse_args()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--video", required=True, help="Path to local video file")
+    parser.add_argument("--caption", required=True, help="Post caption")
+    parser.add_argument("--confirm", action="store_true", help="Actually post")
+    args = parser.parse_args()
 
-    # Targets your exact repo secrets
     api_key = os.environ.get("ZERNIO_API")
-    account_id = os.environ.get("ZERNIO_INSTAGRAM_ID")
+    ig_id = os.environ.get("ZERNIO_INSTAGRAM_ID")
 
-    if not api_key or not account_id:
-        print(json.dumps({"error": "Missing ZERNIO_API or ZERNIO_INSTAGRAM_ID inside environment context"}))
-        sys.exit(1)
+    if not api_key or not ig_id:
+        sys.exit("ZERNIO_API or ZERNIO_INSTAGRAM_ID is missing from your environment variables.")
 
-    url = "https://zernio.com/api/v1/posts"
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
-    }
-    
-    payload = {
-        "content": args.caption,
-        "mediaUrls": [args.video_url],
-        "platforms": [
-            {
-                "platform": "instagram",
-                "accountId": account_id
-            }
-        ],
-        "publishNow": True
-    }
+    if not args.confirm:
+        print(json.dumps({"media_id": "dry_run_instagram_skipped"}))
+        return
 
     try:
-        res = requests.post(url, headers=headers, json=payload)
-        res.raise_for_status()
-        data = res.json()
-        
-        post_id = data.get("id") or data.get("postId") or "zernio_success"
-        print(json.dumps({"media_id": post_id}))
-        
+        # 1. Initialize the official Zernio client
+        client = Zernio(api_key=api_key)
+
+        # 2. Upload the local video directly to Zernio's media library
+        upload_result = client.media.upload(args.video)
+        media_url = upload_result["publicUrl"]
+
+        # 3. Publish to Instagram using the uploaded media
+        post = client.posts.create(
+            content=args.caption,
+            media_urls=[media_url],
+            platforms=[{"platform": "instagram", "accountId": ig_id}],
+            publish_now=True
+        )
+
+        # Print success JSON so your pipeline log catches it
+        print(json.dumps({"media_id": "posted_successfully"}))
+
     except Exception as e:
-        print(json.dumps({"error": f"Zernio API engine failure: {str(e)}"}))
-        sys.exit(1)
+        sys.exit(f"Zernio API Error: {str(e)}")
 
 if __name__ == "__main__":
     main()
