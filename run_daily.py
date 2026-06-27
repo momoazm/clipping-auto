@@ -5,7 +5,6 @@ import json
 import os
 import subprocess
 import sys
-import traceback
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -69,6 +68,27 @@ def ensure_sfx():
         except Exception as e:
             log("build_sfx failed:", e)
 
+
+# ==========================================
+# ISOLATED INSTAGRAM UPLOAD FUNCTION
+# ==========================================
+def attempt_instagram_upload(short_path, caption, clip_num, summary_dict, entry_dict):
+    """Isolated logic to prevent try/except indentation crashes in the main loop."""
+    log(f"DEBUG: IG_ENABLED = {IG_ENABLED} | API = {bool(os.environ.get('ZERNIO_API'))} | IG_ID = {bool(os.environ.get('ZERNIO_INSTAGRAM_ID'))}")
+    
+    if not IG_ENABLED:
+        log(f"clip {clip_num}: Instagram upload skipped (IG_ENABLED is False)")
+        return
+        
+    try:
+        ig = run_tool("upload_instagram.py", "--video", short_path, "--caption", caption, "--confirm")
+        entry_dict["instagram_media_id"] = ig.get("media_id")
+        log(f"clip {clip_num}: Instagram -> {ig.get('media_id')}")
+    except Exception as e:
+        log(f"clip {clip_num}: Instagram FAILED: {e}")
+        summary_dict.setdefault("instagram_errors", []).append({"clip": clip_num, "error": str(e)})
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true")
@@ -86,7 +106,7 @@ def main():
     max_video_attempts = int(cfg.get("max_video_attempts", 5))
 
     summary = {"date": datetime.date.today().isoformat(), "dry_run": args.dry_run, "uploaded": [], "errors": []}
-    video_attempts, attempted_videos, last_error = 0, [], None
+    video_attempts, attempted_videos = 0, []
     clips = []
     src_path = ""
     src_title = ""
@@ -116,7 +136,6 @@ def main():
             clips = sel.get("clips", [])
             break
         except Exception as e:
-            last_error = str(e)
             continue
 
     if video_attempts >= max_video_attempts or not clips:
@@ -130,7 +149,6 @@ def main():
         short = str(TMP / f"short_{n}.mp4")
         
         try:
-            # Rendering steps
             reframed = str(TMP/f"reframed_{n}.mp4")
             cues = str(TMP/f"cues_{n}.json")
             caps = str(TMP/f"caps_{n}.ass")
@@ -140,7 +158,6 @@ def main():
             run_tool("build_captions.py", "--start", clip["start"], "--end", clip["end"], "--style", "hormozi", "--hook", hook, "--out", caps)
             run_tool("render_clip.py", "--in", reframed, "--captions", caps, "--cues", cues, "--out", short, "--max-secs", maxs)
             
-            # YouTube Upload
             tags = run_tool("generate_hashtags.py", "--title", src_title, "--hook", hook, "--snippet", hook)
             up_args = ["upload_youtube.py", "--video", short, "--title", hook, "--description", hook, "--tags", ",".join(tags.get("hashtags", [])), "--privacy", args.privacy]
             if not args.dry_run:
@@ -154,19 +171,9 @@ def main():
                 
             uploaded_ids.append(up.get("video_id"))
             entry = {"clip": n, "video_id": up.get("video_id")}
-
-            # Direct Instagram Upload
-            log(f"DEBUG: IG_ENABLED is {IG_ENABLED} (API present: {bool(os.environ.get('ZERNIO_API'))}, IG ID present: {bool(os.environ.get('ZERNIO_INSTAGRAM_ID'))})")
             
-            if IG_ENABLED:
-                try:
-                    ig = run_tool("upload_instagram.py", "--video", short, "--caption", hook, "--confirm")
-                    entry["instagram_media_id"] = ig.get("media_id")
-                    log(f"clip {n}: Instagram -> {ig.get('media_id')}")
-                except Exception as e:
-                    log(f"clip {n}: Instagram FAILED: {e}")
-                    log(traceback.format_exc())
-                    summary.setdefault("instagram_errors", []).append({"clip": n, "error": str(e)})
+            # Instagram upload is now safely called as a single line
+            attempt_instagram_upload(short, hook, n, summary, entry)
                     
             summary["uploaded"].append(entry)
             
@@ -174,7 +181,6 @@ def main():
             log(f"clip {n} FAILED:", e)
             continue
 
-    # Update History File
     if not args.dry_run and uploaded_ids:
         hist = load_json(HISTORY, {"clipped": []})
         if isinstance(hist, list):
