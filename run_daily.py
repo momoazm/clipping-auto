@@ -5,6 +5,7 @@ import json
 import os
 import subprocess
 import sys
+import traceback
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -48,8 +49,7 @@ def run_tool(script, *args):
                           text=True, encoding="utf-8", errors="replace")
     data = _extract_json(proc.stdout)
     if data is None:
-        raise RuntimeError(f"{script}: no JSON output (exit {proc.returncode}). "
-                           f"stderr: {(proc.stderr or '')[-400:]}")
+        raise RuntimeError(f"{script}: no JSON output (exit {proc.returncode}). stderr: {(proc.stderr or '')[-400:]}")
     if isinstance(data, dict) and data.get("error"):
         raise RuntimeError(f"{script}: {data['error']}")
     return data
@@ -87,6 +87,10 @@ def main():
 
     summary = {"date": datetime.date.today().isoformat(), "dry_run": args.dry_run, "uploaded": [], "errors": []}
     video_attempts, attempted_videos, last_error = 0, [], None
+    clips = []
+    src_path = ""
+    src_title = ""
+    src = {}
 
     while video_attempts < max_video_attempts:
         video_attempts += 1
@@ -116,6 +120,7 @@ def main():
             continue
 
     if video_attempts >= max_video_attempts or not clips:
+        log("Failed to find or process clips.")
         sys.exit(1)
 
     uploaded_ids = []
@@ -123,30 +128,66 @@ def main():
         n = f"{idx:02d}"
         hook = clip.get("suggested_title") or clip.get("hook") or "Clip"
         short = str(TMP / f"short_{n}.mp4")
+        
         try:
-            # Rendering steps...
-            run_tool("reframe_crop.py", "--in", src_path, "--start", clip["start"], "--end", clip["end"], "--out", str(TMP/f"reframed_{n}.mp4"))
-            run_tool("plan_effects.py", "--start", clip["start"], "--end", clip["end"], "--emphasis", ",".join(clip.get("emphasis_words", [])), "--out", str(TMP/f"cues_{n}.json"))
-            run_tool("build_captions.py", "--start", clip["start"], "--end", clip["end"], "--style", "hormozi", "--hook", hook, "--out", str(TMP/f"caps_{n}.ass"))
-            run_tool("render_clip.py", "--in", str(TMP/f"reframed_{n}.mp4"), "--captions", str(TMP/f"caps_{n}.ass"), "--cues", str(TMP/f"cues_{n}.json"), "--out", short, "--max-secs", maxs)
+            # Rendering steps
+            reframed = str(TMP/f"reframed_{n}.mp4")
+            cues = str(TMP/f"cues_{n}.json")
+            caps = str(TMP/f"caps_{n}.ass")
+            
+            run_tool("reframe_crop.py", "--in", src_path, "--start", clip["start"], "--end", clip["end"], "--out", reframed)
+            run_tool("plan_effects.py", "--start", clip["start"], "--end", clip["end"], "--emphasis", ",".join(clip.get("emphasis_words", [])), "--out", cues)
+            run_tool("build_captions.py", "--start", clip["start"], "--end", clip["end"], "--style", "hormozi", "--hook", hook, "--out", caps)
+            run_tool("render_clip.py", "--in", reframed, "--captions", caps, "--cues", cues, "--out", short, "--max-secs", maxs)
             
             # YouTube Upload
             tags = run_tool("generate_hashtags.py", "--title", src_title, "--hook", hook, "--snippet", hook)
-            up = run_tool("upload_youtube.py", "--video", short, "--title", hook, "--description", hook, "--tags", ",".join(tags.get("hashtags", [])), "--privacy", args.privacy, "--confirm")
+            up_args = ["upload_youtube.py", "--video", short, "--title", hook, "--description", hook, "--tags", ",".join(tags.get("hashtags", [])), "--privacy", args.privacy]
+            if not args.dry_run:
+                up_args.append("--confirm")
+            
+            up = run_tool(*up_args)
+            
+            if args.dry_run:
+                summary["uploaded"].append({"clip": n, "preview": True})
+                continue
+                
             uploaded_ids.append(up.get("video_id"))
-log(f"DEBUG: IG_ENABLED is {IG_ENABLED} (API present: {bool(os.environ.get('ZERNIO_API'))}, IG ID present: {bool(os.environ.get('ZERNIO_INSTAGRAM_ID'))})")
-            # Direct Instagram Upload (SDK Implementation)
+            entry = {"clip": n, "video_id": up.get("video_id")}
+
+            # Direct Instagram Upload
+            log(f"DEBUG: IG_ENABLED is {IG_ENABLED} (API present: {bool(os.environ.get('ZERNIO_API'))}, IG ID present: {bool(os.environ.get('ZERNIO_INSTAGRAM_ID'))})")
+            
             if IG_ENABLED:
                 try:
                     ig = run_tool("upload_instagram.py", "--video", short, "--caption", hook, "--confirm")
-                    entry = {"clip": n, "video_id": up.get("video_id"), "instagram_media_id": ig.get("media_id")}
-                    summary["uploaded"].append(entry)
+                    entry["instagram_media_id"] = ig.get("media_id")
                     log(f"clip {n}: Instagram -> {ig.get('media_id')}")
                 except Exception as e:
                     log(f"clip {n}: Instagram FAILED: {e}")
+                    log(traceback.format_exc())
+                    summary.setdefault("instagram_errors", []).append({"clip": n, "error": str(e)})
+                    
+            summary["uploaded"].append(entry)
+            
         except Exception as e:
             log(f"clip {n} FAILED:", e)
             continue
+
+    # Update History File
+    if not args.dry_run and uploaded_ids:
+        hist = load_json(HISTORY, {"clipped": []})
+        if isinstance(hist, list):
+            hist = {"clipped": hist}
+        hist.setdefault("clipped", []).append({
+            "source_id": src.get("video_id", "unknown"), 
+            "source_title": src_title,
+            "date": summary["date"],
+            "clip_video_ids": uploaded_ids,
+        })
+        with open(HISTORY, "w", encoding="utf-8") as f:
+            json.dump(hist, f, ensure_ascii=False, indent=2)
+        log(f"history updated: +{len(uploaded_ids)} clips")
 
     print(json.dumps(summary, indent=2))
 
