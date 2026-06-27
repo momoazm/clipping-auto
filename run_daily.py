@@ -134,7 +134,7 @@ def main():
             tags = run_tool("generate_hashtags.py", "--title", src_title, "--hook", hook, "--snippet", hook)
             up = run_tool("upload_youtube.py", "--video", short, "--title", hook, "--description", hook, "--tags", ",".join(tags.get("hashtags", [])), "--privacy", args.privacy, "--confirm")
             uploaded_ids.append(up.get("video_id"))
-
+log(f"DEBUG: IG_ENABLED is {IG_ENABLED} (API present: {bool(os.environ.get('ZERNIO_API'))}, IG ID present: {bool(os.environ.get('ZERNIO_INSTAGRAM_ID'))})")
             # Direct Instagram Upload (SDK Implementation)
             if IG_ENABLED:
                 try:
