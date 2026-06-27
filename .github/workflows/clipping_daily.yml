@@ -43,8 +43,8 @@ jobs:
           Invoke-Expression "& '$py' -m pip install -r requirements.txt"
           if ($LASTEXITCODE -ne 0) { exit 1 }
 
-      # --- UNIFIED UTF-8 SECRET MATERIALIZATION ---
-      - name: Materialize secrets
+      # --- THE FIX: We use pure Python to write the secrets so Windows can't corrupt the text ---
+      - name: Materialize secrets via Python
         env:
           API_ENV: ${{ secrets.API_ENV }}
           YT_TOKEN_JSON: ${{ secrets.YT_TOKEN_JSON }}
@@ -52,22 +52,26 @@ jobs:
           ZERNIO_INSTAGRAM_ID: ${{ secrets.ZERNIO_INSTAGRAM_ID }}
           ZERNIO_YOUTUBE_ID: ${{ secrets.ZERNIO_YOUTUBE_ID }}
         run: |
-          $root = Get-Location
+          $pyScript = @"
+          import os
+          # Write API.env cleanly
+          with open('API.env', 'w', encoding='utf-8') as f:
+              f.write(os.environ.get('API_ENV', '') + '\n')
+              f.write('ZERNIO_API=' + os.environ.get('ZERNIO_API', '') + '\n')
+              f.write('ZERNIO_INSTAGRAM_ID=' + os.environ.get('ZERNIO_INSTAGRAM_ID', '') + '\n')
+              f.write('ZERNIO_YOUTUBE_ID=' + os.environ.get('ZERNIO_YOUTUBE_ID', '') + '\n')
           
-          # Combine your legacy keys and new Zernio keys cleanly into a single string variable
-          $b1 = $env:API_ENV
-          $b2 = "ZERNIO_API=$($env:ZERNIO_API)"
-          $b3 = "ZERNIO_INSTAGRAM_ID=$($env:ZERNIO_INSTAGRAM_ID)"
-          $b4 = "ZERNIO_YOUTUBE_ID=$($env:ZERNIO_YOUTUBE_ID)"
-          $full_env = -join($b1, "`r`n", $b2, "`r`n", $b3, "`r`n", $b4)
-          
-          # Write the complete environment block using a single uniform UTF8 encoding pass
-          [System.IO.File]::WriteAllText("$root\API.env", $full_env, [System.Text.Encoding]::UTF8)
-          [System.IO.File]::WriteAllText("$root\token.json", $env:YT_TOKEN_JSON, [System.Text.Encoding]::UTF8)
+          # Write token.json cleanly
+          with open('token.json', 'w', encoding='utf-8') as f:
+              f.write(os.environ.get('YT_TOKEN_JSON', ''))
+          "@
+          Set-Content -Path "write_secrets.py" -Value $pyScript
+          python write_secrets.py
+          Remove-Item -Path "write_secrets.py"
           
           if (-not (Test-Path "API.env")   -or (Get-Item "API.env").Length   -eq 0) { Write-Host "::error::API_ENV secret is empty"; exit 1 }
           if (-not (Test-Path "token.json") -or (Get-Item "token.json").Length -eq 0) { Write-Host "::error::YT_TOKEN_JSON secret is empty"; exit 1 }
-          if (Test-Path "$root\cookies.txt") { Remove-Item "$root\cookies.txt" -Force }
+          if (Test-Path "cookies.txt") { Remove-Item "cookies.txt" -Force }
 
       - name: Ensure full ffmpeg on PATH
         run: |
@@ -92,9 +96,6 @@ jobs:
           IN_PRIVACY: ${{ inputs.privacy }}
           IN_DRYRUN: ${{ inputs.dry_run }}
           IN_LIMIT: ${{ inputs.limit }}
-          ZERNIO_API: ${{ secrets.ZERNIO_API }}
-          ZERNIO_INSTAGRAM_ID: ${{ secrets.ZERNIO_INSTAGRAM_ID }}
-          ZERNIO_YOUTUBE_ID: ${{ secrets.ZERNIO_YOUTUBE_ID }}
         run: |
           $py = Join-Path (Get-Location) ".venv\Scripts\python.exe"
           $argv = @("--privacy", $(if ($env:IN_PRIVACY) { $env:IN_PRIVACY } else { "public" }))
