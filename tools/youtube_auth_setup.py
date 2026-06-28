@@ -9,8 +9,11 @@ Run once, standalone; opens a browser for consent. This project keeps its OWN to
 inside clipping/ (separate from the Gmail OAuth used by the newsletter project).
 
 Scopes requested:
-  - youtube.upload   (publish videos)
-  - youtube.readonly (resolve your channel name so the upload gate can echo it)
+  - youtube.upload       (publish videos)
+  - youtube.readonly     (resolve your channel name; list uploads, stats, comments)
+  - yt-analytics.readonly (retention, CTR, watch time, subs — for the weekly-roundup skill)
+
+Prereq for analytics: enable the **YouTube Analytics API** in the same Cloud project.
 
 Usage:
     python tools/youtube_auth_setup.py
@@ -24,6 +27,7 @@ from _common import REPO_ROOT, load_env, emit, fail
 SCOPES = [
     "https://www.googleapis.com/auth/youtube.upload",
     "https://www.googleapis.com/auth/youtube.readonly",
+    "https://www.googleapis.com/auth/yt-analytics.readonly",
 ]
 
 

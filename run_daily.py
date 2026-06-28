@@ -225,8 +225,8 @@ def main():
                         host = run_tool("host_public.py", "--video", short)
                         ig = run_tool("upload_instagram.py", "--video-url", host["url"],
                                       "--caption", desc, "--confirm")
-                        entry["instagram_media_id"] = ig.get("media_id")
-                        log(f"clip {n}: Instagram -> {ig.get('media_id')}")
+                        entry["instagram_media_id"] = ig.get("post_id") or ig.get("media_id")
+                        log(f"clip {n}: Instagram -> {entry['instagram_media_id']}")
                     except Exception as e:
                         log(f"clip {n}: Instagram FAILED (YouTube upload still kept): {e}")
                         summary.setdefault("instagram_errors", []).append({"clip": n, "error": str(e)})

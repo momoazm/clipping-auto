@@ -14,20 +14,26 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 # This is the STANDALONE automation copy (clipping-auto). API.env can live EITHER at
-# this project's own root (CI writes it there / standalone repo) OR one level up (when
-# kept as a sibling of clipping/ inside the multi-project repo). Try both, prefer own root.
-_ENV_CANDIDATES = (REPO_ROOT / "API.env", REPO_ROOT.parent / "API.env")
-SHARED_ENV = next((p for p in _ENV_CANDIDATES if p.is_file()), _ENV_CANDIDATES[0])
+# this project's own root (CI writes it there / standalone repo) OR somewhere above it
+# (when kept nested inside the multi-project repo, currently at projects/clipping-auto/
+# -- two levels up). Walk up so this keeps working regardless of nesting depth.
+SHARED_ENV = next(
+    (p / "API.env" for p in REPO_ROOT.parents if (p / "API.env").is_file()),
+    REPO_ROOT.parent / "API.env",
+)
 TMP_DIR = REPO_ROOT / ".tmp"
 
 
 def load_env():
     from dotenv import load_dotenv
-    # Load whichever API.env exists; if neither does, keys are expected in the real env.
-    for p in _ENV_CANDIDATES:
-        if p.is_file():
-            load_dotenv(p)
-            return
+    # Shared copy first as defaults, then this project's own root API.env with
+    # override=True -- so a partial local file (e.g. just an account id) augments
+    # the shared one instead of shadowing it entirely.
+    if SHARED_ENV.is_file():
+        load_dotenv(SHARED_ENV)
+    local_env = REPO_ROOT / "API.env"
+    if local_env.is_file():
+        load_dotenv(local_env, override=True)
 
 
 def load_theme():
