@@ -159,17 +159,20 @@ def main():
             continue
             
         tags = run_tool("generate_hashtags.py", "--title", src_title, "--hook", hook, "--snippet", hook)
-        up_args = ["upload_youtube.py", "--video", short, "--title", hook, "--description", hook, "--tags", ",".join(tags.get("hashtags", [])), "--privacy", args.privacy]
-        if not args.dry_run:
-            up_args.append("--confirm")
-        
         entry = {"clip": n}
-        
-        # 2. Try YouTube (If this fails, log it but keep going!)
+
+        # 2. Try YouTube (If this fails, log it but keep going!) -- needs a PUBLIC url,
+        # not the local path, since it now publishes via Zernio instead of OAuth.
         try:
+            host = run_tool("host_public.py", "--video", short)
+            up_args = ["upload_youtube.py", "--video-url", host["url"], "--title", hook,
+                       "--description", hook, "--tags", ",".join(tags.get("hashtags", [])),
+                       "--privacy", args.privacy]
+            if not args.dry_run:
+                up_args.append("--confirm")
             up = run_tool(*up_args)
             if not args.dry_run:
-                yt_id = up.get("video_id")
+                yt_id = up.get("post_id")
                 uploaded_ids.append(yt_id)
                 entry["video_id"] = yt_id
         except Exception as e:
