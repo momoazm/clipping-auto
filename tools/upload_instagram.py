@@ -3,21 +3,20 @@ API directly.
 
 Why Zernio instead of our own Meta app: posting through your OWN Facebook App requires either
 (a) Advanced Access via Meta App Review + Business Verification (real registered-business
-documents), or (b) staying in Development Mode with the posting account added as an App
-Tester/Admin -- and even then a System User token (Business Manager construct) still hits the same
-Advanced Access wall. Zernio already completed App Review and Business Verification under THEIR
-app; you authorize via a normal "Continue with Facebook" OAuth consent screen on zernio.com, and
-Zernio's API takes it from there. Free tier covers this project's volume (first 2 connected
-accounts, unlimited posts).
+documents Moemen doesn't have), or (b) staying in Development Mode with the posting account
+added as an App Tester/Admin -- and even then a System User token (Business Manager construct)
+still hits the same Advanced Access wall. Zernio already completed App Review and Business
+Verification under THEIR app; you authorize via a normal "Continue with Facebook" OAuth consent
+screen on zernio.com, and Zernio's API takes it from there. Free tier covers this project's
+volume (first 2 connected accounts, unlimited posts).
 
 SAFETY GATE: refuses to publish without --confirm (dry-run preview otherwise). Irreversible.
 
 AUTH/SETUP:
-  * ZERNIO_API_KEY in root API.env (shared -- one Zernio account can hold multiple connected
-    social accounts across projects).
-  * ZERNIO_ACCOUNT_ID in this project's local API.env -- the Zernio-internal id for the
-    connected Instagram account (NOT the same as IG_USER_ID; fetched once via GET /v1/accounts
-    after connecting).
+  * ZERNIO_API in API.env (the GitHub secret name already wired into this repo's workflow).
+  * ZERNIO_INSTAGRAM_ID -- the Zernio-internal id for the connected Instagram account (NOT the
+    same as a Meta IG user id; fetched once via GET /v1/accounts after connecting in Zernio's
+    dashboard).
 
 Instagram still fetches the video from a PUBLIC url (Zernio just proxies the same Graph API
 container-create/poll/publish flow under the hood) -- pass --video-url (host_public.py).
@@ -46,15 +45,15 @@ def main():
     args = parser.parse_args()
 
     load_env()
-    api_key = os.environ.get("ZERNIO_API_KEY", "").strip()
-    account_id = os.environ.get("ZERNIO_ACCOUNT_ID", "").strip()
+    api_key = os.environ.get("ZERNIO_API", "").strip()
+    account_id = os.environ.get("ZERNIO_INSTAGRAM_ID", "").strip()
     if not api_key:
-        fail("ZERNIO_API_KEY not set in API.env. Sign up free at zernio.com and grab it from "
+        fail("ZERNIO_API not set in API.env. Sign up free at zernio.com and grab it from "
              "Settings -> API Keys.")
         return
     if not account_id:
-        fail("ZERNIO_ACCOUNT_ID not set in this project's API.env. After connecting the "
-             "Instagram account in Zernio's dashboard, fetch it via GET /v1/accounts.")
+        fail("ZERNIO_INSTAGRAM_ID not set in API.env. After connecting the Instagram account "
+             "in Zernio's dashboard, fetch it via GET /v1/accounts.")
         return
 
     payload = {
@@ -103,6 +102,9 @@ def main():
     entry = platform_entry(post)
     status = entry.get("status") or post.get("status")
 
+    # publishNow:true is meant to include the URL immediately, but Instagram-side processing
+    # (container transcode) can take up to ~2 min -- poll the same way the old direct-Graph-API
+    # version did if it isn't done yet.
     deadline = time.time() + args.poll_timeout
     while status not in ("published", "failed", "error") and time.time() < deadline:
         time.sleep(5)
