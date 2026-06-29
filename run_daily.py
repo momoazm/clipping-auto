@@ -20,7 +20,7 @@ except ImportError:
     pass
 
 # --- Zernio secret keys ---
-IG_ENABLED = bool(os.environ.get("ZERNIO_API")) and bool(os.environ.get("ZERNIO_INSTAGRAM_ID"))
+IG_ENABLED = bool(os.environ.get("ZERNIO_API_KEY")) and bool(os.environ.get("ZERNIO_INSTAGRAM_ID"))
 
 def log(*a):
     print("[run_daily]", *a, file=sys.stderr, flush=True)
