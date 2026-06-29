@@ -71,7 +71,7 @@ def ensure_sfx():
 def attempt_instagram_upload(short_path, caption, clip_num, summary_dict, entry_dict):
     """Isolated Instagram logic that won't crash the main pipeline."""
     if not IG_ENABLED:
-        log(f"clip {clip_num}: Instagram upload skipped (ZERNIO_API/ZERNIO_INSTAGRAM_ID not configured)")
+        log(f"clip {clip_num}: Instagram upload skipped (ZERNIO_API_KEY/ZERNIO_INSTAGRAM_ID not configured)")
         return
 
     try:
