@@ -44,23 +44,19 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit 1 }
 
       # --- THE FIX: We use pure Python to write the secrets so Windows can't corrupt the text ---
+      # Zernio creds are deliberately NOT written here -- they come straight from their own
+      # GitHub secrets as env vars on the "Run daily clipping" step (read via os.environ).
       - name: Materialize secrets via Python
         env:
           API_ENV: ${{ secrets.API_ENV }}
           YT_TOKEN_JSON: ${{ secrets.YT_TOKEN_JSON }}
-          ZERNIO_API_KEY: ${{ secrets.ZERNIO_API }}
-          ZERNIO_INSTAGRAM_ID: ${{ secrets.ZERNIO_INSTAGRAM_ID }}
-          ZERNIO_YOUTUBE_ID: ${{ secrets.ZERNIO_YOUTUBE_ID }}
         run: |
           $pyScript = @"
           import os
           # Write API.env cleanly
           with open('API.env', 'w', encoding='utf-8') as f:
               f.write(os.environ.get('API_ENV', '') + '\n')
-              f.write('ZERNIO_API_KEY=' + os.environ.get('ZERNIO_API_KEY', '') + '\n')
-              f.write('ZERNIO_INSTAGRAM_ID=' + os.environ.get('ZERNIO_INSTAGRAM_ID', '') + '\n')
-              f.write('ZERNIO_YOUTUBE_ID=' + os.environ.get('ZERNIO_YOUTUBE_ID', '') + '\n')
-          
+
           # Write token.json cleanly
           with open('token.json', 'w', encoding='utf-8') as f:
               f.write(os.environ.get('YT_TOKEN_JSON', ''))
@@ -96,6 +92,10 @@ jobs:
           IN_PRIVACY: ${{ inputs.privacy }}
           IN_DRYRUN: ${{ inputs.dry_run }}
           IN_LIMIT: ${{ inputs.limit }}
+          # Zernio creds straight from their own secrets -- read via os.environ, never written to API.env
+          ZERNIO_API: ${{ secrets.ZERNIO_API }}
+          ZERNIO_INSTAGRAM_ID: ${{ secrets.ZERNIO_INSTAGRAM_ID }}
+          ZERNIO_YOUTUBE_ID: ${{ secrets.ZERNIO_YOUTUBE_ID }}
         run: |
           $py = Join-Path (Get-Location) ".venv\Scripts\python.exe"
           $argv = @("--privacy", $(if ($env:IN_PRIVACY) { $env:IN_PRIVACY } else { "public" }))

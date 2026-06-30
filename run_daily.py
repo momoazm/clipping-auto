@@ -19,8 +19,8 @@ try:
 except ImportError:
     pass
 
-# --- Zernio secret keys ---
-IG_ENABLED = bool(os.environ.get("ZERNIO_API_KEY")) and bool(os.environ.get("ZERNIO_INSTAGRAM_ID"))
+# --- Zernio secret keys (passed as env vars by the workflow; in API.env for local runs) ---
+IG_ENABLED = bool(os.environ.get("ZERNIO_API")) and bool(os.environ.get("ZERNIO_INSTAGRAM_ID"))
 
 def log(*a):
     print("[run_daily]", *a, file=sys.stderr, flush=True)
@@ -71,7 +71,7 @@ def ensure_sfx():
 def attempt_instagram_upload(short_path, caption, clip_num, summary_dict, entry_dict):
     """Isolated Instagram logic that won't crash the main pipeline."""
     if not IG_ENABLED:
-        log(f"clip {clip_num}: Instagram upload skipped (ZERNIO_API_KEY/ZERNIO_INSTAGRAM_ID not configured)")
+        log(f"clip {clip_num}: Instagram upload skipped (ZERNIO_API/ZERNIO_INSTAGRAM_ID not configured)")
         return
 
     try:
