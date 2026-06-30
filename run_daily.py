@@ -60,6 +60,29 @@ def load_json(path, default):
     except (FileNotFoundError, json.JSONDecodeError):
         return default
 
+def record_attempts(attempted_ids, dry_run):
+    """No-repeat memory: persist every source id we picked this run (success OR fail)
+    so a future run never re-selects it. The workflow commits this file back even when
+    the run fails, so a video that breaks once won't be retried forever. Dry runs don't
+    record (they're just tests)."""
+    if dry_run or not attempted_ids:
+        return
+    hist = load_json(HISTORY, {"clipped": []})
+    if isinstance(hist, list):
+        hist = {"clipped": hist}
+    seen = {r.get("source_id") if isinstance(r, dict) else r for r in hist.get("attempted", [])}
+    today = datetime.date.today().isoformat()
+    changed = False
+    for sid in attempted_ids:
+        if sid and sid not in seen:
+            hist.setdefault("attempted", []).append({"source_id": sid, "date": today})
+            seen.add(sid)
+            changed = True
+    if changed:
+        with open(HISTORY, "w", encoding="utf-8") as f:
+            json.dump(hist, f, ensure_ascii=False, indent=2)
+        log(f"recorded {len(attempted_ids)} attempted source(s) to no-repeat memory")
+
 def ensure_sfx():
     sfx_dir = HERE / "config" / "sfx"
     if not list(sfx_dir.glob("*.wav")):
@@ -111,14 +134,15 @@ def main():
     while video_attempts < max_video_attempts:
         video_attempts += 1
         try:
-            src = run_tool("find_source_video.py")
+            # Tell the finder which sources we already tried this run so it advances to
+            # the next video/channel instead of handing back the same one every time.
+            src = run_tool("find_source_video.py", "--exclude", ",".join(attempted_videos))
         except Exception as e:
             log("no source video to clip today:", e)
+            record_attempts(attempted_videos, args.dry_run)
             print(json.dumps({"status": "no_source", "detail": str(e)}))
             return
 
-        if src["video_id"] in attempted_videos:
-            continue
         attempted_videos.append(src["video_id"])
 
         try:
@@ -135,8 +159,9 @@ def main():
             log(f"source {src.get('video_id')} failed (attempt {video_attempts}/{max_video_attempts}):", e)
             continue
 
-    if video_attempts >= max_video_attempts or not clips:
+    if not clips:
         log("Failed to find or process clips.")
+        record_attempts(attempted_videos, args.dry_run)
         sys.exit(1)
 
     uploaded_ids = []
@@ -202,6 +227,10 @@ def main():
         with open(HISTORY, "w", encoding="utf-8") as f:
             json.dump(hist, f, ensure_ascii=False, indent=2)
         log(f"history updated: +{len(uploaded_ids)} clips")
+
+    # Remember every source we touched this run (incl. any earlier failed attempts)
+    # so none of them come back next run.
+    record_attempts(attempted_videos, args.dry_run)
 
     print(json.dumps(summary, indent=2))
 

@@ -116,8 +116,11 @@ jobs:
             Stop-Process -Id $awake.Id -Force -ErrorAction SilentlyContinue
           }
 
+      # always() so the no-repeat memory is committed even when the run FAILS -- that's
+      # how a source that broke this run gets remembered and isn't re-picked next time
+      # (without it, the next checkout resets the file and the same video repeats).
       - name: Commit updated history
-        if: ${{ inputs.dry_run != 'true' }}
+        if: ${{ always() && inputs.dry_run != 'true' }}
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
