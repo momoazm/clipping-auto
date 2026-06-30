@@ -32,8 +32,11 @@ from _common import load_env, emit, fail, run, ffmpeg_bin, ffprobe_json, tmp_pat
 # Default to the full-accuracy model (better than -turbo on noisy/crowd audio,
 # which is where captions were weakest). Override via --model or GROQ_WHISPER_MODEL.
 DEFAULT_MODEL = "whisper-large-v3"
-# Groq's free tier caps upload size ~25 MB; stay safely under it per chunk.
-MAX_CHUNK_BYTES = 22 * 1024 * 1024
+# Groq's free tier caps upload size ~25 MB, but a single big upload also tends to
+# blow the request timeout. Keep each chunk small enough to transcribe quickly and
+# retry cheaply (a ~39 min source -> ~19 MB audio used to go as one request and time
+# out; at 14 MB it splits into two bounded requests).
+MAX_CHUNK_BYTES = 14 * 1024 * 1024
 AUDIO_BITRATE = "64k"  # 16 kHz mono mp3 @ 64k ~= 0.48 MB/min
 # Light, conservative cleanup that helps ASR without distorting speech:
 # drop sub-90Hz rumble, then dynamically normalize so quiet talkers come up.
@@ -80,7 +83,10 @@ def groq_transcribe(audio_path, language, model):
     if not api_key:
         raise RuntimeError("GROQ_API_KEY not set")
 
-    client = Groq(api_key=api_key)
+    # Audio uploads + full transcription routinely exceed the SDK's short default
+    # timeout (surfaces as "Request timed out."). Give it generous headroom and let
+    # the SDK transparently retry transient timeouts/5xx.
+    client = Groq(api_key=api_key, timeout=600.0, max_retries=3)
     kwargs = dict(
         model=model,
         response_format="verbose_json",
