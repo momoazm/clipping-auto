@@ -42,6 +42,10 @@ jobs:
           Invoke-Expression "& '$py' -m pip install --upgrade pip"
           Invoke-Expression "& '$py' -m pip install -r requirements.txt"
           if ($LASTEXITCODE -ne 0) { exit 1 }
+          # YouTube breaks old yt-dlp builds constantly; requirements.txt's floating
+          # >= minimum won't upgrade an already-installed copy on this reused .venv, so
+          # force the latest every run (best-effort -- a transient PyPI hiccup won't fail us).
+          Invoke-Expression "& '$py' -m pip install --upgrade yt-dlp"
 
       # --- THE FIX: We use pure Python to write the secrets so Windows can't corrupt the text ---
       # Zernio creds are deliberately NOT written here -- they come straight from their own

@@ -132,6 +132,7 @@ def main():
             clips = sel.get("clips", [])
             break
         except Exception as e:
+            log(f"source {src.get('video_id')} failed (attempt {video_attempts}/{max_video_attempts}):", e)
             continue
 
     if video_attempts >= max_video_attempts or not clips:
