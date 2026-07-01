@@ -1,8 +1,9 @@
 name: Daily MrBeast clipping
 
 on:
-  schedule:
-    - cron: "0 21 * * *"
+  # Schedule removed: runs are now triggered on demand from the MOMO site button
+  # (Vercel /api/runner -> workflow_dispatch). The local runner-helper starts the
+  # self-hosted runner (C:\actions-runner) only when a job is queued.
   workflow_dispatch:
     inputs:
       dry_run:
