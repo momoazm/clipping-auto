@@ -110,6 +110,19 @@
         "6a450e8a49a00c7d40e5079b",
         "6a451085baf55ed48a4e9e5a"
       ]
+    },
+    {
+      "source_id": "DXVHmGoCTco",
+      "source_title": "50 Streamers Fight for $1,000,000",
+      "date": "2026-07-02",
+      "clip_video_ids": [
+        "6a458d4197f5afb69d3bf7ed",
+        "6a458f0353539a177c95b8f1",
+        "6a4590bd1977b9de62abec12",
+        "6a4592964a0ad18fff9bcde7",
+        "6a4594a0eaa27d5b3b12ab96",
+        "6a459650d67b2d5e37eba929"
+      ]
     }
   ],
   "attempted": [
@@ -120,6 +133,10 @@
     {
       "source_id": "zRtGL0-5rg4",
       "date": "2026-07-01"
+    },
+    {
+      "source_id": "DXVHmGoCTco",
+      "date": "2026-07-02"
     }
   ]
 }
