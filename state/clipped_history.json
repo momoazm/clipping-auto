@@ -99,11 +99,26 @@
         "6a44370046da7dda17e2091c",
         "6a44386becf352b4e7180b1e"
       ]
+    },
+    {
+      "source_id": "zRtGL0-5rg4",
+      "source_title": "Last To Leave Grocery Store, Wins $250,000",
+      "date": "2026-07-01",
+      "clip_video_ids": [
+        "6a45083617a1877783979fc6",
+        "6a450c5269507588c6082cbe",
+        "6a450e8a49a00c7d40e5079b",
+        "6a451085baf55ed48a4e9e5a"
+      ]
     }
   ],
   "attempted": [
     {
       "source_id": "6Zy5VLcEbZc",
+      "date": "2026-07-01"
+    },
+    {
+      "source_id": "zRtGL0-5rg4",
       "date": "2026-07-01"
     }
   ]
