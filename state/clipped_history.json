@@ -123,6 +123,18 @@
         "6a4594a0eaa27d5b3b12ab96",
         "6a459650d67b2d5e37eba929"
       ]
+    },
+    {
+      "source_id": "JFtlf8RoPZY",
+      "source_title": "Trapped On An Island Until I Build A Boat",
+      "date": "2026-07-02",
+      "clip_video_ids": [
+        "6a45cd77d75bd604dd674266",
+        "6a45d1552b660f9c5a992ede",
+        "6a45d3d217e9e2b8f8e37015",
+        "6a45d5e7b39b3983d59bb3eb",
+        "6a45d942d81c4f8730f66a0a"
+      ]
     }
   ],
   "attempted": [
@@ -136,6 +148,10 @@
     },
     {
       "source_id": "DXVHmGoCTco",
+      "date": "2026-07-02"
+    },
+    {
+      "source_id": "JFtlf8RoPZY",
       "date": "2026-07-02"
     }
   ]
