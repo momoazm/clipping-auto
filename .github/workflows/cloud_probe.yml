@@ -1,0 +1,81 @@
+name: Cloud IP probe (temporary)
+
+# TEMPORARY diagnostic: tests whether a GitHub-hosted (datacenter-IP) runner can
+# still reach the pipeline's data sources today. No uploads, no state changes.
+# Delete this file once the self-hosted -> cloud decision is made.
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install yt-dlp + ffmpeg
+        run: |
+          pip install --upgrade yt-dlp
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+
+      - name: "TEST 1: Reddit RSS feed (ranking-shorts source discovery)"
+        continue-on-error: true
+        run: |
+          python3 - <<'EOF'
+          import urllib.request, re, sys
+          UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                "(KHTML, like Gecko) Chrome/124.0 Safari/537.36")
+          url = "https://www.reddit.com/r/Whatcouldgowrong/top/.rss?t=week"
+          req = urllib.request.Request(url, headers={"User-Agent": UA})
+          try:
+              body = urllib.request.urlopen(req, timeout=30).read().decode("utf-8", "replace")
+          except Exception as e:
+              print(f"RESULT reddit_rss=FAIL {e}")
+              sys.exit(1)
+          vids = re.findall(r"https://v\.redd\.it/[a-z0-9]+", body)
+          print(f"RESULT reddit_rss=OK entries_with_vreddit={len(set(vids))}")
+          with open("/tmp/vreddit_url.txt", "w") as f:
+              f.write(sorted(set(vids))[0] if vids else "")
+          EOF
+
+      - name: "TEST 2: v.redd.it download via yt-dlp (ranking-shorts clip download)"
+        continue-on-error: true
+        run: |
+          URL=$(cat /tmp/vreddit_url.txt 2>/dev/null || true)
+          if [ -z "$URL" ]; then echo "RESULT vreddit_dl=SKIP no url from RSS"; exit 0; fi
+          echo "Trying $URL"
+          if yt-dlp -f "b[height<=480]/b" --max-filesize 200M -o /tmp/probe_reddit.mp4 "$URL"; then
+            ls -la /tmp/probe_reddit.mp4 && echo "RESULT vreddit_dl=OK"
+          else
+            echo "RESULT vreddit_dl=FAIL"; exit 1
+          fi
+
+      - name: "TEST 3: YouTube metadata + download, plain yt-dlp (clipping-auto source)"
+        continue-on-error: true
+        run: |
+          # A MrBeast upload; 360p + first 30s only to keep it tiny but exercise the real video CDN path.
+          if yt-dlp -f "bv*[height<=360]+ba/b[height<=360]" --download-sections "*0-30" \
+               -o /tmp/probe_yt.mp4 "https://www.youtube.com/watch?v=0e3GPea1Tyg"; then
+            ls -la /tmp/probe_yt.* && echo "RESULT youtube_plain=OK"
+          else
+            echo "RESULT youtube_plain=FAIL"; exit 1
+          fi
+
+      - name: "TEST 4: YouTube with bgutil PO-token provider"
+        continue-on-error: true
+        run: |
+          docker run --name bgutil -d -p 4416:4416 brainicism/bgutil-ytdlp-pot-provider
+          pip install bgutil-ytdlp-pot-provider
+          sleep 5
+          if yt-dlp -f "bv*[height<=360]+ba/b[height<=360]" --download-sections "*0-30" \
+               -o /tmp/probe_yt_pot.mp4 "https://www.youtube.com/watch?v=0e3GPea1Tyg"; then
+            ls -la /tmp/probe_yt_pot.* && echo "RESULT youtube_pot=OK"
+          else
+            echo "RESULT youtube_pot=FAIL"; exit 1
+          fi
