@@ -117,3 +117,79 @@ jobs:
           else
             echo "RESULT youtube_warp=FAIL"; exit 1
           fi
+
+      - name: "TEST 7: YouTube via WARP, native downloader (no ffmpeg sections)"
+        continue-on-error: true
+        run: |
+          # ffmpeg can't speak SOCKS, so download a whole small file with yt-dlp's own downloader.
+          if yt-dlp --proxy socks5://127.0.0.1:40000 -f "b[height<=360]/bv*[height<=360]+ba" \
+               --max-filesize 300M -o "/tmp/probe_yt_native.%(ext)s" \
+               "https://www.youtube.com/watch?v=0e3GPea1Tyg"; then
+            ls -la /tmp/probe_yt_native.* && echo "RESULT youtube_warp_native=OK"
+          else
+            echo "RESULT youtube_warp_native=FAIL"; exit 1
+          fi
+
+      - name: "TEST 8: Reddit alternate media endpoints (JSON -> direct files)"
+        continue-on-error: true
+        run: |
+          python3 - <<'EOF'
+          import json, urllib.request, re
+          UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                "(KHTML, like Gecko) Chrome/124.0 Safari/537.36")
+          def get(url, proxy=None, binary=False, rng=None):
+              h = {"User-Agent": UA, "Accept": "*/*"}
+              if rng: h["Range"] = rng
+              req = urllib.request.Request(url, headers=h)
+              if proxy:
+                  req.set_proxy(proxy, "http"); req.set_proxy(proxy, "https")
+              r = urllib.request.urlopen(req, timeout=30)
+              return r.read(65536) if binary else r.read().decode("utf-8", "replace")
+          # 1) post listing JSON from www.reddit.com (plain IP)
+          try:
+              body = get("https://www.reddit.com/r/Whatcouldgowrong/top.json?t=week&limit=25")
+              posts = json.loads(body)["data"]["children"]
+              print(f"RESULT reddit_json=OK posts={len(posts)}")
+          except Exception as e:
+              print(f"RESULT reddit_json=FAIL {e}"); raise SystemExit(0)
+          vid = None
+          for p in posts:
+              d = p["data"]
+              if d.get("is_video") and d.get("media", {}).get("reddit_video"):
+                  vid = d["media"]["reddit_video"]; break
+          if not vid:
+              print("RESULT reddit_media=SKIP no video post"); raise SystemExit(0)
+          fallback = vid.get("fallback_url", "").split("?")[0]
+          print("fallback_url:", fallback)
+          # 2) direct DASH mp4 from v.redd.it, plain IP, browser headers + Range
+          for label, proxy in (("plain", None),):
+              try:
+                  data = get(fallback, proxy=proxy, binary=True, rng="bytes=0-65535")
+                  print(f"RESULT vreddit_dash_{label}=OK bytes={len(data)}")
+              except Exception as e:
+                  print(f"RESULT vreddit_dash_{label}=FAIL {e}")
+          # 3) packaged-media (if present)
+          pm = vid.get("packaged_media") or {}
+          mp4s = (pm.get("mp4") or {}).get("permalink") if isinstance(pm.get("mp4"), dict) else None
+          if mp4s:
+              try:
+                  data = get(mp4s, binary=True, rng="bytes=0-65535")
+                  print(f"RESULT packaged_media=OK bytes={len(data)}")
+              except Exception as e:
+                  print(f"RESULT packaged_media=FAIL {e}")
+          else:
+              print("RESULT packaged_media=SKIP not in listing JSON")
+          EOF
+
+      - name: "TEST 9: v.redd.it DASH file via WARP with browser headers"
+        continue-on-error: true
+        run: |
+          URL=$(cat /tmp/vreddit_url.txt 2>/dev/null || true)
+          if [ -z "$URL" ]; then echo "RESULT vreddit_dash_warp=SKIP"; exit 0; fi
+          # try the direct 720p DASH file on the CDN through WARP
+          if curl -sf --proxy socks5h://127.0.0.1:40000 -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" \
+               -r 0-65535 -o /tmp/dash_warp.bin "$URL/DASH_720.mp4"; then
+            ls -la /tmp/dash_warp.bin && echo "RESULT vreddit_dash_warp=OK"
+          else
+            echo "RESULT vreddit_dash_warp=FAIL"; exit 1
+          fi
