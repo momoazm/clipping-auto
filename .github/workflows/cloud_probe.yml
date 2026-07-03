@@ -79,3 +79,41 @@ jobs:
           else
             echo "RESULT youtube_pot=FAIL"; exit 1
           fi
+
+      - name: "Install Cloudflare WARP (SOCKS proxy mode, free egress IP change)"
+        continue-on-error: true
+        run: |
+          curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg | sudo gpg --yes --dearmor -o /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/cloudflare-client.list
+          sudo apt-get update -qq && sudo apt-get install -y -qq cloudflare-warp
+          pip install pysocks
+          warp-cli --accept-tos registration new
+          warp-cli --accept-tos mode proxy
+          warp-cli --accept-tos connect
+          sleep 5
+          warp-cli --accept-tos status
+          echo "Egress IP via WARP:"
+          curl -s --proxy socks5h://127.0.0.1:40000 https://ifconfig.me || true
+
+      - name: "TEST 5: v.redd.it via WARP proxy"
+        continue-on-error: true
+        run: |
+          URL=$(cat /tmp/vreddit_url.txt 2>/dev/null || true)
+          if [ -z "$URL" ]; then echo "RESULT vreddit_warp=SKIP no url"; exit 0; fi
+          if yt-dlp --proxy socks5://127.0.0.1:40000 -f "b[height<=480]/b" \
+               --max-filesize 200M -o /tmp/probe_reddit_warp.mp4 "$URL"; then
+            ls -la /tmp/probe_reddit_warp.mp4 && echo "RESULT vreddit_warp=OK"
+          else
+            echo "RESULT vreddit_warp=FAIL"; exit 1
+          fi
+
+      - name: "TEST 6: YouTube via WARP proxy (with PO-token provider still up)"
+        continue-on-error: true
+        run: |
+          if yt-dlp --proxy socks5://127.0.0.1:40000 -f "bv*[height<=360]+ba/b[height<=360]" \
+               --download-sections "*0-30" -o /tmp/probe_yt_warp.mp4 \
+               "https://www.youtube.com/watch?v=0e3GPea1Tyg"; then
+            ls -la /tmp/probe_yt_warp.* && echo "RESULT youtube_warp=OK"
+          else
+            echo "RESULT youtube_warp=FAIL"; exit 1
+          fi
