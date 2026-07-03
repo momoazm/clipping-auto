@@ -65,6 +65,9 @@ def channel_latest(url, depth):
     cookie_file = os.environ.get("YT_COOKIES_FILE") or str(REPO_ROOT / "cookies.txt")
     if os.path.isfile(cookie_file):
         opts["cookiefile"] = cookie_file
+    proxy = os.environ.get("YTDLP_PROXY")   # datacenter-IP runners: route via WARP/residential proxy
+    if proxy:
+        opts["proxy"] = proxy
     with YoutubeDL(opts) as ydl:
         info = ydl.extract_info(url, download=False)
     out = []

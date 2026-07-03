@@ -71,6 +71,14 @@ def main():
     if os.path.isfile(cookie_file):
         ydl_opts["cookiefile"] = cookie_file
 
+    # Cloud runners (GitHub-hosted) have datacenter IPs that YouTube bot-checks. Routing
+    # yt-dlp -- and only yt-dlp -- through a proxy fixes it (probed 2026-07-03: WARP's
+    # local SOCKS passes the bot-check where plain IP and PO-token both fail). Native
+    # downloader only: ffmpeg can't speak SOCKS, so no --download-sections through this.
+    proxy = os.environ.get("YTDLP_PROXY")
+    if proxy:
+        ydl_opts["proxy"] = proxy
+
     try:
         with YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(args.url, download=True)
