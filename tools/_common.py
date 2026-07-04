@@ -105,16 +105,29 @@ def run(cmd, **kwargs):
     """Run a subprocess, raising RuntimeError with captured stderr on failure.
 
     `cmd` is a list of args. Returns the CompletedProcess on success.
+
+    stdin is pinned to DEVNULL: ffmpeg reads stdin for interactive keyboard commands,
+    and in a CI/background context (e.g. GitHub Actions) that stdin is an open pipe
+    ffmpeg blocks on -- which hung the render step for hours until the job timed out.
+    None of our subprocesses need stdin, so closing it is always safe.
+    Callers may pass timeout=<seconds>; a TimeoutExpired is re-raised with any partial
+    stderr so a stall fails fast and legibly instead of burning the whole job budget.
     """
-    proc = subprocess.run(
-        cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        **kwargs,
-    )
+    try:
+        proc = subprocess.run(
+            cmd,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            **kwargs,
+        )
+    except subprocess.TimeoutExpired as e:
+        prog = os.path.basename(str(cmd[0]))
+        tail = "\n".join((e.stderr or "").strip().splitlines()[-15:]) if e.stderr else ""
+        raise RuntimeError(f"{prog} timed out after {e.timeout:.0f}s\n{tail}")
     if proc.returncode != 0:
         prog = os.path.basename(str(cmd[0]))
         tail = (proc.stderr or "").strip().splitlines()[-15:]

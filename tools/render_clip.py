@@ -236,7 +236,10 @@ def main():
         chains.append(f"{premix}{tail}{limiter}anull[a]")
 
     # --- assemble + run ------------------------------------------------------
-    cmd = [ffmpeg, "-y"]
+    # -nostdin: never read stdin. In CI (GitHub Actions) ffmpeg's interactive keyboard
+    # reader blocks on the open-pipe stdin and the encode never starts -- that stall hung
+    # this step for hours. Belt-and-suspenders with run()'s stdin=DEVNULL.
+    cmd = [ffmpeg, "-nostdin", "-y"]
     for i, inp in enumerate(inputs):
         # Loop the music bed so it always covers the clip; amix(duration=first) trims it.
         if i == music_idx:
@@ -253,7 +256,10 @@ def main():
     ]
 
     try:
-        run(cmd, cwd=cwd)
+        # A 60s clip renders in well under a minute even on a 2-core CI runner; 15 min is
+        # a generous ceiling that turns any future stall into a fast, legible failure
+        # instead of a multi-hour job-timeout with no output.
+        run(cmd, cwd=cwd, timeout=900)
     except Exception as e:
         fail(f"render failed: {e}")
         return
