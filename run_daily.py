@@ -12,6 +12,14 @@ TOOLS = HERE / "tools"
 TMP = HERE / ".tmp"
 CONFIG = HERE / "config" / "channels.json"
 HISTORY = HERE / "state" / "clipped_history.json"
+# Crash-safe local ledger: written the instant a source is picked, BEFORE any heavy
+# download/transcribe/render/upload. Untracked + gitignored, so `actions/checkout`
+# (clean: false) keeps it across runs on the same laptop -- unlike the tracked history
+# file, which checkout force-resets to the last PUSHED version. If the machine powers
+# off mid-run, the source is already recorded here, so the next run skips it and never
+# re-clips the same video. This is what survives a hard shutdown; clipped_history.json
+# (committed at the end) only survives a clean finish.
+LEDGER = HERE / "state" / "attempted_local.json"
 
 try:
     from dotenv import load_dotenv
@@ -59,6 +67,42 @@ def load_json(path, default):
             return json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         return default
+
+def load_ledger_ids():
+    """Source ids picked by a prior (possibly interrupted) run on this machine."""
+    data = load_json(LEDGER, {"attempted": []})
+    records = (data.get("attempted") if isinstance(data, dict) else data) or []
+    ids = set()
+    for r in records:
+        sid = r.get("source_id") if isinstance(r, dict) else r
+        if sid:
+            ids.add(sid)
+    return ids
+
+
+def mark_ledger(sid):
+    """Persist a just-picked source id to the crash-safe local ledger IMMEDIATELY,
+    before any heavy processing. Atomic write (fsync + os.replace) so a power cut can't
+    leave the file half-written."""
+    if not sid:
+        return
+    data = load_json(LEDGER, {"attempted": []})
+    if isinstance(data, list):
+        data = {"attempted": data}
+    seen = {r.get("source_id") if isinstance(r, dict) else r for r in data.get("attempted", [])}
+    if sid in seen:
+        return
+    data.setdefault("attempted", []).append(
+        {"source_id": sid, "date": datetime.date.today().isoformat()})
+    LEDGER.parent.mkdir(parents=True, exist_ok=True)
+    tmp = LEDGER.with_name(LEDGER.name + ".tmp")
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp, LEDGER)  # atomic on the same filesystem
+    log(f"ledger: recorded picked source {sid} (crash-safe, pre-processing)")
+
 
 def record_attempts(attempted_ids, dry_run):
     """No-repeat memory: persist every source id we picked this run (success OR fail)
@@ -125,6 +169,10 @@ def main():
     max_video_attempts = int(cfg.get("max_video_attempts", 5))
 
     summary = {"date": datetime.date.today().isoformat(), "dry_run": args.dry_run, "uploaded": [], "errors": []}
+    # Crash-safe skip list: sources a prior interrupted run already picked on this machine.
+    ledger_ids = load_ledger_ids()
+    if ledger_ids:
+        log(f"ledger: skipping {len(ledger_ids)} source(s) picked by earlier run(s)")
     video_attempts, attempted_videos = 0, []
     clips = []
     src_path = ""
@@ -134,9 +182,11 @@ def main():
     while video_attempts < max_video_attempts:
         video_attempts += 1
         try:
-            # Tell the finder which sources we already tried this run so it advances to
-            # the next video/channel instead of handing back the same one every time.
-            src = run_tool("find_source_video.py", "--exclude", ",".join(attempted_videos))
+            # Tell the finder which sources to skip: ones we already tried this run PLUS
+            # the crash-safe ledger (sources an earlier interrupted run already picked),
+            # so it advances to the next video/channel instead of handing back a repeat.
+            exclude = ",".join(attempted_videos + sorted(ledger_ids - set(attempted_videos)))
+            src = run_tool("find_source_video.py", "--exclude", exclude)
         except Exception as e:
             log("no source video to clip today:", e)
             record_attempts(attempted_videos, args.dry_run)
@@ -144,6 +194,11 @@ def main():
             return
 
         attempted_videos.append(src["video_id"])
+        # Flush to the crash-safe ledger NOW, before any download/render/upload. If the
+        # laptop dies at any point below, this source is already recorded on disk and the
+        # next run skips it -> no repeated video/clips. Dry runs are tests, so skip.
+        if not args.dry_run:
+            mark_ledger(src["video_id"])
 
         try:
             ensure_sfx()

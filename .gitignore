@@ -28,3 +28,10 @@ config/music/*.mp3
 # COMMITS the YuNet model (config/models/*.onnx) and the Anton font (brand/fonts/*.ttf)
 # so GitHub Actions has them at runtime. state/clipped_history.json is committed too
 # (it's the no-repeat memory the workflow pushes back after each run).
+
+# Crash-safe local ledger: untracked ON PURPOSE. run_daily.py writes the picked source
+# id here the instant it's chosen (before any heavy work). Because it's untracked,
+# actions/checkout (clean: false) keeps it across runs on the same laptop, so a hard
+# power-off can't cause the same video to be re-clipped. Never commit it.
+state/attempted_local.json
+state/attempted_local.json.tmp
