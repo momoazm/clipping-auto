@@ -94,8 +94,17 @@ jobs:
           done
           warp-cli --accept-tos mode proxy
           warp-cli --accept-tos connect
-          sleep 5
+          # Poll until actually Connected -- a fixed 5s sleep is flaky (status can still be
+          # "Connecting", making every proxied yt-dlp download fail instantly).
+          for i in $(seq 1 40); do
+            if warp-cli --accept-tos status | grep -q "Connected"; then echo "WARP connected"; break; fi
+            sleep 3
+          done
           warp-cli --accept-tos status
+          if ! curl -s --max-time 25 --proxy socks5h://127.0.0.1:40000 https://ifconfig.me; then
+            echo "::error::WARP proxy egress check failed -- yt-dlp would be bot-blocked"; exit 1
+          fi
+          echo
 
       - name: Materialize secrets
         env:
