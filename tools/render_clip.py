@@ -255,14 +255,44 @@ def main():
         os.path.abspath(out_path),
     ]
 
+    def simple_cmd():
+        """A minimal, crash-proof fallback: burned captions + 9:16 scale + loudnorm audio only.
+        The full graph (sendcmd punch-zoom + amix SFX + sidechain music) can SIGSEGV ffmpeg on
+        certain clips (exit -11); dropping those effects still yields a shippable, on-brand Short
+        rather than losing the clip entirely."""
+        v = []
+        if args.captions:
+            v.append(f"ass={os.path.basename(args.captions)}")
+        v.append(f"scale={OUT_W}:{OUT_H},setsar=1,format=yuv420p")
+        ch = ["[0:v]" + ",".join(v) + "[v]"]
+        amap2 = False
+        if audio_present:
+            ch.append("[0:a]loudnorm=I=-14:TP=-1.5:LRA=11[a]"); amap2 = True
+        c = [ffmpeg, "-nostdin", "-y", "-i", os.path.abspath(args.inp),
+             "-filter_complex", ";".join(ch), "-map", "[v]"]
+        if amap2:
+            c += ["-map", "[a]"]
+        c += ["-t", f"{args.max_secs:.3f}", "-c:v", "libx264", "-preset", "veryfast", "-crf", "20",
+              "-pix_fmt", "yuv420p", "-r", "30", "-c:a", "aac", "-b:a", "192k",
+              "-movflags", "+faststart", os.path.abspath(out_path)]
+        return c
+
+    effects = "full"
     try:
         # A 60s clip renders in well under a minute even on a 2-core CI runner; 15 min is
         # a generous ceiling that turns any future stall into a fast, legible failure
         # instead of a multi-hour job-timeout with no output.
         run(cmd, cwd=cwd, timeout=900)
     except Exception as e:
-        fail(f"render failed: {e}")
-        return
+        # Full graph failed/crashed -> retry stripped-down so the clip still ships.
+        print(f"[render_clip] full render failed ({str(e)[:120]}); retrying without punch/SFX",
+              file=__import__("sys").stderr)
+        try:
+            run(simple_cmd(), cwd=cwd, timeout=900)
+            effects = "simple"
+        except Exception as e2:
+            fail(f"render failed (full + simple): {e2}")
+            return
 
     out_dur = probe_duration(out_path)
     emit({
@@ -276,6 +306,7 @@ def main():
         "music": os.path.basename(music_path) if music_path else None,
         "sfx_count": len(sfx_cues),
         "punch_ins": len(punch_ins),
+        "effects": effects,
     })
 
 
