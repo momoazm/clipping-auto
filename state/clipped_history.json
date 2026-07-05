@@ -143,6 +143,19 @@
       "clip_video_ids": [
         "6a4979a41efdaf1ce97a51d7"
       ]
+    },
+    {
+      "source_id": "pAnGwRiQ4-4",
+      "source_title": "$1 vs $1,000,000,000 Futuristic Tech!",
+      "date": "2026-07-05",
+      "clip_video_ids": [
+        "6a4abdd559155bc07895460d",
+        "6a4abeed12e666d249a00dab",
+        "6a4abfc9f301df4956126aad",
+        "6a4ac1534dc2445da2b64af4",
+        "6a4ac27642c4d4eb82dc9177",
+        "6a4ac33d25ccec82a68ac542"
+      ]
     }
   ],
   "attempted": [
@@ -177,6 +190,10 @@
     {
       "source_id": "9WEQts7b8Pw",
       "date": "2026-07-04"
+    },
+    {
+      "source_id": "pAnGwRiQ4-4",
+      "date": "2026-07-05"
     }
   ]
 }
