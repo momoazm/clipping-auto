@@ -10,9 +10,13 @@ name: Daily MrBeast clipping
 
 on:
   schedule:
-    # Fires 15:50 UTC; the hold step releases at exactly 16:30 UTC (12:30pm New York,
-    # 7:30pm Cairo) so uploads land in the US midday->evening Shorts window.
+    # TWO runs a day, each clipping a DIFFERENT source video (the committed no-repeat
+    # history makes the second run skip the first run's pick) -> up to 2x clips_per_day
+    # Shorts daily. Crons fire ~40 min early; the hold step releases at the exact slot.
+    #   16:30 UTC = 12:30pm New York / 7:30pm Cairo  (US midday Shorts window)
+    #   22:30 UTC =  6:30pm New York / 1:30am Cairo  (US evening Shorts window)
     - cron: "50 15 * * *"
+    - cron: "50 21 * * *"
   workflow_dispatch:
     inputs:
       dry_run:
@@ -45,7 +49,7 @@ jobs:
           python3 - <<'EOF'
           # GitHub cron fires early on purpose (and drifts); pin the real start to the slot.
           import datetime, time
-          SLOTS_UTC = ["16:30"]
+          SLOTS_UTC = ["16:30", "22:30"]
           now = datetime.datetime.now(datetime.timezone.utc)
           waits = []
           for s in SLOTS_UTC:

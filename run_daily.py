@@ -242,12 +242,20 @@ def main():
         tags = run_tool("generate_hashtags.py", "--title", src_title, "--hook", hook, "--snippet", hook)
         entry = {"clip": n}
 
+        # Richer metadata than a bare hook: "#Shorts" in the title (kept under YouTube's
+        # 100-char limit), hashtags in the description where YouTube surfaces them, and a
+        # source credit (standard practice for clip channels).
+        tag_list = tags.get("hashtags", [])
+        yt_title = hook if len(hook) > 92 else f"{hook} #Shorts"
+        hashtag_line = " ".join(f"#{t}" for t in tag_list[:10])
+        description = f"{hook}\n\n{hashtag_line}\n\nCredit: {src.get('channel') or 'MrBeast'}"
+
         # 2. Try YouTube (If this fails, log it but keep going!) -- needs a PUBLIC url,
         # not the local path, since it now publishes via Zernio instead of OAuth.
         try:
             host = run_tool("host_public.py", "--video", short)
-            up_args = ["upload_youtube.py", "--video-url", host["url"], "--title", hook,
-                       "--description", hook, "--tags", ",".join(tags.get("hashtags", [])),
+            up_args = ["upload_youtube.py", "--video-url", host["url"], "--title", yt_title,
+                       "--description", description, "--tags", ",".join(tag_list),
                        "--privacy", args.privacy]
             if not args.dry_run:
                 up_args.append("--confirm")
@@ -265,7 +273,7 @@ def main():
             continue
             
         # 3. Try Instagram (This will now run even if YouTube fails)
-        attempt_instagram_upload(short, hook, n, summary, entry)
+        attempt_instagram_upload(short, f"{hook}\n\n{hashtag_line}", n, summary, entry)
         
         summary["uploaded"].append(entry)
 
