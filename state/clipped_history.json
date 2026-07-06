@@ -156,6 +156,19 @@
         "6a4ac27642c4d4eb82dc9177",
         "6a4ac33d25ccec82a68ac542"
       ]
+    },
+    {
+      "source_id": "QJI0an6irrA",
+      "source_title": "30 Celebrities Fight For $1,000,000!",
+      "date": "2026-07-06",
+      "clip_video_ids": [
+        "6a4b9fe853143b0a1d19c94b",
+        "6a4ba04cebde8e283e4e96ee",
+        "6a4ba0ab5565db48bb689c7a",
+        "6a4ba499aad1a65e3f5634d3",
+        "6a4ba875bb3fe2b32377b602",
+        "6a4bac5a0e40505fe66c9155"
+      ]
     }
   ],
   "attempted": [
@@ -194,6 +207,10 @@
     {
       "source_id": "pAnGwRiQ4-4",
       "date": "2026-07-05"
+    },
+    {
+      "source_id": "QJI0an6irrA",
+      "date": "2026-07-06"
     }
   ]
 }
