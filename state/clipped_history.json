@@ -169,6 +169,19 @@
         "6a4ba875bb3fe2b32377b602",
         "6a4bac5a0e40505fe66c9155"
       ]
+    },
+    {
+      "source_id": "ZFoNBxpXen4",
+      "source_title": "Survive 30 Days Trapped In The Sky, Win $250,000",
+      "date": "2026-07-06",
+      "clip_video_ids": [
+        "6a4c1bb8aefae877df11b494",
+        "6a4c1fa1b5da9a1926e49b07",
+        "6a4c200fe35fcc4388dc654a",
+        "6a4c2090c4f6c1ca7b4cd1c8",
+        "6a4c212bc4f6c1ca7b4ce4c3",
+        "6a4c24febd5c1f6b63807b74"
+      ]
     }
   ],
   "attempted": [
@@ -210,6 +223,10 @@
     },
     {
       "source_id": "QJI0an6irrA",
+      "date": "2026-07-06"
+    },
+    {
+      "source_id": "ZFoNBxpXen4",
       "date": "2026-07-06"
     }
   ]
