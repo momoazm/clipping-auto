@@ -182,6 +182,18 @@
         "6a4c212bc4f6c1ca7b4ce4c3",
         "6a4c24febd5c1f6b63807b74"
       ]
+    },
+    {
+      "source_id": "8bMh8azh3CY",
+      "source_title": "100 Pilots Fight For A Private Jet",
+      "date": "2026-07-07",
+      "clip_video_ids": [
+        "6a4cd6a862f3276749501bae",
+        "6a4cdabe3f5237698b6512cd",
+        "6a4cdeb09ed22eecfee6ba16",
+        "6a4cdf2329badb710fd21207",
+        "6a4ce30b2a36ba981df882e7"
+      ]
     }
   ],
   "attempted": [
@@ -228,6 +240,10 @@
     {
       "source_id": "ZFoNBxpXen4",
       "date": "2026-07-06"
+    },
+    {
+      "source_id": "8bMh8azh3CY",
+      "date": "2026-07-07"
     }
   ]
 }
