@@ -33,6 +33,16 @@ IG_ENABLED = bool(os.environ.get("ZERNIO_API")) and bool(os.environ.get("ZERNIO_
 def log(*a):
     print("[run_daily]", *a, file=sys.stderr, flush=True)
 
+def purge_files(*paths):
+    """Delete temp files once they're finally used (best-effort; never fails the run)."""
+    for p in paths:
+        if not p:
+            continue
+        try:
+            os.remove(p)
+        except OSError:
+            pass
+
 def _extract_json(text):
     text = (text or "").strip()
     if not text:
@@ -274,8 +284,14 @@ def main():
             
         # 3. Try Instagram (This will now run even if YouTube fails)
         attempt_instagram_upload(short, f"{hook}\n\n{hashtag_line}", n, summary, entry)
-        
+
         summary["uploaded"].append(entry)
+
+        # 4. This clip is finally used (uploaded/hosted) -> delete its intermediates so .tmp/
+        # doesn't accumulate across runs (2026-07-09, Moemen's request). Dry runs keep them for
+        # inspection. The shared source.mp4 is removed once, after the whole clip loop.
+        if not args.dry_run:
+            purge_files(short, reframed, caps, cues)
 
     if not args.dry_run and uploaded_ids:
         hist = load_json(HISTORY, {"clipped": []})
@@ -294,6 +310,14 @@ def main():
     # Remember every source we touched this run (incl. any earlier failed attempts)
     # so none of them come back next run.
     record_attempts(attempted_videos, args.dry_run)
+
+    # The source video + transcript are now finally used (all clips built) -> delete them, plus
+    # any stray intermediates from clips that failed mid-render (2026-07-09, Moemen's request).
+    if not args.dry_run:
+        purge_files(src_path, str(TMP / "transcript.json"))
+        for pat in ("reframed_*.mp4", "caps_*.ass", "cues_*.json", "short_*.mp4"):
+            for p in TMP.glob(pat):
+                purge_files(str(p))
 
     print(json.dumps(summary, indent=2))
 

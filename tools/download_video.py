@@ -1,8 +1,8 @@
 """Download a source video from a URL (YouTube, etc.) for the clipping pipeline.
 
 Pipeline role: the front door when the user gives a link instead of a local file.
-Fetches the best <=1080p MP4 into .tmp/ so probe_video.py and the rest of the
-pipeline can treat it like any local source.
+Fetches the best <=1440p MP4 into .tmp/ (higher res = a sharper 9:16 vertical crop) so
+probe_video.py and the rest of the pipeline can treat it like any local source.
 
 Uses yt-dlp's Python API and points it at our ffmpeg (for stream merging) via
 _common.ffmpeg_bin(), so it works even when ffmpeg isn't on PATH.
@@ -23,7 +23,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--url", required=True)
     parser.add_argument("--out", default=None, help="Output path (default .tmp/source.mp4)")
-    parser.add_argument("--max-height", type=int, default=1080)
+    parser.add_argument("--max-height", type=int, default=1440)
     args = parser.parse_args()
 
     load_env()
@@ -44,16 +44,16 @@ def main():
 
     h = args.max_height
     ydl_opts = {
-        # PREFER H.264 (avc1): on this low-RAM (~4GB) self-hosted runner, AV1/VP9
-        # software decode is so CPU/memory-heavy that reframe_crop's decode pass gets
-        # OOM-killed (no traceback, just exit 1). avc1 decodes far lighter (and HW-
-        # accelerated), so force it first, then fall back to any codec so it always
-        # resolves. ba* avoids the Opus-in-mp4 edge case by preferring m4a audio.
-        "format": (
-            f"bv*[height<={h}][vcodec^=avc1]+ba[ext=m4a]/"
-            f"b[height<={h}][vcodec^=avc1]/"
-            f"bv*[height<={h}]+ba/b[height<={h}]/bv*+ba/b"
-        ),
+        # BEST QUALITY up to `h` (default 1440), 2026-07-09: the source is 16:9 but the Short is
+        # a 9:16 vertical CROP of it, so a higher-res source = a sharper crop (a 1080p source
+        # crops to only a ~600px-wide column -> upscaled -> soft; 1440p -> ~810px -> sharp).
+        # `format_sort` picks the HIGHEST resolution first, then prefers H.264 (avc1) ONLY as a
+        # same-resolution tie-break: avc1 tops out at 1080 on YouTube, so <=1080 stays light avc1
+        # (HW-decodable) while 1440 comes as VP9/AV1 -- fine on the GitHub-hosted cloud runner's
+        # RAM (the old ~4GB self-hosted-laptop OOM constraint no longer applies). m4a audio avoids
+        # the Opus-in-mp4 edge case.
+        "format": f"bv*[height<={h}]+ba/b[height<={h}]/bv*+ba/b",
+        "format_sort": ["res", "vcodec:h264", "acodec:m4a"],
         "merge_output_format": "mp4",
         "outtmpl": out_base + ".%(ext)s",
         "noplaylist": True,
