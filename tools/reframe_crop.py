@@ -10,18 +10,22 @@ How it works (no torch / mediapipe -- 3.14-safe, OpenCV only):
      YuNet DNN detector (config/models/) -- it catches profile/angled/smaller
      faces that Haar misses; falls back to the bundled Haar cascade if the model
      is absent.
-  2. For each detected face it estimates an ACTIVE-SPEAKER score from lip motion:
-     the mouth ROI's frame-to-frame change, with eye-ROI motion subtracted out so
-     a person merely turning their head doesn't read as "talking". Selection then
-     favours the talker, not just the biggest face -- with hysteresis so it won't
-     flick onto a momentarily-bigger bystander, and a hard cut (not a glide) when
-     the subject changes or the shot cuts (so the crop never drifts through the
-     empty gap between two people).
+  2. For each detected face it estimates an ACTIVE-SPEAKER score from lip motion
+     (the mouth ROI's frame-to-frame change, minus eye-ROI/head motion) PLUS a
+     frame-diff MOTION cue -- how much of the scene's movement is at that face, so a
+     gesturing/moving talker beats a static bystander. Selection favours the talker,
+     not just the biggest face -- with hysteresis so it won't flick onto a
+     momentarily-bigger bystander, and a hard cut (not a glide) when the subject
+     changes or the shot cuts (so the crop never drifts through the empty gap
+     between two people).
+  2b. In shots with NO detected face (common in action/wide MrBeast footage) it
+     follows the MOTION CENTROID -- the column where the frame-to-frame action is --
+     instead of freezing or letterboxing, so the crop stays on "the main part".
   3. The chosen center path is interpolated to per-frame and zero-phase
      (forward-backward) smoothed WITHIN each shot, then written as ffmpeg `sendcmd`
      keyframes driving the `crop` filter's x, then scaled to 1080x1920.
 
-Fallbacks: no faces found, or a source already narrower than 9:16 -> blurred
+Fallbacks: no faces AND no motion, or a source already narrower than 9:16 -> blurred
 letterbox fit (`--mode letterbox` forces this). If lip motion can't be measured
 (no landmarks / no match across frames) selection degrades to the old
 prominence-based pick, so behaviour never gets worse than before. Audio for the
@@ -46,9 +50,20 @@ DETECT_WIDTH = 640      # downscale frames before detection (bigger = catches sm
 EMA_ALPHA = 0.25        # smoothing strength; applied zero-phase so it does NOT lag
 YUNET_PATH = REPO_ROOT / "config" / "models" / "face_detection_yunet_2023mar.onnx"
 
+# --- motion saliency ---------------------------------------------------------
+# A cheap frame-diff on the already-downscaled detect frame. Gives us TWO things
+# faces alone can't: (a) a target to follow in faceless action/wide shots (MrBeast
+# footage is full of these -- previously they fell back to a blurred letterbox that
+# threw away "the main part"), and (b) a per-face "is this the one actually moving/
+# gesturing" cue that reinforces the lip-motion speaker score.
+MOTION_DIFF_THRESH = 18   # per-pixel grayscale delta (0..255) that counts as motion
+MOTION_FLOOR = 0.008      # mean frame motion below this = "static" -> ignore as noise
+MOTION_LERP = 0.5         # how fast the crop chases the motion centroid in a faceless shot
+
 # --- active-speaker selection tuning -----------------------------------------
 RESEED_FRAC = 0.40      # a horizontal jump bigger than this fraction of width = a cut/new subject
-W_LIP, W_AREA, W_SCORE = 0.60, 0.30, 0.10   # composite weights (lip/area normalised 0..1, score ~0..1)
+# composite weights (lip/area/motion normalised 0..1 per sample, score ~0..1)
+W_LIP, W_AREA, W_SCORE, W_MOTION = 0.45, 0.22, 0.08, 0.25
 SWITCH_MARGIN = 0.15    # a challenger must beat the tracked face's composite by this to count
 SWITCH_HOLD = 2         # ...for this many consecutive samples before we actually switch (hysteresis)
 LIP_RIGID_COMP = 0.60   # how much eye-region (head) motion to subtract from mouth motion
@@ -150,14 +165,46 @@ def _lip_activity(face, prev_faces, gate):
     return max(0.0, mouth - LIP_RIGID_COMP * rigid)
 
 
+def _motion_from_diff(np, cv2, gray, prev_gray, rows, scale):
+    """Frame-diff motion. Returns (motion_cx_src or None, per-row local-motion list).
+
+    Global centroid = intensity-weighted mean column of the thresholded diff (where
+    the action is). Per-face local motion = the share of that column-motion landing
+    inside each face's horizontal band, so a moving/gesturing face scores high and a
+    static bystander scores ~0.
+    """
+    locals_ = [0.0] * len(rows)
+    if prev_gray is None or prev_gray.shape != gray.shape:
+        return None, locals_
+    d = cv2.absdiff(gray, prev_gray)
+    if float(d.mean()) / 255.0 < MOTION_FLOOR:
+        return None, locals_          # whole frame basically static -> no motion cue
+    _, dth = cv2.threshold(d, MOTION_DIFF_THRESH, 255, cv2.THRESH_BINARY)
+    colmag = dth.sum(axis=0).astype("float64")   # per-column motion energy
+    total = float(colmag.sum())
+    if total <= 0:
+        return None, locals_
+    xs = np.arange(colmag.shape[0], dtype="float64")
+    mcx_small = float((xs * colmag).sum() / total)
+    for i, r in enumerate(rows):
+        fw = (r["area"] * 0.8) ** 0.5            # approx face width from area
+        lo = max(0, int(r["cx"] - 0.6 * fw))
+        hi = min(colmag.shape[0], int(r["cx"] + 0.6 * fw))
+        if hi > lo:
+            locals_[i] = float(colmag[lo:hi].sum() / total)
+    return mcx_small / scale, locals_
+
+
 def detect_face_track(video, start, end):
     """Sample the span and return (samples, src_w, src_h, fps).
 
-    samples = [{"t": clip_relative_secs, "dets": [{"cx","area","score","lip"}, ...]}]
-    with cx in SOURCE pixels. The heavy per-pixel work (ROI diffs) is done here; the
-    pure selection logic in choose_track() only ever sees these scalars.
+    samples = [{"t": clip_relative_secs, "mcx": motion_center_src_px|None,
+                "dets": [{"cx","area","score","lip","motion"}, ...]}]
+    with cx/mcx in SOURCE pixels. The heavy per-pixel work (ROI diffs, motion diff)
+    is done here; the pure selection logic in choose_track() only sees these scalars.
     """
     import cv2
+    import numpy as np
 
     cap = cv2.VideoCapture(video)
     if not cap.isOpened():
@@ -175,6 +222,7 @@ def detect_face_track(video, start, end):
     cap.set(cv2.CAP_PROP_POS_MSEC, start * 1000.0)
     idx = 0
     prev_rows = []
+    prev_gray = None
     samples = []
     while True:
         pos = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
@@ -185,14 +233,17 @@ def detect_face_track(video, start, end):
             break
         if idx % step == 0:
             small = cv2.resize(frame, (0, 0), fx=scale, fy=scale) if scale != 1.0 else frame
+            gray = cv2.cvtColor(small, cv2.COLOR_BGR2GRAY)
             rows = _detect_full(cv2, kind, det, small, min_face)
+            mcx, locals_ = _motion_from_diff(np, cv2, gray, prev_gray, rows, scale)
             dets = []
-            for r in rows:
+            for r, lm in zip(rows, locals_):
                 lip = _lip_activity(r, prev_rows, gate_small)
                 dets.append({"cx": r["cx"] / scale, "area": r["area"],
-                             "score": r["score"], "lip": lip})
-            samples.append({"t": round(pos - start, 3), "dets": dets})
+                             "score": r["score"], "lip": lip, "motion": lm})
+            samples.append({"t": round(pos - start, 3), "mcx": mcx, "dets": dets})
             prev_rows = rows  # keep patches for next-sample diff
+            prev_gray = gray
         idx += 1
     cap.release()
     return samples, src_w, src_h, fps
@@ -212,21 +263,34 @@ def choose_track(samples, reseed_gap):
     seg = -1
     want = {}  # challenger bucket -> consecutive samples it has dominated
 
-    def composite(d, max_lip, max_area):
+    def composite(d, max_lip, max_area, max_motion):
         return (W_LIP * (d["lip"] / max_lip)
                 + W_AREA * (d["area"] / max_area)
-                + W_SCORE * d["score"])
+                + W_SCORE * d["score"]
+                + W_MOTION * (d.get("motion", 0.0) / max_motion))
 
     bucket = max(1.0, reseed_gap * 0.2)
     for s in samples:
         dets = s["dets"]
         if not dets:
-            if cur_cx is not None:          # hold position through a detection gap
+            # No face this sample. If there's motion, FOLLOW THE ACTION instead of
+            # freezing/letterboxing (the MrBeast-footage win); else hold last center.
+            mcx = s.get("mcx")
+            if mcx is not None:
+                if cur_cx is None:
+                    cur_cx = mcx; seg += 1; want.clear()
+                elif abs(mcx - cur_cx) > reseed_gap:
+                    cur_cx = mcx; seg += 1; want.clear()          # action jumped -> cut
+                else:
+                    cur_cx = cur_cx + MOTION_LERP * (mcx - cur_cx)  # chase, damped
+                times.append(s["t"]); centers.append(cur_cx); segments.append(seg)
+            elif cur_cx is not None:          # hold position through a detection gap
                 times.append(s["t"]); centers.append(cur_cx); segments.append(seg)
             continue
         max_lip = max((d["lip"] for d in dets), default=0.0) or 1.0
         max_area = max((d["area"] for d in dets), default=0.0) or 1.0
-        best = max(dets, key=lambda d: composite(d, max_lip, max_area))
+        max_motion = max((d.get("motion", 0.0) for d in dets), default=0.0) or 1.0
+        best = max(dets, key=lambda d: composite(d, max_lip, max_area, max_motion))
 
         if cur_cx is None:                  # first lock
             cur_cx = best["cx"]; seg += 1; want.clear()
@@ -236,7 +300,7 @@ def choose_track(samples, reseed_gap):
                 cur_cx = best["cx"]; seg += 1; want.clear()   # subject lost -> cut
             elif best is nearest:
                 cur_cx = nearest["cx"]; want.clear()          # glide with our subject
-            elif composite(best, max_lip, max_area) - composite(nearest, max_lip, max_area) >= SWITCH_MARGIN:
+            elif composite(best, max_lip, max_area, max_motion) - composite(nearest, max_lip, max_area, max_motion) >= SWITCH_MARGIN:
                 key = round(best["cx"] / bucket)
                 want = {key: want.get(key, 0) + 1}            # one challenger at a time
                 if want[key] >= SWITCH_HOLD:
@@ -397,7 +461,7 @@ def main():
         cmds_text, crop_w = build_pan_commands(times, centers, segments, src_w, src_h, dur)
         if cmds_text is None or (args.mode == "auto" and not times):
             render_letterbox(args.inp, args.start, dur, out_path)
-            why = "source narrower than 9:16" if cmds_text is None else "no faces detected"
+            why = "source narrower than 9:16" if cmds_text is None else "no faces or motion detected"
             emit({"path": out_path, "mode": "letterbox", "faces_tracked": detected, "cuts": 0,
                   "width": OUT_W, "height": OUT_H, "duration": round(dur, 3),
                   "note": f"Fell back to letterbox ({why})."})

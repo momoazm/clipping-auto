@@ -1,9 +1,11 @@
 name: Daily MrBeast clipping
 
 # Runs on GitHub-hosted Ubuntu runners -- no laptop / self-hosted runner needed.
-# YouTube bot-checks datacenter IPs, so yt-dlp is routed through Cloudflare WARP's
-# local SOCKS proxy (free), which passes the check (probed 2026-07-03; plain IP and
-# PO-token both fail). The repo is PUBLIC so Actions minutes are free and unlimited.
+# YouTube bot-checks datacenter IPs. Two free layers defeat it: (1) a BgUtils PO-token
+# provider (Docker, localhost:4416) mints proof-of-origin tokens so yt-dlp's web/tv
+# clients look legitimate (added 2026-07-08 after WARP-alone started getting bot-walled),
+# and (2) Cloudflare WARP's local SOCKS proxy gives a cleaner egress IP. The repo is
+# PUBLIC so Actions minutes are free and unlimited.
 #
 # Exact-time posting: GitHub cron can drift 5-30+ min, so the cron fires ~40 min
 # EARLY and the "Hold until slot" step sleeps until the exact target minute.
@@ -86,6 +88,10 @@ jobs:
           pip install -r requirements.txt
           # YouTube breaks old yt-dlp builds constantly; force the latest every run.
           pip install --upgrade yt-dlp
+          # PO-token provider plugin: yt-dlp auto-discovers it and mints proof-of-origin
+          # tokens (via the localhost provider below) so the web/tv clients pass the
+          # "confirm you're not a bot" wall on datacenter IPs. Free, no key, no account.
+          pip install --upgrade bgutil-ytdlp-pot-provider
 
       - name: Start Cloudflare WARP (SOCKS proxy for yt-dlp egress)
         run: |
@@ -109,6 +115,30 @@ jobs:
             echo "::error::WARP proxy egress check failed -- yt-dlp would be bot-blocked"; exit 1
           fi
           echo
+
+      - name: Start PO-token provider (BgUtils, defeats YouTube bot-check)
+        run: |
+          # Prebuilt Docker image mints proof-of-origin tokens on localhost:4416. The
+          # bgutil yt-dlp plugin (installed above) auto-discovers it at the default
+          # IP/port, so the web/tv clients get valid POTs and downloads stop bot-blocking.
+          # The container talks to the internet directly (WARP proxy only affects apps
+          # pointed at its SOCKS port), so token generation isn't affected by WARP.
+          docker run --name bgutil-provider -d --init -p 4416:4416 \
+            brainicism/bgutil-ytdlp-pot-provider
+          # Wait until the token server answers before we start downloading.
+          for i in $(seq 1 30); do
+            if curl -s --max-time 5 http://127.0.0.1:4416/ >/dev/null 2>&1; then
+              echo "POT provider up"; break
+            fi
+            sleep 2
+          done
+          # Soft check that yt-dlp actually loaded the plugin (verbose prints the providers).
+          if yt-dlp -v --simulate --no-warnings "https://www.youtube.com/watch?v=BaW_jenozKc" 2>&1 \
+               | grep -q "PO Token Providers: bgutil"; then
+            echo "yt-dlp sees the bgutil POT provider"
+          else
+            echo "::warning::yt-dlp did not report the bgutil POT provider -- downloads may still bot-block"
+          fi
 
       - name: Materialize secrets
         env:
@@ -135,6 +165,10 @@ jobs:
         env:
           # Route yt-dlp (and only yt-dlp) through WARP -- see tools/download_video.py.
           YTDLP_PROXY: socks5://127.0.0.1:40000
+          # ...but NOT the PO-token provider call: it lives on localhost and must bypass
+          # the SOCKS proxy or the token fetch fails (and downloads bot-block again).
+          # (Python's proxy-bypass check lowercases env names, so one key covers both.)
+          no_proxy: "127.0.0.1,localhost"
           IN_PRIVACY: ${{ inputs.privacy }}
           IN_DRYRUN: ${{ inputs.dry_run }}
           IN_LIMIT: ${{ inputs.limit }}
