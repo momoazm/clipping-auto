@@ -62,6 +62,11 @@ def main():
         "noprogress": True,
         "ffmpeg_location": ffmpeg_dir,
         "overwrites": True,
+        # WEB CLIENT FIRST (2026-07-08): the BgUtils PO-token provider only supplies tokens
+        # for the `web` client -- that's what beats YouTube's datacenter bot-wall. `android`
+        # is kept as a last-ditch fallback (it can't use a PO token, but occasionally works).
+        # Without this, yt-dlp's default client set may skip web and the wall wins.
+        "extractor_args": {"youtube": {"player_client": ["web", "android"]}},
     }
 
     # On cloud/datacenter IPs (e.g. GitHub Actions) YouTube demands "confirm you're not
