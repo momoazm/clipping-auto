@@ -194,6 +194,18 @@
         "6a4cdf2329badb710fd21207",
         "6a4ce30b2a36ba981df882e7"
       ]
+    },
+    {
+      "source_id": "5F5MKI_jXJw",
+      "source_title": "I Survived 100 Days In Realistic Minecraft",
+      "date": "2026-07-08",
+      "clip_video_ids": [
+        "6a4eb955db90fb53264e78e4",
+        "6a4eb9b2b766990727c69293",
+        "6a4eba05187e793b396fc088",
+        "6a4eba6f3b7308502a91803f",
+        "6a4ebe59be44981f11df35c8"
+      ]
     }
   ],
   "attempted": [
@@ -283,6 +295,10 @@
     },
     {
       "source_id": "Z4hVGCWH1Kc",
+      "date": "2026-07-08"
+    },
+    {
+      "source_id": "5F5MKI_jXJw",
       "date": "2026-07-08"
     }
   ]
