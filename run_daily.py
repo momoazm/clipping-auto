@@ -215,6 +215,7 @@ def main():
             src_path = str(TMP / "source.mp4")
             dl = run_tool("download_video.py", "--url", src["url"], "--out", src_path)
             src_path = dl.get("path", src_path)
+            log(f"downloaded source at {dl.get('width')}x{dl.get('height')}")  # visible res check
             src_title = src.get("title") or "Video"
             run_tool("transcribe_video.py", "--in", src_path)
             sel = run_tool("select_clips.py", "--count", clips_per_day, "--target-secs", target, "--max-secs", maxs)

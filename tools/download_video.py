@@ -24,6 +24,10 @@ def main():
     parser.add_argument("--url", required=True)
     parser.add_argument("--out", default=None, help="Output path (default .tmp/source.mp4)")
     parser.add_argument("--max-height", type=int, default=1440)
+    parser.add_argument("--min-height", type=int, default=1080,
+                        help="Refuse to download below this. A soft-bot-detected YouTube response "
+                             "withholds the HD ladder and offers only <=360p -- better NO clip "
+                             "(loud failure, surfaces the PO-token problem) than a soft low-res one.")
     args = parser.parse_args()
 
     load_env()
@@ -42,17 +46,20 @@ def main():
         fail("yt-dlp not installed. Run: .venv/Scripts/python -m pip install yt-dlp")
         return
 
-    h = args.max_height
+    h, lo = args.max_height, args.min_height
     ydl_opts = {
-        # BEST QUALITY up to `h` (default 1440), 2026-07-09: the source is 16:9 but the Short is
-        # a 9:16 vertical CROP of it, so a higher-res source = a sharper crop (a 1080p source
-        # crops to only a ~600px-wide column -> upscaled -> soft; 1440p -> ~810px -> sharp).
-        # `format_sort` picks the HIGHEST resolution first, then prefers H.264 (avc1) ONLY as a
-        # same-resolution tie-break: avc1 tops out at 1080 on YouTube, so <=1080 stays light avc1
-        # (HW-decodable) while 1440 comes as VP9/AV1 -- fine on the GitHub-hosted cloud runner's
-        # RAM (the old ~4GB self-hosted-laptop OOM constraint no longer applies). m4a audio avoids
-        # the Opus-in-mp4 edge case.
-        "format": f"bv*[height<={h}]+ba/b[height<={h}]/bv*+ba/b",
+        # BEST QUALITY between `lo` (default 1080) and `h` (default 1440), 2026-07-09: the source
+        # is 16:9 but the Short is a 9:16 vertical CROP of it, so a higher-res source = a sharper
+        # crop (a 1080p source crops to a ~600px column -> upscaled -> soft; 1440p -> ~810px).
+        # `format_sort` picks the HIGHEST resolution first, then H.264 (avc1) ONLY as a same-res
+        # tie-break: avc1 tops out at 1080, so <=1080 stays light avc1 while 1440 comes as VP9/AV1
+        # (fine on the cloud runner's RAM). The [height>={lo}] FLOOR is the fix for the real bug:
+        # when the PO token/client auth doesn't engage, YouTube serves a degraded ladder (only
+        # <=360p) and the old selector silently grabbed 360p -> a soft Short. Requiring >=1080
+        # makes that case raise "Requested format is not available" so the run FAILS loudly
+        # (surfacing the bot problem) instead of posting garbage. m4a audio avoids Opus-in-mp4.
+        "format": (f"bv*[height<={h}][height>={lo}]+ba/b[height<={h}][height>={lo}]/"
+                   f"bv*[height>={lo}]+ba/b[height>={lo}]"),
         "format_sort": ["res", "vcodec:h264", "acodec:m4a"],
         "merge_output_format": "mp4",
         "outtmpl": out_base + ".%(ext)s",
@@ -93,11 +100,30 @@ def main():
                 cand = out_base + ".mp4"
                 final_path = cand if os.path.isfile(cand) else final_path
     except Exception as e:
-        fail(f"yt-dlp download failed: {e}", url=args.url)
+        msg = str(e)
+        # "Requested format is not available" now means nothing >= lo was offered -> almost always
+        # a bot-degraded response (only <=360p served). Say so, so the log points at the real cause.
+        if "Requested format is not available" in msg:
+            fail(f"no format >= {lo}p offered -- YouTube served a degraded/bot-limited ladder "
+                 f"(PO token likely not engaged); refusing to download a soft low-res source",
+                 url=args.url, degraded=True)
+        else:
+            fail(f"yt-dlp download failed: {msg}", url=args.url)
         return
 
     if not os.path.isfile(final_path):
         fail("Download reported success but no output file was found.", url=args.url)
+        return
+
+    # Belt-and-suspenders floor check (a muxed fallback could still slip a low one through).
+    got_h = info.get("height") or 0
+    if got_h and got_h < lo:
+        try:
+            os.remove(final_path)
+        except OSError:
+            pass
+        fail(f"downloaded {got_h}p < required {lo}p -- degraded/bot-limited response; refusing "
+             f"a soft low-res source", url=args.url, height=got_h, degraded=True)
         return
 
     emit({
