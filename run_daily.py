@@ -167,6 +167,15 @@ def main():
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--privacy", default="public", choices=["public", "unlisted", "private"])
+    # Hybrid mode (2026-07-10): YouTube bot-walls datacenter IPs, so the DOWNLOAD half
+    # runs on the self-hosted laptop runner (residential IP) with --download-only, and
+    # the cloud job resumes from the artifact with --source/--source-meta.
+    ap.add_argument("--download-only", action="store_true",
+                    help="Find + download the source, write .tmp/source_meta.json, then stop")
+    ap.add_argument("--source", default=None,
+                    help="Process this pre-downloaded source file (skips find+download)")
+    ap.add_argument("--source-meta", default=None,
+                    help="Manifest written by --download-only (source info + attempted ids)")
     args = ap.parse_args()
 
     TMP.mkdir(parents=True, exist_ok=True)
@@ -189,7 +198,26 @@ def main():
     src_title = ""
     src = {}
 
-    while video_attempts < max_video_attempts:
+    if args.source:
+        # Hybrid cloud half: the laptop job already downloaded the source on a
+        # residential IP -- resume from transcription. No retry loop here: if this
+        # source can't be processed, the attempt is recorded below and the run ends.
+        manifest = load_json(args.source_meta, {}) if args.source_meta else {}
+        src = manifest.get("src") or {}
+        attempted_videos = list(manifest.get("attempted") or [])
+        if src.get("video_id") and src["video_id"] not in attempted_videos:
+            attempted_videos.append(src["video_id"])
+        src_path = args.source
+        src_title = src.get("title") or "Video"
+        try:
+            ensure_sfx()
+            run_tool("transcribe_video.py", "--in", src_path)
+            sel = run_tool("select_clips.py", "--count", clips_per_day, "--target-secs", target, "--max-secs", maxs)
+            clips = sel.get("clips", [])
+        except Exception as e:
+            log(f"pre-downloaded source {src.get('video_id')} failed:", e)
+
+    while not args.source and video_attempts < max_video_attempts:
         video_attempts += 1
         try:
             # Tell the finder which sources to skip: ones we already tried this run PLUS
@@ -211,12 +239,25 @@ def main():
             mark_ledger(src["video_id"])
 
         try:
-            ensure_sfx()
             src_path = str(TMP / "source.mp4")
             dl = run_tool("download_video.py", "--url", src["url"], "--out", src_path)
             src_path = dl.get("path", src_path)
             log(f"downloaded source at {dl.get('width')}x{dl.get('height')}")  # visible res check
             src_title = src.get("title") or "Video"
+            if args.download_only:
+                # Hybrid laptop half: hand the source + everything the cloud job needs
+                # to resume (src info, this run's failed picks) to the artifact and stop.
+                manifest = {"src": src, "path": os.path.basename(src_path),
+                            "width": dl.get("width"), "height": dl.get("height"),
+                            "attempted": attempted_videos}
+                with open(TMP / "source_meta.json", "w", encoding="utf-8") as f:
+                    json.dump(manifest, f, ensure_ascii=False, indent=2)
+                print(json.dumps({"status": "downloaded", "video_id": src["video_id"],
+                                  "title": src_title, "path": src_path,
+                                  "width": dl.get("width"), "height": dl.get("height"),
+                                  "attempts": video_attempts}, indent=2))
+                return
+            ensure_sfx()
             run_tool("transcribe_video.py", "--in", src_path)
             sel = run_tool("select_clips.py", "--count", clips_per_day, "--target-secs", target, "--max-secs", maxs)
             clips = sel.get("clips", [])

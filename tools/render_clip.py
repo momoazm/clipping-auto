@@ -10,9 +10,11 @@ Sound design + effects (from plan_effects.py cues, passed via --cues):
   - SFX (whoosh on caption/scene changes, riser into the hook, pop on emphasis) are
     each added as an extra input, delayed to their cue time, gained to sit UNDER the
     voice, and amixed in (normalize=0 + a final limiter so nothing clips).
-  - Punch-ins: brief center zooms on emphasis moments, implemented as `sendcmd`-driven
-    `crop` keyframes (math done in Python) applied AFTER the caption burn, then scaled
-    back to 1080x1920 -- the same bare-filename + cwd pattern the reframe/ass filters use.
+  - Punch-ins: brief center zooms on emphasis moments, implemented as ONE fixed-size
+    `zoompan` filter whose zoom expression is evaluated per frame inside ffmpeg,
+    applied AFTER the caption burn. (Replaced the old sendcmd-driven crop keyframes
+    2026-07-10: those changed the frame SIZE 30x/sec mid-stream, which garbled a
+    region of the frame on some ffmpeg builds and could SIGSEGV the render.)
 
 Sync note: captions are burned and punch-zoom keyframes are applied BEFORE the speed
 change; the speed factor is then applied uniformly to video (setpts) and audio (atempo),
@@ -30,11 +32,10 @@ Prints JSON: {"path","duration","width","height","byte_size","speed","captions",
 """
 import argparse
 import json
-import math
 import os
 
 from _common import (load_env, emit, fail, run, ffmpeg_bin, ffprobe_json,
-                     tmp_path, TMP_DIR, REPO_ROOT, FFmpegMissing)
+                     tmp_path, REPO_ROOT, FFmpegMissing)
 
 OUT_W, OUT_H = 1080, 1920
 CMD_FPS = 30.0            # punch-zoom keyframe density (matches output fps -> smooth)
@@ -80,30 +81,25 @@ def resolve_music(arg):
     return arg if os.path.isfile(arg) else None
 
 
-def build_punch_cmds(punch_ins, dur):
-    """sendcmd text driving the crop filter to zoom in briefly at each punch time.
+def build_punch_zoom(punch_ins):
+    """One fixed-size zoompan filter implementing the brief center punch-ins.
 
-    Z(t) = min(PUNCH_MAX, 1 + sum_i AMP*exp(-((t-p_i)/SIGMA)^2)). We crop a centered
-    OUT_W/Z x OUT_H/Z window (even dims) and let the downstream scale blow it back up
-    to OUT_W x OUT_H -- a center punch-in including the burned captions.
+    Z(t) = min(PUNCH_MAX, 1 + sum_i AMP*exp(-((t-p_i)/SIGMA)^2)), evaluated per frame
+    INSIDE ffmpeg from the input-frame time, with the output pinned to OUT_WxOUT_H on
+    every frame. The fps filter in front normalizes timestamps to CMD_FPS so zoompan
+    can't stretch/desync a variable- or high-fps source, and `it` is guarded against
+    NaN on the first frame. Atomic zoom+center in one filter: no per-frame frame-size
+    changes, so nothing downstream ever sees a half-updated crop window.
     """
-    n = max(2, int(dur * CMD_FPS))
-    lines = []
-    for k in range(n + 1):
-        t = min(dur, k / CMD_FPS)
-        z = 1.0
-        for p in punch_ins:
-            z += PUNCH_AMP * math.exp(-(((t - p) / PUNCH_SIGMA) ** 2))
-        z = min(PUNCH_MAX, z)
-        w = int(round(OUT_W / z)) & ~1   # force even
-        h = int(round(OUT_H / z)) & ~1
-        x = (OUT_W - w) // 2
-        y = (OUT_H - h) // 2
-        lines.append(f"{t:.3f} crop w {w};")
-        lines.append(f"{t:.3f} crop h {h};")
-        lines.append(f"{t:.3f} crop x {x};")
-        lines.append(f"{t:.3f} crop y {y};")
-    return "\n".join(lines)
+    terms = []
+    for i, p in enumerate(punch_ins):
+        # st/ld: evaluate the NaN-guarded time once, reuse it for every punch term.
+        ref = "st(0,if(isnan(it),0,it))" if i == 0 else "ld(0)"
+        terms.append(f"{PUNCH_AMP}*exp(-pow(({ref}-{p:.3f})/{PUNCH_SIGMA},2))")
+    z = f"min({PUNCH_MAX},1+{'+'.join(terms)})"
+    return (f"fps={CMD_FPS:g},"
+            f"zoompan=z='{z}':x='(iw-iw/zoom)/2':y='(ih-ih/zoom)/2'"
+            f":d=1:s={OUT_W}x{OUT_H}:fps={CMD_FPS:g}")
 
 
 def main():
@@ -168,15 +164,7 @@ def main():
         cwd = os.path.dirname(os.path.abspath(args.captions)) or None
         vchain.append(f"ass={os.path.basename(args.captions)}")
     if punch_ins and dur > 0:
-        stem = os.path.splitext(os.path.basename(out_path))[0]
-        punch_name = f"punch_{stem}.txt"
-        (TMP_DIR / punch_name).write_text(build_punch_cmds(punch_ins, dur) + "\n",
-                                          encoding="utf-8")
-        # If there are no captions, cwd is unset; the punch file lives in .tmp, so
-        # point cwd there and keep the bare-filename rule.
-        if cwd is None:
-            cwd = str(TMP_DIR)
-        vchain.append(f"sendcmd=f={punch_name},crop=w={OUT_W}:h={OUT_H}:x=0:y=0")
+        vchain.append(build_punch_zoom(punch_ins))
     if speed != 1.0:
         vchain.append(f"setpts=PTS/{speed}")
     vchain.append(f"scale={OUT_W}:{OUT_H},setsar=1,format=yuv420p")
