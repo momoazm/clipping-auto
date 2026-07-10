@@ -89,6 +89,12 @@ def main():
     # datacenter IP -- for when the WARP range itself is what's flagged. `android` can't use
     # a POT at all; it's a last-ditch lottery ticket.
     attempts = [
+        # DEFAULT FIRST (2026-07-10): on a residential IP, yt-dlp's own client mix gets the
+        # full 1080p ladder while FORCED clients fail (`tv` alone returns no formats at all
+        # here, `android` caps at 360p) -- the hybrid laptop job died on exactly that. On a
+        # bot-walled datacenter IP the default fails fast and the POT-covered chain below
+        # still gets its shot, so this costs the cloud path nothing.
+        (None, False),
         (["tv"], True),
         (["web"], True),
         (["tv", "web"], False),
@@ -98,12 +104,13 @@ def main():
     info, final_path, degraded, last_err = None, None, False, None
     for clients, use_proxy in attempts:
         opts = dict(base_opts)
-        opts["extractor_args"] = {"youtube": {"player_client": clients}}
+        if clients:
+            opts["extractor_args"] = {"youtube": {"player_client": clients}}
         if proxy and use_proxy:
             # Routing yt-dlp -- and only yt-dlp -- through WARP's local SOCKS (probed
             # 2026-07-03). Native downloader only: ffmpeg can't speak SOCKS.
             opts["proxy"] = proxy
-        route = f"{'+'.join(clients)}{' via proxy' if (proxy and use_proxy) else ' direct'}"
+        route = f"{'+'.join(clients) if clients else 'default'}{' via proxy' if (proxy and use_proxy) else ' direct'}"
         try:
             with YoutubeDL(opts) as ydl:
                 inf = ydl.extract_info(args.url, download=True)
