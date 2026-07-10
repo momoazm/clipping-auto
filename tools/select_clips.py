@@ -114,7 +114,7 @@ def _chat_groq(prompt):
         raise RuntimeError("GROQ_API_KEY not set")
     client = Groq(api_key=key)
     r = client.chat.completions.create(
-        model=os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile"),
+        model=os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b"),
         messages=[{"role": "system", "content": SYSTEM}, {"role": "user", "content": prompt}],
         temperature=0.5,
         response_format={"type": "json_object"},
@@ -175,16 +175,33 @@ def _chat_mistral(prompt):
     return _chat_openai_compatible(prompt, "https://api.mistral.ai/v1", "MISTRAL_API_KEY", "mistral-small-latest", "MISTRAL_MODEL")
 
 
-def _chat_openrouter(prompt):
-    return _chat_openai_compatible(prompt, "https://openrouter.ai/api/v1", "OPENROUTER_API_KEY", "meta-llama/llama-3.3-70b-instruct:free", "OPENROUTER_MODEL")
+def _chat_openrouter_nemotron(prompt):
+    return _chat_openai_compatible(prompt, "https://openrouter.ai/api/v1", "OPENROUTER_API_KEY", "nvidia/nemotron-3-ultra-550b-a55b:free", "OPENROUTER_MODEL")
 
 
+def _chat_openrouter_qwen_coder(prompt):
+    return _chat_openai_compatible(prompt, "https://openrouter.ai/api/v1", "OPENROUTER_API_KEY", "qwen/qwen3-coder:free", "OPENROUTER_MODEL_2")
+
+
+def _chat_zhipu(prompt):
+    base = os.environ.get("ZHIPU_BASE_URL", "https://open.bigmodel.cn/api/paas/v4")
+    return _chat_openai_compatible(prompt, base, "ZHIPU_API_KEY", "glm-4.7-flash", "ZHIPU_MODEL")
+
+
+# Accuracy-first order (Artificial Analysis index, 2026-07-10): Nemotron 3 Ultra (38,
+# best model with a live :free route — Kimi/DeepSeek :free are gone) -> Qwen3 Coder ->
+# GLM-4.7-Flash (Zhipu, permanently free; skipped until ZHIPU_API_KEY exists) ->
+# gpt-oss-120b on Groq/Cerebras (fast, big quotas) -> tail.
+# OpenRouter :free = 50 req/day (1000/day after a one-time $10 top-up); when the cap
+# trips the first two links fail fast and Groq takes over.
 CHAIN = (
+    ("openrouter-nemotron", _chat_openrouter_nemotron),
+    ("openrouter-qwen-coder", _chat_openrouter_qwen_coder),
+    ("zhipu", _chat_zhipu),
     ("groq", _chat_groq),
     ("cerebras", _chat_cerebras),
     ("gemini", _chat_gemini),
     ("mistral", _chat_mistral),
-    ("openrouter", _chat_openrouter),
 )
 
 
