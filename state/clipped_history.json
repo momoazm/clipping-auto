@@ -206,6 +206,19 @@
         "6a4eba6f3b7308502a91803f",
         "6a4ebe59be44981f11df35c8"
       ]
+    },
+    {
+      "source_id": "ICNtItWYMNE",
+      "source_title": "World's Deadliest Explosion!",
+      "date": "2026-07-11",
+      "clip_video_ids": [
+        "6a51fb872d7562b41128f9fd",
+        "6a51fc33cad26b1437643618",
+        "6a51fce868dd182e16d25a09",
+        "6a51fda07de8025eb7acba44",
+        "6a51fe9908a880faf772deaa",
+        "6a51ff16789bb5f621b51851"
+      ]
     }
   ],
   "attempted": [
@@ -360,6 +373,10 @@
     {
       "source_id": "1Vg00spYj2g",
       "date": "2026-07-10"
+    },
+    {
+      "source_id": "ICNtItWYMNE",
+      "date": "2026-07-11"
     }
   ]
 }
