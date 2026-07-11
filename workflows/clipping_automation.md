@@ -175,3 +175,11 @@ JSON object to stdout — parse it before moving on. Intermediates land in `.tmp
   YouTube upload. See the `ranking shorts` Instagram memory for the Business-Settings
   asset-assignment steps (Pages → Instagram accounts → System Users, all four must be
   assigned) — same recipe, different Page/IG account this time.
+- **Follow CTA end-card (2026-07-12):** `build_captions.py` now burns a "FOLLOW FOR MORE"
+  pop-in over the last `--cta-secs` (default 2.2s) of every clip — a new `CTA` ASS style
+  mirroring the existing `Hook` card but bottom-anchored (`MarginV 150`, well below the
+  caption band's ~320-360) so the two never collide. Default ON, no caller changes needed
+  (`run_daily.py` invokes `build_captions.py` as a CLI subprocess). Ported from the same
+  pattern already shipped to `ranking shorts`' `build_ranking_video.py`/`build_clip.py`
+  (see that project's decision log 2026-07-12) — text overlay burned onto already-playing
+  footage, not a spoken TTS line or a bolt-on end screen, per short-form CTA research.

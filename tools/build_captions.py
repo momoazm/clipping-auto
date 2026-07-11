@@ -79,7 +79,8 @@ def group_screens(words, per_screen):
     return screens
 
 
-def build_ass(words, style, animate, hook=None, hook_secs=2.5):
+def build_ass(words, style, animate, hook=None, hook_secs=2.5,
+              total=None, cta_secs=0.0, cta_text=""):
     primary = hex_to_ass(style["primary_color"])
     highlight = hex_to_ass(style["highlight_color"])
     outline = hex_to_ass(style["outline_color"])
@@ -108,6 +109,7 @@ ScaledBorderAndShadow: yes
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
 Style: Caps,{font},{size},{primary},{highlight},{outline},&H64000000,{bold},0,0,0,100,100,0,0,1,{out_px},{shadow},2,80,80,{margin_v},1
 Style: Hook,{font},{hook_size},{highlight},{highlight},{outline},&H64000000,{bold},0,0,0,100,100,0,0,1,{out_px + 2},{shadow},8,110,110,380,1
+Style: CTA,{font},{min(80, int(size * 0.65))},{highlight},{highlight},{outline},&H64000000,{bold},0,0,0,100,100,0,0,1,{out_px},{shadow},2,60,60,150,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -148,6 +150,18 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             events.append(
                 f"Dialogue: 0,{ass_time(start)},{ass_time(end)},Caps,,0,0,0,,{' '.join(parts)}")
 
+    # Follow CTA: a bold pop-in over the LAST cta_secs of the clip, sitting well below the
+    # caption band (MarginV 150 vs captions' ~320-360) so the two never collide. Burned onto
+    # already-playing footage -- no runtime added, no bolt-on end screen (matches the pattern
+    # used across the ranking-shorts/momoclips formats; see decisions/log.md 2026-07-12).
+    if total and cta_secs > 0 and cta_text:
+        eff = min(cta_secs, total)
+        cs = max(0.0, total - eff)
+        ctext = esc(cta_text.upper() if upper else cta_text)
+        events.append(
+            f"Dialogue: 1,{ass_time(cs)},{ass_time(total)},CTA,,0,0,0,,"
+            "{\\fad(150,0)\\fscx120\\fscy120\\t(0,250,\\fscx100\\fscy100)}" + ctext)
+
     return header + "\n".join(events) + "\n", len(events)
 
 
@@ -159,6 +173,11 @@ def main():
     parser.add_argument("--style", default="hormozi")
     parser.add_argument("--hook", default=None, help="Hook title-card text for the clip opening")
     parser.add_argument("--hook-secs", type=float, default=2.5, help="How long the hook card stays up")
+    parser.add_argument("--cta", dest="cta", action="store_true", default=True,
+                        help="Follow CTA pop-in over the last --cta-secs of the clip (default ON).")
+    parser.add_argument("--no-cta", dest="cta", action="store_false", help="Disable the follow CTA.")
+    parser.add_argument("--cta-secs", type=float, default=2.2, help="CTA pop-in length in seconds.")
+    parser.add_argument("--cta-text", default="FOLLOW FOR MORE", help="Follow CTA on-screen text.")
     parser.add_argument("--out", default=None)
     args = parser.parse_args()
 
@@ -185,14 +204,17 @@ def main():
 
     style_name, style = load_style(args.style)
     animate = style.get("animation", "none") == "word-highlight"
+    total = args.end - args.start
     ass_text, line_count = build_ass(words, style, animate,
-                                     hook=args.hook, hook_secs=args.hook_secs)
+                                     hook=args.hook, hook_secs=args.hook_secs,
+                                     total=total, cta_secs=args.cta_secs if args.cta else 0.0,
+                                     cta_text=args.cta_text)
 
     with open(out_path, "w", encoding="utf-8") as f:
         f.write(ass_text)
 
     emit({"path": out_path, "style": style_name, "line_count": line_count,
-          "word_count": len(words), "hook": bool(args.hook)})
+          "word_count": len(words), "hook": bool(args.hook), "cta": bool(args.cta)})
 
 
 if __name__ == "__main__":
