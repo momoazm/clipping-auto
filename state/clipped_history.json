@@ -219,6 +219,19 @@
         "6a51fe9908a880faf772deaa",
         "6a51ff16789bb5f621b51851"
       ]
+    },
+    {
+      "source_id": "KRr0i2akDlk",
+      "source_title": "Beat This Game, Win $250,000",
+      "date": "2026-07-11",
+      "clip_video_ids": [
+        "6a5294ebed7f4f585b13bc93",
+        "6a52955d888a54636f2b8319",
+        "6a5295fad6acd0ab74e360af",
+        "6a5296b056ef476e6b12c81a",
+        "6a5297690cfdacf61007f21e",
+        "6a5297de0cfdacf61007f6d3"
+      ]
     }
   ],
   "attempted": [
@@ -376,6 +389,10 @@
     },
     {
       "source_id": "ICNtItWYMNE",
+      "date": "2026-07-11"
+    },
+    {
+      "source_id": "KRr0i2akDlk",
       "date": "2026-07-11"
     }
   ]
