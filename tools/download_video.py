@@ -58,8 +58,7 @@ def main():
         # <=360p) and the old selector silently grabbed 360p -> a soft Short. Requiring >=1080
         # makes that case raise "Requested format is not available" so the attempt fails loudly
         # and the next client/route gets a shot. m4a audio avoids Opus-in-mp4.
-        "format": (f"bv*[height<={h}][height>={lo}]+ba/b[height<={h}][height>={lo}]/"
-                   f"bv*[height>={lo}]+ba/b[height>={lo}]"),
+        # (the "format" selector itself is set per-pass inside try_chain -- the floor varies)
         "format_sort": ["res", "vcodec:h264", "acodec:m4a"],
         "merge_output_format": "mp4",
         "outtmpl": out_base + ".%(ext)s",
@@ -101,42 +100,64 @@ def main():
         (["android"], True),
     ]
 
-    info, final_path, degraded, last_err = None, None, False, None
-    for clients, use_proxy in attempts:
-        opts = dict(base_opts)
-        if clients:
-            opts["extractor_args"] = {"youtube": {"player_client": clients}}
-        if proxy and use_proxy:
-            # Routing yt-dlp -- and only yt-dlp -- through WARP's local SOCKS (probed
-            # 2026-07-03). Native downloader only: ffmpeg can't speak SOCKS.
-            opts["proxy"] = proxy
-        route = f"{'+'.join(clients) if clients else 'default'}{' via proxy' if (proxy and use_proxy) else ' direct'}"
-        try:
-            with YoutubeDL(opts) as ydl:
-                inf = ydl.extract_info(args.url, download=True)
-                path = ydl.prepare_filename(inf)
-                # merge_output_format may have changed the extension to .mp4
-                if not os.path.isfile(path):
-                    cand = out_base + ".mp4"
-                    path = cand if os.path.isfile(cand) else path
-        except Exception as e:
-            msg = str(e)
-            if "Requested format is not available" in msg:
-                degraded = True     # nothing >= lo offered on this route -> bot-degraded ladder
-            last_err = f"[{route}] {msg}"
-            continue
-        # Belt-and-suspenders floor check (a muxed fallback could still slip a low one through).
-        got_h = inf.get("height") or 0
-        if got_h and got_h < lo:
-            degraded = True
-            last_err = f"[{route}] served only {got_h}p"
+    def try_chain(floor):
+        """Run the whole client/route chain demanding >= floor. Returns
+        (info, path, degraded, last_err) -- degraded means at least one route
+        answered but only with a ladder below the floor."""
+        info, final_path, degraded, last_err = None, None, False, None
+        for clients, use_proxy in attempts:
+            opts = dict(base_opts)
+            opts["format"] = (f"bv*[height<={h}][height>={floor}]+ba/b[height<={h}][height>={floor}]/"
+                              f"bv*[height>={floor}]+ba/b[height>={floor}]")
+            if clients:
+                opts["extractor_args"] = {"youtube": {"player_client": clients}}
+            if proxy and use_proxy:
+                # Routing yt-dlp -- and only yt-dlp -- through WARP's local SOCKS (probed
+                # 2026-07-03). Native downloader only: ffmpeg can't speak SOCKS.
+                opts["proxy"] = proxy
+            route = f"{'+'.join(clients) if clients else 'default'}{' via proxy' if (proxy and use_proxy) else ' direct'}"
             try:
-                os.remove(path)
-            except OSError:
-                pass
-            continue
-        info, final_path = inf, path
-        break
+                with YoutubeDL(opts) as ydl:
+                    inf = ydl.extract_info(args.url, download=True)
+                    path = ydl.prepare_filename(inf)
+                    # merge_output_format may have changed the extension to .mp4
+                    if not os.path.isfile(path):
+                        cand = out_base + ".mp4"
+                        path = cand if os.path.isfile(cand) else path
+            except Exception as e:
+                msg = str(e)
+                if "Requested format is not available" in msg:
+                    degraded = True     # nothing >= floor offered on this route -> bot-degraded ladder
+                last_err = f"[{route}] {msg}"
+                continue
+            # Belt-and-suspenders floor check (a muxed fallback could still slip a low one through).
+            got_h = inf.get("height") or 0
+            if got_h and got_h < floor:
+                degraded = True
+                last_err = f"[{route}] served only {got_h}p"
+                try:
+                    os.remove(path)
+                except OSError:
+                    pass
+                continue
+            info, final_path = inf, path
+            break
+        return info, final_path, degraded, last_err
+
+    info, final_path, degraded, last_err = try_chain(lo)
+
+    # Cloud runners since 2026-07-09: YouTube can wall EVERY datacenter route down to a
+    # <=360p ladder. YTDLP_DEGRADED_MIN=<height> opts in to a SECOND pass that accepts the
+    # best available >= that height instead of failing the run -- a soft Short beats a
+    # silent channel, and format_sort still grabs the highest ladder on healthy days.
+    took_degraded = False
+    degraded_min = int(os.environ.get("YTDLP_DEGRADED_MIN", "0") or 0)
+    if info is None and degraded and 0 < degraded_min < lo:
+        info, final_path, _, last_err2 = try_chain(degraded_min)
+        if info is not None:
+            took_degraded = True
+        else:
+            last_err = last_err2 or last_err
 
     if info is None:
         if degraded:
@@ -159,6 +180,7 @@ def main():
         "height": info.get("height"),
         "url": args.url,
         "id": info.get("id"),
+        "degraded": took_degraded,
     })
 
 
