@@ -28,9 +28,14 @@ ZERNIO_API = "https://zernio.com/api/v1"
 
 def _normalize(post):
     a = post.get("analytics") or {}
+    # The single-post lookup (?postId=) returns top-level "postId"/"syncStatus"; the list
+    # endpoint (?accountId=) instead returns Mongo-style "_id" with "syncStatus" nested one
+    # level down under platforms[0] -- verified against the real API 2026-07-12 (docs' example
+    # response didn't match the list shape). Fall back through both.
+    plat = (post.get("platforms") or [{}])[0]
     return {
-        "post_id": post.get("postId"),
-        "platform_post_url": post.get("platformPostUrl"),
+        "post_id": post.get("postId") or post.get("_id"),
+        "platform_post_url": post.get("platformPostUrl") or plat.get("platformPostUrl"),
         "published_at": post.get("publishedAt"),
         "views": a.get("views", 0),
         "likes": a.get("likes", 0),
@@ -40,7 +45,7 @@ def _normalize(post):
         "impressions": a.get("impressions", 0),
         "reach": a.get("reach", 0),
         "engagement_rate": a.get("engagementRate", 0),
-        "sync_status": post.get("syncStatus"),
+        "sync_status": post.get("syncStatus") or plat.get("syncStatus"),
     }
 
 
@@ -51,7 +56,7 @@ def _extract_list(data):
         if isinstance(data.get(key), list):
             return data[key]
     # Some responses may come back as a single post object even for a "list" query.
-    return [data] if data.get("postId") else []
+    return [data] if (data.get("postId") or data.get("_id")) else []
 
 
 def main():
