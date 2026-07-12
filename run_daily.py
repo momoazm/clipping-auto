@@ -12,6 +12,9 @@ TOOLS = HERE / "tools"
 TMP = HERE / ".tmp"
 CONFIG = HERE / "config" / "channels.json"
 HISTORY = HERE / "state" / "clipped_history.json"
+
+sys.path.insert(0, str(TOOLS))
+from _common import log_ig_post  # noqa: E402
 # Crash-safe local ledger: written the instant a source is picked, BEFORE any heavy
 # download/transcribe/render/upload. Untracked + gitignored, so `actions/checkout`
 # (clean: false) keeps it across runs on the same laptop -- unlike the tracked history
@@ -145,7 +148,8 @@ def ensure_sfx():
         except Exception as e:
             log("build_sfx failed:", e)
 
-def attempt_instagram_upload(short_path, caption, clip_num, summary_dict, entry_dict):
+def attempt_instagram_upload(short_path, caption, clip_num, summary_dict, entry_dict,
+                              style=None, experiment=False):
     """Isolated Instagram logic that won't crash the main pipeline."""
     if not IG_ENABLED:
         log(f"clip {clip_num}: Instagram upload skipped (ZERNIO_API/ZERNIO_INSTAGRAM_ID not configured)")
@@ -155,8 +159,21 @@ def attempt_instagram_upload(short_path, caption, clip_num, summary_dict, entry_
         # Zernio needs a PUBLIC url, not a local file path -- host it first.
         host = run_tool("host_public.py", "--video", short_path)
         ig = run_tool("upload_instagram.py", "--video-url", host["url"], "--caption", caption, "--confirm")
-        entry_dict["instagram_media_id"] = ig.get("post_id") or ig.get("media_id")
-        log(f"clip {clip_num}: Instagram -> {entry_dict['instagram_media_id']}")
+        media_id = ig.get("post_id") or ig.get("media_id")
+        entry_dict["instagram_media_id"] = media_id
+        log(f"clip {clip_num}: Instagram -> {media_id}")
+        if media_id:
+            # Only NOW claim the weekly experiment slot -- the clip already rendered with
+            # this style, but a failed IG post shouldn't burn the week's only experiment.
+            if experiment:
+                try:
+                    claim = run_tool("pick_weekly_style.py", "--consume")
+                    experiment = bool(claim.get("consumed"))
+                except Exception as e:
+                    log("pick_weekly_style --consume failed:", e)
+                    experiment = False
+            log_ig_post(media_id, style=style, experiment=experiment,
+                        context={"clip": clip_num, "hook": caption.split("\n", 1)[0][:120]})
     except Exception as e:
         log(f"clip {clip_num}: Instagram FAILED: {e}")
         summary_dict.setdefault("instagram_errors", []).append({"clip": clip_num, "error": str(e)})
@@ -276,7 +293,23 @@ def main():
         n = f"{idx:02d}"
         hook = clip.get("suggested_title") or clip.get("hook") or "Clip"
         short = str(TMP / f"short_{n}.mp4")
-        
+
+        # Weekly style experiment (2026-07-12): the FIRST clip of whichever daily run
+        # happens first in a new ISO week TRIES that week's rotated caption style; the
+        # slot is only actually claimed (see attempt_instagram_upload below) once that
+        # clip's Instagram post succeeds, so a failed upload doesn't burn the week's
+        # only experiment. Every other clip stays on the normal "hormozi" default. See
+        # tools/pick_weekly_style.py.
+        clip_style, is_experiment = "hormozi", False
+        if idx == 1 and not args.dry_run:
+            try:
+                weekly = run_tool("pick_weekly_style.py")  # peek only, don't claim yet
+                if weekly.get("style") and not weekly.get("used"):
+                    clip_style, is_experiment = weekly["style"], True
+                    log(f"clip {n}: trying weekly style experiment -> {clip_style}")
+            except Exception as e:
+                log("pick_weekly_style failed (falling back to hormozi):", e)
+
         # 1. Process the video (if this fails, skip to next clip)
         try:
             reframed = str(TMP/f"reframed_{n}.mp4")
@@ -285,7 +318,7 @@ def main():
 
             run_tool("reframe_crop.py", "--in", src_path, "--start", clip["start"], "--end", clip["end"], "--out", reframed)
             run_tool("plan_effects.py", "--start", clip["start"], "--end", clip["end"], "--emphasis", ",".join(clip.get("emphasis_words", [])), "--out", cues)
-            run_tool("build_captions.py", "--start", clip["start"], "--end", clip["end"], "--style", "hormozi", "--hook", hook, "--out", caps)
+            run_tool("build_captions.py", "--start", clip["start"], "--end", clip["end"], "--style", clip_style, "--hook", hook, "--out", caps)
             run_tool("render_clip.py", "--in", reframed, "--captions", caps, "--cues", cues, "--out", short, "--max-secs", maxs)
         except Exception as e:
             log(f"clip {n} RENDER FAILED:", e)
@@ -325,7 +358,8 @@ def main():
             continue
             
         # 3. Try Instagram (This will now run even if YouTube fails)
-        attempt_instagram_upload(short, f"{hook}\n\n{hashtag_line}", n, summary, entry)
+        attempt_instagram_upload(short, f"{hook}\n\n{hashtag_line}", n, summary, entry,
+                                  style=clip_style, experiment=is_experiment)
 
         summary["uploaded"].append(entry)
 

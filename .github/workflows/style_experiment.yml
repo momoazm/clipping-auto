@@ -1,0 +1,60 @@
+name: Weekly style experiment check
+
+# Resolves last week's experimental-caption-style clip (queued automatically by
+# run_daily.py's tools/pick_weekly_style.py -- rotation is deterministic by ISO
+# week number, so nothing needs to be "queued" here) against a baseline of
+# recent normal clips, and WhatsApps Moemen if it clearly won. See
+# tools/check_style_experiment.py. Never changes the live pipeline itself.
+
+on:
+  schedule:
+    # Monday 09:00 UTC -- gives Instagram's insights sync (~24h+) and the
+    # 4-day min-age window room to have real numbers for last week's post.
+    - cron: "0 9 * * 1"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  check-experiment:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Minimal deps (no video stack needed for this job)
+        run: pip install --upgrade pip httpx python-dotenv
+
+      - name: Materialize API.env
+        env:
+          API_ENV: ${{ secrets.API_ENV }}
+        run: |
+          python3 - <<'EOF'
+          import os
+          with open('API.env', 'w', encoding='utf-8') as f:
+              f.write(os.environ.get('API_ENV', '') + '\n')
+          EOF
+          [ -s API.env ] || { echo "::error::API_ENV secret is empty"; exit 1; }
+
+      - name: Run weekly check
+        run: python tools/check_style_experiment.py
+
+      - name: Commit updated post log
+        if: always()
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add state/ig_post_log.json
+          if ! git diff --staged --quiet; then
+            git commit -m "chore: resolve weekly style experiment [skip ci]"
+            git pull --rebase origin main || true
+            git push
+          else
+            echo "No log change to commit."
+          fi

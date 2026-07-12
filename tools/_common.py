@@ -142,3 +142,31 @@ def ffprobe_json(path):
         "-show_format", "-show_streams", str(path),
     ])
     return json.loads(proc.stdout)
+
+
+# --- Instagram post log (weekly style-experiment tracking) ----------------
+# Durable, append-only record of every successful Instagram publish, so
+# check_style_experiment.py can later pull an experimental post's id plus a
+# baseline of recent normal posts and compare performance via Zernio analytics.
+
+def log_ig_post(post_id, style=None, experiment=False, context=None):
+    import datetime
+    path = REPO_ROOT / "state" / "ig_post_log.json"
+    data = {"posts": []}
+    if path.is_file():
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except (json.JSONDecodeError, OSError):
+            pass
+    data.setdefault("posts", []).append({
+        "post_id": post_id,
+        "posted_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "style": style,
+        "experiment": bool(experiment),
+        "resolved": False,
+        "context": context or {},
+    })
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)

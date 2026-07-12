@@ -78,6 +78,19 @@ files are gitignored.
    workflow file never needs editing (the `API_ENV` secret already lands in `API.env`
    verbatim). An IG failure is logged but never undoes the YouTube upload.
 
+### Weekly IG style experiment (2026-07-12)
+Clip `01` of whichever daily run happens first in a new ISO week TRIES a rotated caption style
+(`tools/pick_weekly_style.py`: `hormozi` → `brand` → `clean`, `config/caption_styles.json`); the
+slot is only actually claimed once that clip's Instagram post succeeds (see
+`attempt_instagram_upload()` in `run_daily.py`), so a failed upload doesn't burn the week's only
+experiment. Every successful IG post is logged to `state/ig_post_log.json`
+(`_common.log_ig_post`). A separate Monday cron (`.github/workflows/style_experiment.yml` →
+`tools/check_style_experiment.py`) resolves any experiment post ≥4 days old against a baseline of
+recent normal posts (via `tools/ig_fetch_analytics.py`, Zernio's analytics API) and WhatsApps
+Moemen (`tools/send_whatsapp.py`, CallMeBot — see `.claude/skills/send-whatsapp/SKILL.md`) if it
+clearly won. **This never changes the live default style automatically** — a win is a
+notification; Moemen decides whether to update `run_daily.py`'s default.
+
 ### Hard rules specific to this project
 - **Branding is not optional.** The `brand` caption style and the `theme_gold` highlight
   pull from `brand/theme.json`; never re-derive brand colors per clip.
