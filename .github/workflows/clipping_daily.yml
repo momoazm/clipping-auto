@@ -8,11 +8,12 @@ name: Daily MrBeast clipping
 # YouTube bot-checks datacenter IPs. Defense layers: (1) a BgUtils PO-token provider
 # (Docker, localhost:4416) mints proof-of-origin tokens for the web/tv clients, and
 # (2) Cloudflare WARP's local SOCKS proxy gives a cleaner egress IP. Since 2026-07-09
-# YouTube sometimes walls EVERY datacenter route down to a <=360p ladder even so;
-# YTDLP_DEGRADED_MIN=360 tells download_video.py to FIRST hunt >=1080p on every
-# client/route, then -- only if all routes are degraded -- take the best available
-# instead of failing the run (a soft Short beats a silent channel). The run log and
-# tool JSON flag `degraded: true` when that happens.
+# YouTube sometimes walls EVERY datacenter route down to a <=360p ladder even so.
+# 2026-07-11 added YTDLP_DEGRADED_MIN=360 to post a soft Short on those days instead
+# of failing the run -- but that shipped visibly low-res Shorts, and Moemen's call
+# 2026-07-12 is quality over volume. The fallback is OFF again: download_video.py's
+# own --min-height floor (1080) now fails the run LOUDLY on a bot-walled day instead
+# of posting one -- a missed slot beats a soft clip.
 #
 # Exact-time posting: GitHub cron can drift 5-30+ min, so the cron fires ~40 min
 # EARLY and the "Hold until slot" step sleeps until the exact target minute.
@@ -176,10 +177,9 @@ jobs:
           # the SOCKS proxy or the token fetch fails (and downloads bot-block again).
           # (Python's proxy-bypass check lowercases env names, so one key covers both.)
           no_proxy: "127.0.0.1,localhost"
-          # Degraded-ladder fallback: hunt >=1080p on every route first; if YouTube walls
-          # them ALL (<=360p ladders, seen since 07-09), take the best available instead
-          # of failing the run. See the header comment.
-          YTDLP_DEGRADED_MIN: "360"
+          # No YTDLP_DEGRADED_MIN (removed 2026-07-12): quality over volume -- see header
+          # comment. download_video.py's --min-height 1080 floor fails the run loudly
+          # instead of accepting a degraded <=360p ladder.
           IN_PRIVACY: ${{ inputs.privacy }}
           IN_DRYRUN: ${{ inputs.dry_run }}
           IN_LIMIT: ${{ inputs.limit }}
