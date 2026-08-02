@@ -55,7 +55,8 @@ concurrency:
 jobs:
   clip-and-upload:
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    # Three bounded source attempts (plus render) must finish well before the next daily slot.
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v5
 
