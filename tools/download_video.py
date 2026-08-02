@@ -14,12 +14,57 @@ Usage:
 Prints JSON: {"path","title","duration","width","height","url","id"}
 """
 import argparse
+import json
 import os
+import subprocess
+import sys
 import time
 
 from _common import load_env, emit, fail, ffmpeg_bin, tmp_path, FFmpegMissing, REPO_ROOT
 
 DOWNLOAD_DEADLINE_SEC = 240.0
+DOWNLOAD_ATTEMPT_TIMEOUT_SEC = 25.0
+
+
+def _download_attempt(url, out_base, clients, use_proxy, fmt, ffmpeg_dir, cookie_file):
+    """Run one route in a killable yt-dlp child and return its metadata plus output path."""
+    cmd = [sys.executable, "-m", "yt_dlp", "--format", fmt,
+           "--format-sort", "res,vcodec:h264,acodec:m4a", "--merge-output-format", "mp4",
+           "--output", out_base + ".%(ext)s", "--no-playlist", "--quiet", "--no-warnings",
+           "--no-progress", "--force-overwrites", "--print-json", "--ffmpeg-location", ffmpeg_dir,
+           "--socket-timeout", "15", "--retries", "0", "--fragment-retries", "0",
+           "--extractor-retries", "0", "--file-access-retries", "0", "--concurrent-fragments", "4"]
+    if clients:
+        cmd += ["--extractor-args", "youtube:player_client=" + ",".join(clients)]
+    if cookie_file and os.path.isfile(cookie_file):
+        cmd += ["--cookies", cookie_file]
+    proxy = os.environ.get("YTDLP_PROXY")
+    if proxy and use_proxy:
+        cmd += ["--proxy", proxy]
+    cmd.append(url)
+    try:
+        proc = subprocess.run(cmd, cwd=str(REPO_ROOT), capture_output=True, text=True,
+                              encoding="utf-8", errors="replace",
+                              timeout=DOWNLOAD_ATTEMPT_TIMEOUT_SEC)
+    except subprocess.TimeoutExpired as e:
+        raise RuntimeError(f"yt-dlp route timed out after {DOWNLOAD_ATTEMPT_TIMEOUT_SEC:.0f}s") from e
+    if proc.returncode != 0:
+        tail = (proc.stderr or proc.stdout or "").strip()[-600:]
+        raise RuntimeError(tail or f"yt-dlp exited {proc.returncode}")
+    info = None
+    for line in reversed((proc.stdout or "").splitlines()):
+        try:
+            candidate = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(candidate, dict) and (candidate.get("id") or candidate.get("title")):
+            info = candidate
+            break
+    path = next((p for p in (out_base + ".mp4", out_base + ".mkv", out_base + ".webm")
+                 if os.path.isfile(p)), None)
+    if not path:
+        raise RuntimeError("yt-dlp reported success but produced no media file")
+    return info or {}, path
 
 
 def main():
@@ -133,13 +178,8 @@ def main():
                 opts["proxy"] = proxy
             route = f"{'+'.join(clients) if clients else 'default'}{' via proxy' if (proxy and use_proxy) else ' direct'}"
             try:
-                with YoutubeDL(opts) as ydl:
-                    inf = ydl.extract_info(args.url, download=True)
-                    path = ydl.prepare_filename(inf)
-                    # merge_output_format may have changed the extension to .mp4
-                    if not os.path.isfile(path):
-                        cand = out_base + ".mp4"
-                        path = cand if os.path.isfile(cand) else path
+                inf, path = _download_attempt(args.url, out_base, clients, use_proxy,
+                                              opts["format"], ffmpeg_dir, cookie_file)
             except Exception as e:
                 msg = str(e)
                 if "Requested format is not available" in msg:
