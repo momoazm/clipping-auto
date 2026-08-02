@@ -46,6 +46,12 @@ on:
 permissions:
   contents: write
 
+# The two scheduled slots share .tmp/, source history, and upload quotas. Queue a second run
+# instead of letting concurrent runners race on the same source/final.mp4.
+concurrency:
+  group: clipping-auto-daily
+  cancel-in-progress: false
+
 jobs:
   clip-and-upload:
     runs-on: ubuntu-latest
@@ -152,11 +158,19 @@ jobs:
         env:
           API_ENV: ${{ secrets.API_ENV }}
           YT_TOKEN_JSON: ${{ secrets.YT_TOKEN_JSON }}
+          TIKTOK_ACCESS_TOKEN: ${{ secrets.TIKTOK_ACCESS_TOKEN }}
+          TIKTOK_REFRESH_TOKEN: ${{ secrets.TIKTOK_REFRESH_TOKEN }}
+          TIKTOK_CLIENT_KEY: ${{ secrets.TIKTOK_CLIENT_KEY }}
+          TIKTOK_CLIENT_SECRET: ${{ secrets.TIKTOK_CLIENT_SECRET }}
         run: |
           python3 - <<'EOF'
           import os
           with open('API.env', 'w', encoding='utf-8') as f:
               f.write(os.environ.get('API_ENV', '') + '\n')
+              for key in ('TIKTOK_ACCESS_TOKEN', 'TIKTOK_REFRESH_TOKEN',
+                          'TIKTOK_CLIENT_KEY', 'TIKTOK_CLIENT_SECRET'):
+                  if os.environ.get(key):
+                      f.write(f'{key}={os.environ[key]}\n')
           with open('token.json', 'w', encoding='utf-8') as f:
               f.write(os.environ.get('YT_TOKEN_JSON', ''))
           EOF
@@ -187,6 +201,11 @@ jobs:
           ZERNIO_API: ${{ secrets.ZERNIO_API }}
           ZERNIO_INSTAGRAM_ID: ${{ secrets.ZERNIO_INSTAGRAM_ID }}
           ZERNIO_YOUTUBE_ID: ${{ secrets.ZERNIO_YOUTUBE_ID }}
+          TIKTOK_ACCESS_TOKEN: ${{ secrets.TIKTOK_ACCESS_TOKEN }}
+          TIKTOK_REFRESH_TOKEN: ${{ secrets.TIKTOK_REFRESH_TOKEN }}
+          TIKTOK_CLIENT_KEY: ${{ secrets.TIKTOK_CLIENT_KEY }}
+          TIKTOK_CLIENT_SECRET: ${{ secrets.TIKTOK_CLIENT_SECRET }}
+          TIKTOK_PRIVACY: PUBLIC_TO_EVERYONE
         run: |
           ARGS=(--privacy "${IN_PRIVACY:-public}")
           if [ "$IN_DRYRUN" == "true" ]; then ARGS+=(--dry-run); fi

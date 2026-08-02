@@ -206,8 +206,13 @@ CHAIN = (
 
 
 def snap_to_words(words, start, end, target_secs, max_secs, min_secs=20):
-    """Snap a span to word boundaries; expand to target when the model returns a
-    too-short span (it often emits just the hook's timestamp), and clamp to max."""
+    """Snap a span to clean word/sentence boundaries and clamp to the Short limit.
+
+    LLMs often return only the timestamp of a hook even when the transcript shows a longer
+    payoff. The old expansion picked an arbitrary word near ``target_secs``, which could cut a
+    MrBeast reveal mid-sentence. When expansion is needed, prefer the nearest spoken sentence
+    boundary; otherwise use the nearest word as a safe fallback.
+    """
     if not words:
         return start, end
     start_w = min(words, key=lambda w: abs(w["start"] - start))
@@ -220,14 +225,27 @@ def snap_to_words(words, start, end, target_secs, max_secs, min_secs=20):
     target_end = s + desired
 
     end_candidates = [w for w in words if w["end"] > s]
-    end_w = min(end_candidates or words, key=lambda w: abs(w["end"] - target_end))
+    sentence_candidates = [
+        w for w in end_candidates
+        if w["end"] >= s + min_secs
+        and w["end"] <= s + max_secs
+        and str(w.get("w", "")).rstrip().endswith((".", "!", "?", "…"))
+    ]
+    # Only use a sentence boundary for the synthetic expansion. If the model supplied a
+    # meaningful longer end, preserving that chosen payoff is more important than re-cutting it.
+    if (end - s) < min_secs and sentence_candidates:
+        end_w = min(sentence_candidates, key=lambda w: abs(w["end"] - target_end))
+    else:
+        end_w = min(end_candidates or words, key=lambda w: abs(w["end"] - target_end))
     e = end_w["end"]
 
     if e - s > max_secs:          # hard cap: trim to last word that fits
         fit = [w for w in words if w["start"] >= s and w["end"] <= s + max_secs]
         e = fit[-1]["end"] if fit else s + max_secs
     if e - s < min_secs:          # never emit a sub-second "clip"
-        e = min(s + target_secs, words[-1]["end"])
+        # Preserve a chosen sentence boundary that already lands after the target; the old
+        # `min(...)` could move it backwards and cut the final punctuation off again.
+        e = max(e, min(s + target_secs, words[-1]["end"]))
     return round(s, 3), round(e, 3)
 
 

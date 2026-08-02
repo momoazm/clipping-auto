@@ -36,6 +36,39 @@ from _common import load_env, emit, fail
 ZERNIO_API = "https://zernio.com/api/v1"
 
 
+def create_post(payload, api_key, max_tries=5):
+    """Create a Zernio post with bounded 429/5xx/network retries.
+
+    The old uploader made one POST. A transient shared Zernio rate limit then looked like a
+    successful workflow with no Instagram post, and the source was consumed by the orchestrator.
+    """
+    import httpx
+    backoff = 10
+    last = None
+    for attempt in range(max_tries):
+        try:
+            r = httpx.post(f"{ZERNIO_API}/posts", json=payload,
+                           headers={"Authorization": f"Bearer {api_key}",
+                                    "x-request-id": str(uuid.uuid4())}, timeout=60)
+            if r.status_code == 429 or r.status_code >= 500:
+                last = f"HTTP {r.status_code}: {r.text[:200]}"
+                retry_after = (r.headers.get("Retry-After") or "").strip()
+                if attempt < max_tries - 1:
+                    time.sleep(min(120, int(retry_after) if retry_after.isdigit() else backoff))
+                    backoff *= 2
+                    continue
+            r.raise_for_status()
+            return r.json().get("post", {}), None
+        except Exception as exc:
+            last = str(exc)
+            if attempt < max_tries - 1:
+                time.sleep(min(120, backoff))
+                backoff *= 2
+                continue
+            break
+    return None, f"Zernio post create failed after {max_tries} tries ({last})"
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--video-url", required=True, help="PUBLIC https url to the mp4 (host_public.py)")
@@ -78,14 +111,9 @@ def main():
 
     import httpx
 
-    headers = {"Authorization": f"Bearer {api_key}", "x-request-id": str(uuid.uuid4())}
-    try:
-        r = httpx.post(f"{ZERNIO_API}/posts", json=payload, headers=headers, timeout=60)
-        r.raise_for_status()
-        post = r.json().get("post", {})
-    except Exception as e:
-        body = getattr(getattr(e, "response", None), "text", "")
-        fail(f"Zernio post create failed: {e} {body}".strip())
+    post, create_error = create_post(payload, api_key)
+    if create_error:
+        fail(create_error)
         return
 
     post_id = post.get("_id")
@@ -106,6 +134,7 @@ def main():
     # (container transcode) can take up to ~2 min -- poll the same way the old direct-Graph-API
     # version did if it isn't done yet.
     deadline = time.time() + args.poll_timeout
+    poll_error = None
     while status not in ("published", "failed", "error") and time.time() < deadline:
         time.sleep(5)
         try:
@@ -115,12 +144,13 @@ def main():
             post = s.json().get("post", post)
             entry = platform_entry(post)
             status = entry.get("status") or post.get("status")
-        except Exception:
-            pass
+        except Exception as exc:
+            poll_error = str(exc)
 
     if status not in ("published",):
         fail(f"Zernio publish did not complete (status={status}).",
-             post_id=post_id, platform_status=entry)
+             post_id=post_id, platform_status=entry, poll_error=poll_error,
+             ambiguous=status not in ("failed", "error"))
         return
 
     emit({"status": "uploaded", "platform": "instagram", "via": "zernio",

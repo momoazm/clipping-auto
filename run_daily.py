@@ -32,6 +32,7 @@ except ImportError:
 
 # --- Zernio secret keys (passed as env vars by the workflow; in API.env for local runs) ---
 IG_ENABLED = bool(os.environ.get("ZERNIO_API")) and bool(os.environ.get("ZERNIO_INSTAGRAM_ID"))
+TIKTOK_ENABLED = bool(os.environ.get("TIKTOK_ACCESS_TOKEN")) or bool(os.environ.get("TIKTOK_REFRESH_TOKEN"))
 
 def log(*a):
     print("[run_daily]", *a, file=sys.stderr, flush=True)
@@ -82,14 +83,28 @@ def load_json(path, default):
         return default
 
 def load_ledger_ids():
-    """Source ids picked by a prior (possibly interrupted) run on this machine."""
+    """Source ids picked by a prior run, with a short cooldown for failed attempts.
+
+    The ledger exists to survive a hard shutdown, not to blacklist a source forever. A permanent
+    local skip list was one reason this pipeline eventually reported no_source after a transient
+    YouTube/API failure.
+    """
     data = load_json(LEDGER, {"attempted": []})
     records = (data.get("attempted") if isinstance(data, dict) else data) or []
     ids = set()
+    cutoff = datetime.date.today() - datetime.timedelta(days=2)
     for r in records:
         sid = r.get("source_id") if isinstance(r, dict) else r
-        if sid:
-            ids.add(sid)
+        if not sid:
+            continue
+        if isinstance(r, dict):
+            try:
+                picked_date = datetime.date.fromisoformat(str(r.get("date", "")))
+            except ValueError:
+                picked_date = datetime.date.today()
+            if picked_date < cutoff:
+                continue
+        ids.add(sid)
     return ids
 
 
@@ -177,6 +192,23 @@ def attempt_instagram_upload(short_path, caption, clip_num, summary_dict, entry_
     except Exception as e:
         log(f"clip {clip_num}: Instagram FAILED: {e}")
         summary_dict.setdefault("instagram_errors", []).append({"clip": clip_num, "error": str(e)})
+
+
+def attempt_tiktok_upload(short_path, caption, clip_num, summary_dict, entry_dict, privacy):
+    """Publish the same finished MP4 directly to TikTok when the Content Posting credentials exist."""
+    if not TIKTOK_ENABLED:
+        log(f"clip {clip_num}: TikTok upload skipped (TIKTOK_ACCESS_TOKEN or refresh credentials not configured)")
+        return False
+    try:
+        tt = run_tool("upload_tiktok.py", "--video", short_path, "--title", caption,
+                      "--privacy", privacy, "--confirm")
+        entry_dict["tiktok_publish_id"] = tt.get("publish_id")
+        log(f"clip {clip_num}: TikTok -> {tt.get('publish_id')}")
+        return tt.get("status") == "uploaded"
+    except Exception as e:
+        log(f"clip {clip_num}: TikTok FAILED: {e}")
+        summary_dict.setdefault("tiktok_errors", []).append({"clip": clip_num, "error": str(e)})
+        return False
 
 
 def main():
@@ -358,8 +390,12 @@ def main():
             continue
             
         # 3. Try Instagram (This will now run even if YouTube fails)
-        attempt_instagram_upload(short, f"{hook}\n\n{hashtag_line}", n, summary, entry,
+        caption = f"{hook}\n\n{hashtag_line}"
+        attempt_instagram_upload(short, caption, n, summary, entry,
                                   style=clip_style, experiment=is_experiment)
+        tiktok_ok = attempt_tiktok_upload(short, caption, n, summary, entry,
+                                           os.environ.get("TIKTOK_PRIVACY", "PUBLIC_TO_EVERYONE"))
+        entry["tiktok_uploaded"] = tiktok_ok
 
         summary["uploaded"].append(entry)
 
@@ -369,7 +405,9 @@ def main():
         if not args.dry_run:
             purge_files(short, reframed, caps, cues)
 
-    if not args.dry_run and uploaded_ids:
+    successful_entries = [e for e in summary["uploaded"]
+                          if e.get("video_id") or e.get("instagram_media_id") or e.get("tiktok_publish_id")]
+    if not args.dry_run and successful_entries:
         hist = load_json(HISTORY, {"clipped": []})
         if isinstance(hist, list):
             hist = {"clipped": hist}
@@ -377,11 +415,13 @@ def main():
             "source_id": src.get("video_id", "unknown"), 
             "source_title": src_title,
             "date": summary["date"],
-            "clip_video_ids": uploaded_ids,
+            "clip_video_ids": [e.get("video_id") for e in successful_entries if e.get("video_id")],
+            "platform_post_ids": [x for e in successful_entries for x in
+                                   (e.get("instagram_media_id"), e.get("tiktok_publish_id")) if x],
         })
         with open(HISTORY, "w", encoding="utf-8") as f:
             json.dump(hist, f, ensure_ascii=False, indent=2)
-        log(f"history updated: +{len(uploaded_ids)} clips")
+        log(f"history updated: source posted on {len(successful_entries)} clip(s)")
 
     # Remember every source we touched this run (incl. any earlier failed attempts)
     # so none of them come back next run.
