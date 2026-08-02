@@ -228,6 +228,17 @@ jobs:
           echo "run_daily.py ${ARGS[*]}"
           python run_daily.py "${ARGS[@]}"
 
+      # Dry-runs keep the rendered Shorts for local/competitor-quality review.  Upload them
+      # before any later cleanup/commit step so a green build cannot hide a missing MP4.
+      - name: Upload generated clipping videos for inspection
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: momobeast-clips-${{ github.run_id }}
+          path: .tmp/short_*.mp4
+          if-no-files-found: warn
+          retention-days: 7
+
       # always() so the no-repeat memory is committed even when the run FAILS -- that's
       # how a source that broke this run gets remembered and isn't re-picked next time
       # (without it, the next checkout resets the file and the same video repeats).
