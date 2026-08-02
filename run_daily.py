@@ -32,7 +32,11 @@ except ImportError:
 
 # --- Zernio secret keys (passed as env vars by the workflow; in API.env for local runs) ---
 IG_ENABLED = bool(os.environ.get("ZERNIO_API")) and bool(os.environ.get("ZERNIO_INSTAGRAM_ID"))
-TIKTOK_ENABLED = bool(os.environ.get("TIKTOK_ACCESS_TOKEN")) or bool(os.environ.get("TIKTOK_REFRESH_TOKEN"))
+TIKTOK_ENABLED = (
+    bool(os.environ.get("TIKTOK_ACCESS_TOKEN")) or
+    all(bool(os.environ.get(key)) for key in
+        ("TIKTOK_REFRESH_TOKEN", "TIKTOK_CLIENT_KEY", "TIKTOK_CLIENT_SECRET"))
+)
 
 def log(*a):
     print("[run_daily]", *a, file=sys.stderr, flush=True)
@@ -66,8 +70,14 @@ def _extract_json(text):
 def run_tool(script, *args):
     cmd = [sys.executable, str(TOOLS / script), *map(str, args)]
     log("->", script, *[a for a in args])
-    proc = subprocess.run(cmd, cwd=str(HERE), capture_output=True,
-                          text=True, encoding="utf-8", errors="replace")
+    # A blocked YouTube listing must not consume the whole daily slot. Keep media/LLM tools
+    # generous, but bound the source picker separately so the next channel can be tried.
+    timeout = 120 if script == "find_source_video.py" else 900
+    try:
+        proc = subprocess.run(cmd, cwd=str(HERE), capture_output=True,
+                              text=True, encoding="utf-8", errors="replace", timeout=timeout)
+    except subprocess.TimeoutExpired:
+        raise RuntimeError(f"{script}: timed out after {timeout}s")
     data = _extract_json(proc.stdout)
     if data is None:
         raise RuntimeError(f"{script}: no JSON output (exit {proc.returncode}). stderr: {(proc.stderr or '')[-400:]}")
@@ -165,10 +175,13 @@ def ensure_sfx():
 
 def attempt_instagram_upload(short_path, caption, clip_num, summary_dict, entry_dict,
                               style=None, experiment=False):
-    """Isolated Instagram logic that won't crash the main pipeline."""
+    """Publish to the pinned Instagram account and return whether it was confirmed uploaded."""
     if not IG_ENABLED:
-        log(f"clip {clip_num}: Instagram upload skipped (ZERNIO_API/ZERNIO_INSTAGRAM_ID not configured)")
-        return
+        detail = "ZERNIO_API/ZERNIO_INSTAGRAM_ID not configured"
+        log(f"clip {clip_num}: Instagram upload skipped ({detail})")
+        entry_dict["instagram_error"] = detail
+        summary_dict.setdefault("instagram_errors", []).append({"clip": clip_num, "error": detail})
+        return False
 
     try:
         # Zernio needs a PUBLIC url, not a local file path -- host it first.
@@ -189,15 +202,19 @@ def attempt_instagram_upload(short_path, caption, clip_num, summary_dict, entry_
                     experiment = False
             log_ig_post(media_id, style=style, experiment=experiment,
                         context={"clip": clip_num, "hook": caption.split("\n", 1)[0][:120]})
+        return bool(media_id)
     except Exception as e:
         log(f"clip {clip_num}: Instagram FAILED: {e}")
+        entry_dict["instagram_error"] = str(e)
         summary_dict.setdefault("instagram_errors", []).append({"clip": clip_num, "error": str(e)})
+        return False
 
 
 def attempt_tiktok_upload(short_path, caption, clip_num, summary_dict, entry_dict, privacy):
     """Publish the same finished MP4 directly to TikTok when the Content Posting credentials exist."""
     if not TIKTOK_ENABLED:
-        log(f"clip {clip_num}: TikTok upload skipped (TIKTOK_ACCESS_TOKEN or refresh credentials not configured)")
+        entry_dict["tiktok_status"] = "not_configured"
+        log(f"clip {clip_num}: TikTok upload skipped (credentials not configured)")
         return False
     try:
         tt = run_tool("upload_tiktok.py", "--video", short_path, "--title", caption,
@@ -225,7 +242,12 @@ def main():
                     help="Process this pre-downloaded source file (skips find+download)")
     ap.add_argument("--source-meta", default=None,
                     help="Manifest written by --download-only (source info + attempted ids)")
+    ap.add_argument("--required-platforms",
+                    default=os.environ.get("REQUIRED_PLATFORMS", "youtube,instagram"),
+                    help="Comma-separated destinations that must publish for a zero exit.")
     args = ap.parse_args()
+
+    required_platforms = {p.strip().lower() for p in args.required_platforms.split(",") if p.strip()}
 
     TMP.mkdir(parents=True, exist_ok=True)
     cfg = load_json(CONFIG, {})
@@ -236,7 +258,8 @@ def main():
     maxs = int(cfg.get("max_secs", 60))
     max_video_attempts = int(cfg.get("max_video_attempts", 5))
 
-    summary = {"date": datetime.date.today().isoformat(), "dry_run": args.dry_run, "uploaded": [], "errors": []}
+    summary = {"date": datetime.date.today().isoformat(), "dry_run": args.dry_run,
+               "uploaded": [], "errors": [], "required_platforms": sorted(required_platforms)}
     # Crash-safe skip list: sources a prior interrupted run already picked on this machine.
     ledger_ids = load_ledger_ids()
     if ledger_ids:
@@ -354,6 +377,7 @@ def main():
             run_tool("render_clip.py", "--in", reframed, "--captions", caps, "--cues", cues, "--out", short, "--max-secs", maxs)
         except Exception as e:
             log(f"clip {n} RENDER FAILED:", e)
+            summary["errors"].append({"clip": n, "stage": "render", "error": str(e)})
             continue
             
         tags = run_tool("generate_hashtags.py", "--title", src_title, "--hook", hook, "--snippet", hook)
@@ -369,6 +393,7 @@ def main():
 
         # 2. Try YouTube (If this fails, log it but keep going!) -- needs a PUBLIC url,
         # not the local path, since it now publishes via Zernio instead of OAuth.
+        yt_ok = False
         try:
             host = run_tool("host_public.py", "--video", short)
             up_args = ["upload_youtube.py", "--video-url", host["url"], "--title", yt_title,
@@ -381,9 +406,11 @@ def main():
                 yt_id = up.get("post_id")
                 uploaded_ids.append(yt_id)
                 entry["video_id"] = yt_id
+                yt_ok = bool(yt_id)
         except Exception as e:
             log(f"clip {n} YOUTUBE FAILED:", e)
             entry["youtube_error"] = str(e)
+        entry["youtube_uploaded"] = yt_ok
             
         if args.dry_run:
             summary["uploaded"].append({"clip": n, "preview": True})
@@ -391,8 +418,9 @@ def main():
             
         # 3. Try Instagram (This will now run even if YouTube fails)
         caption = f"{hook}\n\n{hashtag_line}"
-        attempt_instagram_upload(short, caption, n, summary, entry,
-                                  style=clip_style, experiment=is_experiment)
+        ig_ok = attempt_instagram_upload(short, caption, n, summary, entry,
+                                          style=clip_style, experiment=is_experiment)
+        entry["instagram_uploaded"] = ig_ok
         tiktok_ok = attempt_tiktok_upload(short, caption, n, summary, entry,
                                            os.environ.get("TIKTOK_PRIVACY", "PUBLIC_TO_EVERYONE"))
         entry["tiktok_uploaded"] = tiktok_ok
@@ -435,7 +463,30 @@ def main():
             for p in TMP.glob(pat):
                 purge_files(str(p))
 
+    required_failures = []
+    if not args.dry_run:
+        posted_entries = summary["uploaded"]
+        if "youtube" in required_platforms and (
+                len(posted_entries) < len(clips) or
+                any(e.get("youtube_uploaded") is not True for e in posted_entries)):
+            required_failures.append("youtube")
+        if "instagram" in required_platforms and (
+                len(posted_entries) < len(clips) or
+                any(e.get("instagram_uploaded") is not True for e in posted_entries)):
+            required_failures.append("instagram")
+        if summary["errors"] and "render" not in required_failures:
+            required_failures.append("pipeline")
+        if required_failures:
+            summary["required_delivery_failures"] = required_failures
+            summary["status"] = "delivery_failed"
+        elif successful_entries:
+            summary["status"] = "uploaded"
+        else:
+            summary["status"] = "built_no_delivery"
+
     print(json.dumps(summary, indent=2))
+    if required_failures:
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

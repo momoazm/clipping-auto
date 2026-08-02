@@ -79,7 +79,7 @@ def group_screens(words, per_screen):
     return screens
 
 
-def build_ass(words, style, animate, hook=None, hook_secs=2.5,
+def build_ass(words, style, animate, hook=None, hook_secs=1.6,
               total=None, cta_secs=0.0, cta_text=""):
     primary = hex_to_ass(style["primary_color"])
     highlight = hex_to_ass(style["highlight_color"])
@@ -172,7 +172,8 @@ def main():
     parser.add_argument("--end", type=float, required=True)
     parser.add_argument("--style", default="hormozi")
     parser.add_argument("--hook", default=None, help="Hook title-card text for the clip opening")
-    parser.add_argument("--hook-secs", type=float, default=2.5, help="How long the hook card stays up")
+    parser.add_argument("--hook-secs", type=float, default=1.6,
+                        help="How long the hook card stays up (short cold-open; default 1.6s)")
     parser.add_argument("--cta", dest="cta", action="store_true", default=True,
                         help="Follow CTA pop-in over the last --cta-secs of the clip (default ON).")
     parser.add_argument("--no-cta", dest="cta", action="store_false", help="Disable the follow CTA.")

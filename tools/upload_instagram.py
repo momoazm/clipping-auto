@@ -50,6 +50,11 @@ def create_post(payload, api_key, max_tries=5):
             r = httpx.post(f"{ZERNIO_API}/posts", json=payload,
                            headers={"Authorization": f"Bearer {api_key}",
                                     "x-request-id": str(uuid.uuid4())}, timeout=60)
+            # Account/plan/auth errors are permanent for this run. Retrying a 403 five times
+            # only delayed the workflow and hid the actionable response body in the old code.
+            if 400 <= r.status_code < 500 and r.status_code != 429:
+                body = r.text[:320].strip()
+                return None, f"Zernio HTTP {r.status_code}: {body or 'request rejected'}"
             if r.status_code == 429 or r.status_code >= 500:
                 last = f"HTTP {r.status_code}: {r.text[:200]}"
                 retry_after = (r.headers.get("Retry-After") or "").strip()

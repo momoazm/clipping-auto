@@ -220,6 +220,7 @@ jobs:
           TIKTOK_CLIENT_SECRET: ${{ secrets.TIKTOK_CLIENT_SECRET }}
           TIKTOK_EXPECTED_USERNAME: ${{ secrets.TIKTOK_EXPECTED_USERNAME || 'mrbeasteg' }}
           TIKTOK_PRIVACY: PUBLIC_TO_EVERYONE
+          REQUIRED_PLATFORMS: youtube,instagram
         run: |
           ARGS=(--privacy "${IN_PRIVACY:-public}")
           if [ "$IN_DRYRUN" == "true" ]; then ARGS+=(--dry-run); fi

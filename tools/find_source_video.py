@@ -80,6 +80,7 @@ def channel_latest(url, depth):
         "quiet": True, "no_warnings": True, "noprogress": True,
         "extract_flat": "in_playlist", "skip_download": True,
         "playlist_items": f"1:{max(1, depth)}",
+        "socket_timeout": 15, "extractor_retries": 0,
     }
     cookie_file = os.environ.get("YT_COOKIES_FILE") or str(REPO_ROOT / "cookies.txt")
     if os.path.isfile(cookie_file):
