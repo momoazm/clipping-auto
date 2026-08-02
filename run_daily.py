@@ -70,9 +70,25 @@ def _extract_json(text):
 def run_tool(script, *args):
     cmd = [sys.executable, str(TOOLS / script), *map(str, args)]
     log("->", script, *[a for a in args])
-    # A blocked YouTube listing must not consume the whole daily slot. Keep media/LLM tools
-    # generous, but bound the source picker separately so the next channel can be tried.
-    timeout = 120 if script == "find_source_video.py" else 900
+    # A blocked source must not consume the whole daily slot. Keep transcription/rendering
+    # generous, but bound each network/media child so the source-attempt loop can advance.
+    tool_timeouts = {
+        "find_source_video.py": 120,
+        "download_video.py": 300,
+        "transcribe_video.py": 600,
+        "select_clips.py": 300,
+        "reframe_crop.py": 300,
+        "plan_effects.py": 120,
+        "build_captions.py": 120,
+        "render_clip.py": 300,
+        "generate_hashtags.py": 120,
+        "build_sfx.py": 120,
+        "host_public.py": 240,
+        "upload_youtube.py": 300,
+        "upload_instagram.py": 300,
+        "upload_tiktok.py": 300,
+    }
+    timeout = tool_timeouts.get(script, 900)
     try:
         proc = subprocess.run(cmd, cwd=str(HERE), capture_output=True,
                               text=True, encoding="utf-8", errors="replace", timeout=timeout)

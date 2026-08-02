@@ -15,8 +15,11 @@ Prints JSON: {"path","title","duration","width","height","url","id"}
 """
 import argparse
 import os
+import time
 
 from _common import load_env, emit, fail, ffmpeg_bin, tmp_path, FFmpegMissing, REPO_ROOT
+
+DOWNLOAD_DEADLINE_SEC = 240.0
 
 
 def main():
@@ -68,6 +71,15 @@ def main():
         "noprogress": True,
         "ffmpeg_location": ffmpeg_dir,
         "overwrites": True,
+        # A blocked source must move on to the next candidate instead of holding a scheduled
+        # run through every yt-dlp retry/fragment retry. The route chain already provides the
+        # fallback diversity; retries here only turn a fast failure into a long stall.
+        "socket_timeout": 15,
+        "retries": 0,
+        "fragment_retries": 0,
+        "extractor_retries": 0,
+        "file_access_retries": 0,
+        "concurrent_fragment_downloads": 4,
     }
 
     # On cloud/datacenter IPs (e.g. GitHub Actions) YouTube demands "confirm you're not
@@ -100,12 +112,16 @@ def main():
         (["android"], True),
     ]
 
+    deadline = time.monotonic() + DOWNLOAD_DEADLINE_SEC
+
     def try_chain(floor):
         """Run the whole client/route chain demanding >= floor. Returns
         (info, path, degraded, last_err) -- degraded means at least one route
         answered but only with a ladder below the floor."""
         info, final_path, degraded, last_err = None, None, False, None
         for clients, use_proxy in attempts:
+            if time.monotonic() >= deadline:
+                break
             opts = dict(base_opts)
             opts["format"] = (f"bv*[height<={h}][height>={floor}]+ba/b[height<={h}][height>={floor}]/"
                               f"bv*[height>={floor}]+ba/b[height>={floor}]")
