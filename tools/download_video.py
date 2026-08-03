@@ -32,6 +32,7 @@ def _download_attempt(url, out_base, clients, use_proxy, fmt, ffmpeg_dir, cookie
            "--format-sort", "res,vcodec:h264,acodec:m4a", "--merge-output-format", "mp4",
            "--output", out_base + ".%(ext)s", "--no-playlist", "--quiet", "--no-warnings",
            "--no-progress", "--force-overwrites", "--print-json", "--ffmpeg-location", ffmpeg_dir,
+           "--force-ipv4",
            "--socket-timeout", "15", "--retries", "0", "--fragment-retries", "0",
            "--extractor-retries", "0", "--file-access-retries", "0", "--concurrent-fragments", "4"]
     if clients:
@@ -153,9 +154,12 @@ def main():
         # bot-walled datacenter IP the default fails fast and the POT-covered chain below
         # still gets its shot, so this costs the cloud path nothing.
         (None, False),
+        (["android_vr"], True),
+        (["web_safari"], True),
         (["tv"], True),
         (["web"], True),
         (["tv", "web"], False),
+        (["ios"], True),
         (["android"], True),
     ]
 
