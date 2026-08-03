@@ -12,9 +12,9 @@ Selection logic (mirrors the user's spec):
      rank order) and take the first unused one, so the job still produces something.
   4. If everything is already used, fail cleanly -> the day is skipped (no repeats).
 
-"Used" = already clipped, plus a short cooldown for failed attempts (run_daily records every
-source it picks), plus anything passed via --exclude this run. This keeps a transient failure from
-blacklisting the entire channel forever while still preventing immediate repeats.
+"Used" = every source already clipped or reserved by a prior run (run_daily records every
+source it picks), plus anything passed via --exclude this run. A source reservation is permanent,
+so a transient failure cannot make the same long-form video re-enter the feed later.
 
 Usage:
     python tools/find_source_video.py [--config config/channels.json] \
@@ -23,14 +23,10 @@ Usage:
 Prints JSON: {"video_id","url","title","channel","reason"}  (or {"error": ...}).
 """
 import argparse
-import datetime
 import json
 import os
 
 from _common import emit, fail, REPO_ROOT
-
-ATTEMPT_RETRY_DAYS = 2
-
 
 def load_json(path, default):
     try:
@@ -41,8 +37,9 @@ def load_json(path, default):
 
 
 def history_ids(state):
-    """Source ids we must never re-pick: both successfully `clipped` and previously
-    `attempted` (a failed run still records its source so it isn't retried forever).
+    """Return every source id that has ever been clipped or reserved.
+    Selecting a source is a permanent reservation: even a failed or partial run must not
+    make the same long-form video eligible again.
     Accepts either a bare list or {"clipped":[...], "attempted":[...]}."""
     if isinstance(state, dict):
         clipped = state.get("clipped") or []
@@ -54,20 +51,10 @@ def history_ids(state):
         sid = rec.get("source_id") if isinstance(rec, dict) else rec
         if sid:
             ids.add(sid)
-    cutoff = datetime.date.today() - datetime.timedelta(days=ATTEMPT_RETRY_DAYS)
     for rec in attempted:
         sid = rec.get("source_id") if isinstance(rec, dict) else rec
         if not sid:
             continue
-        if isinstance(rec, dict):
-            try:
-                attempted_date = datetime.date.fromisoformat(str(rec.get("date", "")))
-            except ValueError:
-                attempted_date = datetime.date.today()
-            if attempted_date < cutoff:
-                continue
-        # Legacy bare-string attempts have no age; keep them excluded rather than unexpectedly
-        # reusing them after an upgrade.
         ids.add(sid)
     return ids
 

@@ -207,6 +207,36 @@ jobs:
           TIKTOK_EXPECTED_USERNAME: ${{ secrets.TIKTOK_EXPECTED_USERNAME || 'mrbeasteg' }}
         run: python tools/verify_accounts.py --instagram mrbeasteg --youtube itsmomoclips --tiktok "$TIKTOK_EXPECTED_USERNAME"
 
+      # Reserve the source in tracked history before download/transcription/rendering. This
+      # closes the runner-cancellation window: even if the expensive job is killed, the next
+      # run sees the reservation and cannot select the same long-form video again.
+      - name: Reserve source before processing
+        if: ${{ inputs.dry_run != true }}
+        env:
+          YTDLP_PROXY: socks5://127.0.0.1:40000
+          no_proxy: "127.0.0.1,localhost"
+          IN_LIMIT: ${{ inputs.limit }}
+          REQUIRED_PLATFORMS: youtube,instagram
+        run: |
+          ARGS=(--reserve-source)
+          if [ -n "$IN_LIMIT" ]; then ARGS+=(--limit "$IN_LIMIT"); fi
+          python run_daily.py "${ARGS[@]}"
+
+      - name: Commit source reservation
+        if: ${{ success() && inputs.dry_run != 'true' }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add state/clipped_history.json
+          if ! git diff --staged --quiet; then
+            git commit -m "chore: reserve clipping source [skip ci]"
+            git pull --rebase origin main
+            git push
+          else
+            echo "No source reservation change to commit."
+            exit 1
+          fi
+
       - name: Run daily clipping
         env:
           # Route yt-dlp (and only yt-dlp) through WARP -- see tools/download_video.py.
@@ -237,6 +267,7 @@ jobs:
           ARGS=(--privacy "${IN_PRIVACY:-public}")
           if [ "$IN_DRYRUN" == "true" ]; then ARGS+=(--dry-run); fi
           if [ -n "$IN_LIMIT" ]; then ARGS+=(--limit "$IN_LIMIT"); fi
+          if [ "$IN_DRYRUN" != "true" ]; then ARGS+=(--source-reservation .tmp/source_reservation.json); fi
           echo "run_daily.py ${ARGS[*]}"
           python run_daily.py "${ARGS[@]}"
 
@@ -263,7 +294,7 @@ jobs:
           git add state/clipped_history.json state/delivery_cooldowns.json
           if ! git diff --staged --quiet; then
             git commit -m "chore: update clipped history [skip ci]"
-            git pull --rebase origin main || true
+            git pull --rebase origin main
             git push
           else
             echo "No history change to commit."

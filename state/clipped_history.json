@@ -1,5 +1,5 @@
 {
-  "_note": "Source videos already clipped (so the daily job never repeats one). run_daily.py appends a record per processed source. This file is COMMITTED back by the GitHub Action after each run.",
+  "_note": "Every source in clipped OR attempted is permanently reserved so the daily job never repeats a long-form video. run_daily.py records the reservation before processing and the GitHub Action commits it before the upload job starts.",
   "clipped": [
     {
       "source_id": "__fmDj0ZJ1Q",

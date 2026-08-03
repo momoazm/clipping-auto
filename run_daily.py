@@ -17,12 +17,9 @@ DELIVERY_COOLDOWNS = HERE / "state" / "delivery_cooldowns.json"
 sys.path.insert(0, str(TOOLS))
 from _common import log_ig_post  # noqa: E402
 # Crash-safe local ledger: written the instant a source is picked, BEFORE any heavy
-# download/transcribe/render/upload. Untracked + gitignored, so `actions/checkout`
-# (clean: false) keeps it across runs on the same laptop -- unlike the tracked history
-# file, which checkout force-resets to the last PUSHED version. If the machine powers
-# off mid-run, the source is already recorded here, so the next run skips it and never
-# re-clips the same video. This is what survives a hard shutdown; clipped_history.json
-# (committed at the end) only survives a clean finish.
+# download/transcribe/render/upload. Untracked + gitignored for local runs, while the
+# GitHub workflow makes a tracked reservation commit before processing starts. Both ledgers
+# are permanent: once a source is selected, the same long-form video is never re-clipped.
 LEDGER = HERE / "state" / "attempted_local.json"
 
 try:
@@ -269,27 +266,18 @@ def delivery_budget_guard(required_platforms, requested, cfg, now=None):
     }
 
 def load_ledger_ids():
-    """Source ids picked by a prior run, with a short cooldown for failed attempts.
+    """Source ids picked by any prior local run.
 
-    The ledger exists to survive a hard shutdown, not to blacklist a source forever. A permanent
-    local skip list was one reason this pipeline eventually reported no_source after a transient
-    YouTube/API failure.
+    A local reservation is permanent, matching the tracked history used by Actions. This is
+    intentional: retrying a broken source later is how duplicate Shorts re-enter the feed.
     """
     data = load_json(LEDGER, {"attempted": []})
     records = (data.get("attempted") if isinstance(data, dict) else data) or []
     ids = set()
-    cutoff = datetime.date.today() - datetime.timedelta(days=2)
     for r in records:
         sid = r.get("source_id") if isinstance(r, dict) else r
         if not sid:
             continue
-        if isinstance(r, dict):
-            try:
-                picked_date = datetime.date.fromisoformat(str(r.get("date", "")))
-            except ValueError:
-                picked_date = datetime.date.today()
-            if picked_date < cutoff:
-                continue
         ids.add(sid)
     return ids
 
@@ -319,16 +307,22 @@ def mark_ledger(sid):
 
 
 def record_attempts(attempted_ids, dry_run):
-    """No-repeat memory: persist every source id we picked this run (success OR fail)
-    so a future run never re-selects it. The workflow commits this file back even when
-    the run fails, so a video that breaks once won't be retried forever. Dry runs don't
-    record (they're just tests)."""
+    """Persist every source id picked this run (success OR fail) as a permanent reservation.
+
+    The workflow commits this file even when processing fails. Dry runs deliberately do not
+    change the reservation history.
+    """
     if dry_run or not attempted_ids:
         return
     hist = load_json(HISTORY, {"clipped": []})
     if isinstance(hist, list):
         hist = {"clipped": hist}
-    seen = {r.get("source_id") if isinstance(r, dict) else r for r in hist.get("attempted", [])}
+    seen = set()
+    for key in ("clipped", "attempted"):
+        for record in hist.get(key, []) or []:
+            sid = record.get("source_id") if isinstance(record, dict) else record
+            if sid:
+                seen.add(sid)
     today = datetime.date.today().isoformat()
     changed = False
     for sid in attempted_ids:
@@ -337,8 +331,7 @@ def record_attempts(attempted_ids, dry_run):
             seen.add(sid)
             changed = True
     if changed:
-        with open(HISTORY, "w", encoding="utf-8") as f:
-            json.dump(hist, f, ensure_ascii=False, indent=2)
+        _atomic_write_json(HISTORY, hist)
         log(f"recorded {len(attempted_ids)} attempted source(s) to no-repeat memory")
 
 def ensure_sfx():
@@ -417,14 +410,23 @@ def main():
     # the cloud job resumes from the artifact with --source/--source-meta.
     ap.add_argument("--download-only", action="store_true",
                     help="Find + download the source, write .tmp/source_meta.json, then stop")
+    ap.add_argument("--reserve-source", action="store_true",
+                    help="Reserve one unused source in tracked history before processing")
     ap.add_argument("--source", default=None,
                     help="Process this pre-downloaded source file (skips find+download)")
     ap.add_argument("--source-meta", default=None,
                     help="Manifest written by --download-only (source info + attempted ids)")
+    ap.add_argument("--source-reservation", default=None,
+                    help="Process the source selected by --reserve-source")
     ap.add_argument("--required-platforms",
                     default=os.environ.get("REQUIRED_PLATFORMS", "youtube,instagram"),
                     help="Comma-separated destinations that must publish for a zero exit.")
     args = ap.parse_args()
+
+    if args.reserve_source and (args.dry_run or args.source or args.source_reservation):
+        raise RuntimeError("--reserve-source cannot be combined with --dry-run, --source, or --source-reservation")
+    if args.source and args.source_reservation:
+        raise RuntimeError("--source and --source-reservation are mutually exclusive")
 
     required_platforms = {p.strip().lower() for p in args.required_platforms.split(",") if p.strip()}
 
@@ -467,7 +469,46 @@ def main():
     ledger_ids = load_ledger_ids()
     if ledger_ids:
         log(f"ledger: skipping {len(ledger_ids)} source(s) picked by earlier run(s)")
-    video_attempts, attempted_videos = 0, []
+
+    # Actions reserves the source in a separate step and commits it before any expensive or
+    # cancellable work starts. The reservation is then consumed here explicitly instead of
+    # asking the finder again (which would see the reservation as already used).
+    reserved_src = None
+    reserved_attempts = []
+    if args.source_reservation:
+        reservation = load_json(args.source_reservation, {})
+        reserved_src = reservation.get("src") if isinstance(reservation, dict) else None
+        reserved_attempts = list(reservation.get("attempted") or []) if isinstance(reservation, dict) else []
+        if not isinstance(reserved_src, dict) or not reserved_src.get("video_id") or not reserved_src.get("url"):
+            raise RuntimeError(f"invalid or missing source reservation: {args.source_reservation}")
+        if reserved_src["video_id"] not in reserved_attempts:
+            reserved_attempts.append(reserved_src["video_id"])
+
+    if args.reserve_source:
+        exclude = ",".join(sorted(ledger_ids))
+        try:
+            reserved_src = run_tool("find_source_video.py", "--exclude", exclude)
+        except Exception as e:
+            log("no source video to reserve:", e)
+            print(json.dumps({"status": "no_source", "detail": str(e)}))
+            sys.exit(1)
+        reserved_attempts = [reserved_src["video_id"]]
+        mark_ledger(reserved_src["video_id"])
+        # This write is the payload committed by the workflow's reservation step. If the
+        # later render/upload job is cancelled, the source is still permanently skipped.
+        record_attempts(reserved_attempts, dry_run=False)
+        reservation_path = TMP / "source_reservation.json"
+        _atomic_write_json(reservation_path, {
+            "src": reserved_src,
+            "attempted": reserved_attempts,
+            "reserved_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        })
+        print(json.dumps({"status": "reserved", "video_id": reserved_src["video_id"],
+                          "title": reserved_src.get("title"),
+                          "reservation": str(reservation_path)}, indent=2))
+        return
+
+    video_attempts, attempted_videos = 0, list(reserved_attempts)
     clips = []
     src_path = ""
     src_title = ""
@@ -482,6 +523,16 @@ def main():
         attempted_videos = list(manifest.get("attempted") or [])
         if src.get("video_id") and src["video_id"] not in attempted_videos:
             attempted_videos.append(src["video_id"])
+        clipped_history = load_json(HISTORY, {"clipped": []})
+        clipped_records = clipped_history.get("clipped", []) if isinstance(clipped_history, dict) else []
+        clipped_ids = {
+            record.get("source_id") if isinstance(record, dict) else record
+            for record in clipped_records or []
+        }
+        if src.get("video_id") in clipped_ids:
+            raise RuntimeError(
+                f"refusing to process already-clipped source {src['video_id']}"
+            )
         src_path = args.source
         src_title = src.get("title") or "Video"
         try:
@@ -499,21 +550,27 @@ def main():
     while not args.source and video_attempts < max_video_attempts:
         video_attempts += 1
         try:
-            # Tell the finder which sources to skip: ones we already tried this run PLUS
-            # the crash-safe ledger (sources an earlier interrupted run already picked),
-            # so it advances to the next video/channel instead of handing back a repeat.
-            exclude = ",".join(attempted_videos + sorted(ledger_ids - set(attempted_videos)))
-            src = run_tool("find_source_video.py", "--exclude", exclude)
+            if reserved_src is not None:
+                # The source was already reserved and pushed by the workflow preflight.
+                src = reserved_src
+                reserved_src = None
+            else:
+                # Tell the finder which sources to skip: ones we already tried this run PLUS
+                # the crash-safe ledger (sources an earlier interrupted run already picked),
+                # so it advances to the next video/channel instead of handing back a repeat.
+                exclude = ",".join(attempted_videos + sorted(ledger_ids - set(attempted_videos)))
+                src = run_tool("find_source_video.py", "--exclude", exclude)
         except Exception as e:
             log("no source video to clip today:", e)
             record_attempts(attempted_videos, args.dry_run)
             print(json.dumps({"status": "no_source", "detail": str(e)}))
             return
 
-        attempted_videos.append(src["video_id"])
+        if src["video_id"] not in attempted_videos:
+            attempted_videos.append(src["video_id"])
         # Flush to the crash-safe ledger NOW, before any download/render/upload. If the
-        # laptop dies at any point below, this source is already recorded on disk and the
-        # next run skips it -> no repeated video/clips. Dry runs are tests, so skip.
+        # local runner dies at any point below, this source is already recorded on disk and
+        # the next run skips it -> no repeated video/clips. Dry runs are tests, so skip.
         if not args.dry_run:
             mark_ledger(src["video_id"])
 
@@ -535,6 +592,7 @@ def main():
                             "attempted": attempted_videos}
                 with open(TMP / "source_meta.json", "w", encoding="utf-8") as f:
                     json.dump(manifest, f, ensure_ascii=False, indent=2)
+                record_attempts(attempted_videos, args.dry_run)
                 print(json.dumps({"status": "downloaded", "video_id": src["video_id"],
                                   "title": src_title, "path": src_path,
                                   "width": dl.get("width"), "height": dl.get("height"),
