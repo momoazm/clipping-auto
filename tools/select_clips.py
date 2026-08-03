@@ -303,8 +303,12 @@ def main():
         fail("Transcript has no usable text/timestamps.", transcript=tpath)
         return
 
+    # Ask for a small buffer of candidates. The best six can overlap in a long transcript;
+    # collecting extra ranked options lets the non-overlap pass fill the requested six slots
+    # without accepting weaker moments or cutting a winner in half.
+    candidate_request_count = args.count + max(3, args.count // 2)
     prompt = PROMPT_TMPL.format(
-        count=args.count, target=args.target_secs, maxs=args.max_secs, body=body)
+        count=candidate_request_count, target=args.target_secs, maxs=args.max_secs, body=body)
 
     configured_chain = tuple((name, fn) for name, fn in CHAIN if _provider_configured(name))
     if not configured_chain:
@@ -362,7 +366,9 @@ def main():
             kept.append(c)
     kept = kept[: args.count]
 
-    payload = {"provider": provider, "count": len(kept), "clips": kept}
+    payload = {"provider": provider, "count": len(kept),
+               "target_count": args.count, "candidates_requested": candidate_request_count,
+               "clips": kept}
     if provider != "groq":
         payload["note"] = f"Primary failed; used {provider}."
     with open(out_path, "w", encoding="utf-8") as f:

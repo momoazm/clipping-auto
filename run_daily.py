@@ -289,7 +289,9 @@ def main():
     max_video_attempts = int(cfg.get("max_video_attempts", 5))
 
     summary = {"date": datetime.date.today().isoformat(), "dry_run": args.dry_run,
-               "clips_requested": clips_per_day, "minimum_clips_required": min_clips_per_run,
+               "clips_requested": clips_per_day,
+               "target_clips_per_source_video": clips_per_day,
+               "minimum_clips_required": min_clips_per_run,
                "uploaded": [], "errors": [], "required_platforms": sorted(required_platforms)}
     # Crash-safe skip list: sources a prior interrupted run already picked on this machine.
     ledger_ids = load_ledger_ids()
@@ -386,6 +388,9 @@ def main():
         record_attempts(attempted_videos, args.dry_run)
         sys.exit(1)
     summary["clips_selected"] = len(clips)
+    if len(clips) < clips_per_day:
+        log(f"clip selector returned {len(clips)} of target {clips_per_day}; "
+            f"continuing only because the minimum is {min_clips_per_run}")
 
     uploaded_ids = []
     for idx, clip in enumerate(clips, start=1):
