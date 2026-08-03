@@ -249,6 +249,7 @@ jobs:
           name: momobeast-clips-${{ github.run_id }}
           path: .tmp/short_*.mp4
           if-no-files-found: warn
+          include-hidden-files: true
           retention-days: 7
 
       # always() so the no-repeat memory is committed even when the run FAILS -- that's
