@@ -55,7 +55,8 @@ concurrency:
 jobs:
   clip-and-upload:
     runs-on: ubuntu-latest
-    # Three bounded source attempts (plus render) must finish well before the next daily slot.
+    # Five bounded source attempts (plus render) provide enough quality-gated fallbacks on a
+    # bot-limited YouTube day while staying well inside the 60-minute job timeout.
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v5

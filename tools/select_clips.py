@@ -9,9 +9,10 @@ fits a Short.
 The model only proposes approximate spans; we then SNAP each span to real word
 boundaries from the transcript and clamp it to < 60 s so the cut lands cleanly.
 
-LLM providers are tried best-first, exactly like extract_article.py:
-Groq -> Cerebras -> Gemini -> Mistral -> OpenRouter (each used only if its key is
-set; one that errors or is rate-limited is skipped). A whole-chain failure surfaces.
+LLM providers are tried best-first, exactly like extract_article.py. Only providers
+with a configured key are called; each call has a bounded timeout, and a malformed or
+too-short response falls through to the next configured provider. A whole-chain failure
+surfaces instead of hanging the daily workflow until its job timeout.
 
 Usage:
     python tools/select_clips.py [--transcript .tmp/transcript.json] [--count 3] \
@@ -109,12 +110,36 @@ def _strip_fences(text):
 
 # --- provider chain (OpenAI-compatible + Gemini + Groq SDK) ----------------
 
+def _provider_timeout():
+    """Return a bounded per-provider timeout so one dead API cannot stall the chain."""
+    try:
+        return max(15.0, min(90.0, float(os.environ.get("CLIP_PROVIDER_TIMEOUT_SEC", "45"))))
+    except (TypeError, ValueError):
+        return 45.0
+
+
+def _provider_configured(name):
+    """Avoid spending timeout budget on providers whose secrets are not present in CI."""
+    if name.startswith("openrouter-"):
+        return bool(os.environ.get("OPENROUTER_API_KEY"))
+    if name == "zhipu":
+        return bool(os.environ.get("ZHIPU_API_KEY"))
+    if name == "groq":
+        return bool(os.environ.get("GROQ_API_KEY"))
+    if name == "cerebras":
+        return bool(os.environ.get("CEREBRAS_API_KEY"))
+    if name == "gemini":
+        return bool(os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY"))
+    if name == "mistral":
+        return bool(os.environ.get("MISTRAL_API_KEY"))
+    return True
+
 def _chat_groq(prompt):
     from groq import Groq
     key = os.environ.get("GROQ_API_KEY")
     if not key:
         raise RuntimeError("GROQ_API_KEY not set")
-    client = Groq(api_key=key)
+    client = Groq(api_key=key, timeout=_provider_timeout(), max_retries=0)
     r = client.chat.completions.create(
         model=os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b"),
         messages=[{"role": "system", "content": SYSTEM}, {"role": "user", "content": prompt}],
@@ -140,7 +165,7 @@ def _chat_openai_compatible(prompt, base_url, key_env, default_model, model_env,
             "messages": [{"role": "system", "content": SYSTEM}, {"role": "user", "content": prompt}],
             "temperature": 0.5,
         },
-        timeout=90,
+        timeout=_provider_timeout(),
     )
     resp.raise_for_status()
     out = (resp.json()["choices"][0]["message"]["content"] or "").strip()
@@ -159,7 +184,7 @@ def _chat_gemini(prompt):
         f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
         params={"key": key},
         json={"contents": [{"parts": [{"text": SYSTEM + "\n\n" + prompt}]}]},
-        timeout=90,
+        timeout=_provider_timeout(),
     )
     resp.raise_for_status()
     parts = resp.json().get("candidates", [{}])[0].get("content", {}).get("parts", [])
@@ -281,24 +306,34 @@ def main():
     prompt = PROMPT_TMPL.format(
         count=args.count, target=args.target_secs, maxs=args.max_secs, body=body)
 
-    raw, provider, errors = None, None, {}
-    for name, fn in CHAIN:
+    configured_chain = tuple((name, fn) for name, fn in CHAIN if _provider_configured(name))
+    if not configured_chain:
+        fail("No LLM provider is configured for clip selection.",
+             expected_keys=["GROQ_API_KEY", "GEMINI_API_KEY"])
+        return
+
+    # MrBeast runs require multiple clips. If a provider returns malformed JSON or fewer than
+    # two candidates, try the next configured provider rather than letting run_daily spend the
+    # remaining source-attempt budget on an unusable response.
+    minimum_candidates = min(args.count, 2)
+    candidates, provider, errors = None, None, {}
+    for name, fn in configured_chain:
         try:
             raw = fn(prompt)
-            provider = name
+            data = json.loads(_strip_fences(raw))
+            parsed = data["clips"] if isinstance(data, dict) else data
+            if not isinstance(parsed, list) or len(parsed) < minimum_candidates:
+                raise RuntimeError(
+                    f"provider returned {len(parsed) if isinstance(parsed, list) else 0} usable "
+                    f"candidates; need at least {minimum_candidates}"
+                )
+            candidates, provider = parsed, name
             break
         except Exception as e:
             errors[name] = str(e)
             continue
-    if raw is None:
-        fail("All LLM providers failed for clip selection.", provider_errors=errors)
-        return
-
-    try:
-        data = json.loads(_strip_fences(raw))
-        candidates = data["clips"] if isinstance(data, dict) else data
-    except Exception as e:
-        fail(f"Could not parse LLM JSON ({provider}): {e}", raw_head=raw[:500])
+    if candidates is None:
+        fail("All configured LLM providers failed for clip selection.", provider_errors=errors)
         return
 
     clips = []

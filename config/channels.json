@@ -3,7 +3,7 @@
   "clips_per_day": 6,
   "min_clips_per_run": 2,
   "scan_depth": 60,
-  "max_video_attempts": 3,
+  "max_video_attempts": 5,
   "target_secs": 35,
   "max_secs": 60,
   "channels": [

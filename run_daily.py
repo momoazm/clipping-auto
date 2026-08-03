@@ -76,7 +76,10 @@ def run_tool(script, *args):
         "find_source_video.py": 120,
         "download_video.py": 300,
         "transcribe_video.py": 600,
-        "select_clips.py": 300,
+        # The selector may try the configured Gemini/Groq fallbacks, but each provider call is
+        # bounded inside select_clips.py. Leave enough room for the whole configured chain while
+        # still returning to the source-attempt loop well before the 60-minute Actions timeout.
+        "select_clips.py": 360,
         "reframe_crop.py": 300,
         "plan_effects.py": 120,
         "build_captions.py": 120,
