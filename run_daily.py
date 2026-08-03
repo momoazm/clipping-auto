@@ -268,13 +268,25 @@ def main():
     TMP.mkdir(parents=True, exist_ok=True)
     cfg = load_json(CONFIG, {})
     clips_per_day = int(cfg.get("clips_per_day", 6))
-    if args.limit:
+    min_clips_per_run = int(cfg.get("min_clips_per_run", 2))
+    if min_clips_per_run < 2:
+        raise RuntimeError("config min_clips_per_run must be at least 2")
+    if args.limit is not None:
+        if args.limit < min_clips_per_run:
+            raise RuntimeError(
+                f"--limit {args.limit} would violate the minimum of {min_clips_per_run} clips per run"
+            )
         clips_per_day = min(clips_per_day, args.limit)
+    if clips_per_day < min_clips_per_run:
+        raise RuntimeError(
+            f"config clips_per_day ({clips_per_day}) is below the minimum of {min_clips_per_run} clips per run"
+        )
     target = int(cfg.get("target_secs", 35))
     maxs = int(cfg.get("max_secs", 60))
     max_video_attempts = int(cfg.get("max_video_attempts", 5))
 
     summary = {"date": datetime.date.today().isoformat(), "dry_run": args.dry_run,
+               "clips_requested": clips_per_day, "minimum_clips_required": min_clips_per_run,
                "uploaded": [], "errors": [], "required_platforms": sorted(required_platforms)}
     # Crash-safe skip list: sources a prior interrupted run already picked on this machine.
     ledger_ids = load_ledger_ids()
@@ -302,6 +314,10 @@ def main():
             run_tool("transcribe_video.py", "--in", src_path)
             sel = run_tool("select_clips.py", "--count", clips_per_day, "--target-secs", target, "--max-secs", maxs)
             clips = sel.get("clips", [])
+            if len(clips) < min_clips_per_run:
+                raise RuntimeError(
+                    f"clip selector returned {len(clips)} clip(s); need at least {min_clips_per_run}"
+                )
         except Exception as e:
             log(f"pre-downloaded source {src.get('video_id')} failed:", e)
 
@@ -353,6 +369,10 @@ def main():
             run_tool("transcribe_video.py", "--in", src_path)
             sel = run_tool("select_clips.py", "--count", clips_per_day, "--target-secs", target, "--max-secs", maxs)
             clips = sel.get("clips", [])
+            if len(clips) < min_clips_per_run:
+                raise RuntimeError(
+                    f"clip selector returned {len(clips)} clip(s); need at least {min_clips_per_run}"
+                )
             break
         except Exception as e:
             log(f"source {src.get('video_id')} failed (attempt {video_attempts}/{max_video_attempts}):", e)
@@ -362,6 +382,7 @@ def main():
         log("Failed to find or process clips.")
         record_attempts(attempted_videos, args.dry_run)
         sys.exit(1)
+    summary["clips_selected"] = len(clips)
 
     uploaded_ids = []
     for idx, clip in enumerate(clips, start=1):
@@ -455,6 +476,7 @@ def main():
 
     successful_entries = [e for e in summary["uploaded"]
                           if e.get("video_id") or e.get("instagram_media_id") or e.get("tiktok_publish_id")]
+    summary["clips_with_any_upload"] = len(successful_entries)
     if not args.dry_run and successful_entries:
         hist = load_json(HISTORY, {"clipped": []})
         if isinstance(hist, list):

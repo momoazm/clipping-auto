@@ -1,6 +1,7 @@
 {
   "_note": "MrBeast source channels in SUBSCRIBER-RANK (priority) order. find_source_video.py picks the newest UNCLIPPED upload from the highest-priority channel that has one; if no channel has a brand-new upload it falls back to popular_fallback IDs, then to a deeper recent-backlog scan. Edit freely (add language/other channels, reorder, extend popular_fallback).",
   "clips_per_day": 6,
+  "min_clips_per_run": 2,
   "scan_depth": 60,
   "max_video_attempts": 3,
   "target_secs": 35,

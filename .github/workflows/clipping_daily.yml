@@ -39,7 +39,7 @@ on:
         options: [public, unlisted, private]
         default: public
       limit:
-        description: "Max clips this run (blank = config default of 6)"
+        description: "Max clips this run (blank = config default of 6; minimum 2)"
         type: string
         default: ""
 

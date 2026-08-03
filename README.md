@@ -4,6 +4,10 @@
 short clips for upload.
 
 - **Status:** Active — cloud-scheduled (GitHub-hosted), daily to YouTube @itsmomoclips + Instagram @mrbeasteg.
+- **Multiple-clips guard:** each scheduled/manual publishing run must select at least two distinct
+  MrBeast clips (`config/channels.json:min_clips_per_run`) and checks every selected clip for the
+  required YouTube + Instagram delivery. A selector result with only one clip fails the source
+  attempt instead of silently uploading a single Short.
 - **2026-07-08:** Download fix — WARP-alone was getting YouTube-bot-walled (killed posting for
   >1 day); added the free BgUtils PO-token provider (Docker localhost:4416 + yt-dlp plugin),
   verified via dry-run. `reframe_crop.py` is now motion-aware (follows the action in faceless
