@@ -41,6 +41,8 @@ The hook is the most important factor for virality. For each clip:
   stakes or a big number ("$1,000,000", "last person to leave"), a shocking/surprising turn,
   visible conflict or competition, or a raw emotional peak. Pick the moment with the most of these.
 - It must be a self-contained thought that makes sense with NO prior context.
+- For comedy/MrBeast moments, include only enough setup to understand the joke (usually 0.75-1.5
+  seconds), then keep the full reaction/punchline. Do not cut away at the first laugh or reveal.
 - Cut cleanly: don't start mid-word or end before the payoff lands. End on a punchline,
   resolution, or a cliffhanger that rewards finishing (which lifts completion + loops).
 - Target length about {target} seconds; HARD MAX {maxs} seconds. Shorter, tighter clips finish
@@ -216,7 +218,9 @@ def snap_to_words(words, start, end, target_secs, max_secs, min_secs=20):
     if not words:
         return start, end
     start_w = min(words, key=lambda w: abs(w["start"] - start))
-    s = start_w["start"]
+    # A tiny lead-in makes a selected joke/reveal understandable without bringing back the old
+    # slow setup. The LLM still owns the moment; this only prevents a hard cut on the first word.
+    s = max(0.0, start_w["start"] - 0.85)
 
     desired = end - s
     if desired < min_secs:        # model gave a degenerate/near-zero span

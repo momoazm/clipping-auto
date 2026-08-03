@@ -328,7 +328,11 @@ def main():
 
         try:
             src_path = str(TMP / "source.mp4")
-            dl = run_tool("download_video.py", "--url", src["url"], "--out", src_path)
+            # Preserve the highest useful source detail before the 1080x1920 crop. MrBeast's
+            # wide challenge videos often expose a 1440p/2160p ladder; silently capping at 1080p
+            # makes the vertical crop visibly soft.
+            dl = run_tool("download_video.py", "--url", src["url"], "--out", src_path,
+                          "--max-height", "2160", "--min-height", "1080")
             src_path = dl.get("path", src_path)
             log(f"downloaded source at {dl.get('width')}x{dl.get('height')}")  # visible res check
             src_title = src.get("title") or "Video"

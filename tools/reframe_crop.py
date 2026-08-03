@@ -387,7 +387,7 @@ def render_track(video, start, dur, crop_w, src_h, cmds_text, out_path):
         ffmpeg_bin(), "-y", "-ss", f"{start:.3f}", "-t", f"{dur:.3f}",
         "-i", os.path.abspath(video),
         "-vf", vf, "-map", "0:v:0", "-map", "0:a:0?",
-        "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
+        "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-pix_fmt", "yuv420p",
         "-c:a", "aac", "-b:a", "160k", os.path.abspath(out_path),
     ]
     run(cmd, cwd=str(TMP_DIR))
@@ -404,7 +404,7 @@ def render_letterbox(video, start, dur, out_path):
     cmd = [
         ffmpeg_bin(), "-y", "-ss", f"{start:.3f}", "-t", f"{dur:.3f}", "-i", str(video),
         "-vf", vf, "-map", "0:v:0", "-map", "0:a:0?",
-        "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
+        "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-pix_fmt", "yuv420p",
         "-c:a", "aac", "-b:a", "160k", str(out_path),
     ]
     run(cmd)

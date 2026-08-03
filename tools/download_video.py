@@ -9,7 +9,7 @@ _common.ffmpeg_bin(), so it works even when ffmpeg isn't on PATH.
 
 Usage:
     python tools/download_video.py --url "https://youtu.be/..." \
-        [--out .tmp/source.mp4] [--max-height 1080]
+        [--out .tmp/source.mp4] [--max-height 2160]
 
 Prints JSON: {"path","title","duration","width","height","url","id"}
 """
@@ -71,7 +71,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--url", required=True)
     parser.add_argument("--out", default=None, help="Output path (default .tmp/source.mp4)")
-    parser.add_argument("--max-height", type=int, default=1440)
+    parser.add_argument("--max-height", type=int, default=2160,
+                        help="Highest source height to fetch before the 1080x1920 vertical render")
     parser.add_argument("--min-height", type=int, default=1080,
                         help="Refuse to download below this. A soft-bot-detected YouTube response "
                              "withholds the HD ladder and offers only <=360p -- better NO clip "
@@ -96,9 +97,10 @@ def main():
 
     h, lo = args.max_height, args.min_height
     base_opts = {
-        # BEST QUALITY between `lo` (default 1080) and `h` (default 1440), 2026-07-09: the source
+        # BEST QUALITY between `lo` (default 1080) and `h` (default 2160): the source
         # is 16:9 but the Short is a 9:16 vertical CROP of it, so a higher-res source = a sharper
-        # crop (a 1080p source crops to a ~600px column -> upscaled -> soft; 1440p -> ~810px).
+        # crop (a 1080p source crops to a ~600px column -> upscaled -> soft; 2160p gives a much
+        # sharper vertical crop when MrBeast's wide challenge footage is available at that size).
         # `format_sort` picks the HIGHEST resolution first, then H.264 (avc1) ONLY as a same-res
         # tie-break: avc1 tops out at 1080, so <=1080 stays light avc1 while 1440 comes as VP9/AV1
         # (fine on the cloud runner's RAM). The [height>={lo}] FLOOR is the fix for the real bug:
