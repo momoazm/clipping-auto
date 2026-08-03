@@ -20,13 +20,12 @@ name: Daily MrBeast clipping
 
 on:
   schedule:
-    # TWO runs a day, each clipping a DIFFERENT source video (the committed no-repeat
-    # history makes the second run skip the first run's pick) -> up to 2x clips_per_day
-    # Shorts daily. Crons fire ~40 min early; the hold step releases at the exact slot.
-    #   16:30 UTC = 12:30pm New York / 7:30pm Cairo  (US midday Shorts window)
-    #   22:30 UTC =  6:30pm New York / 1:30am Cairo  (US evening Shorts window)
+    # One scheduled six-clip source run per day. The connected Zernio accounts returned
+    # a rolling 24-hour rate limit after the first six posts, so a second blind slot was
+    # creating partial deliveries. Manual dispatch remains available with a lower limit
+    # after the rolling budget clears. Cron fires ~40 min early; the hold step releases
+    # at the exact slot: 16:30 UTC = 12:30pm New York / 7:30pm Cairo.
     - cron: "50 15 * * *"
-    - cron: "50 21 * * *"
   workflow_dispatch:
     inputs:
       dry_run:
@@ -46,8 +45,8 @@ on:
 permissions:
   contents: write
 
-# The two scheduled slots share .tmp/, source history, and upload quotas. Queue a second run
-# instead of letting concurrent runners race on the same source/final.mp4.
+# A manual dispatch and the scheduled run share .tmp/, source history, and upload quotas.
+# Queue a second run instead of letting concurrent runners race on the same source/final.mp4.
 concurrency:
   group: clipping-auto-daily
   cancel-in-progress: false
@@ -67,7 +66,7 @@ jobs:
           python3 - <<'EOF'
           # GitHub cron fires early on purpose (and drifts); pin the real start to the slot.
           import datetime, time
-          SLOTS_UTC = ["16:30", "22:30"]
+          SLOTS_UTC = ["16:30"]
           now = datetime.datetime.now(datetime.timezone.utc)
           waits = []
           for s in SLOTS_UTC:
@@ -233,6 +232,7 @@ jobs:
           TIKTOK_EXPECTED_USERNAME: ${{ secrets.TIKTOK_EXPECTED_USERNAME || 'mrbeasteg' }}
           TIKTOK_PRIVACY: PUBLIC_TO_EVERYONE
           REQUIRED_PLATFORMS: youtube,instagram
+          KEEP_RENDERED_CLIPS: ${{ github.event_name == 'workflow_dispatch' && '1' || '0' }}
         run: |
           ARGS=(--privacy "${IN_PRIVACY:-public}")
           if [ "$IN_DRYRUN" == "true" ]; then ARGS+=(--dry-run); fi
@@ -240,8 +240,8 @@ jobs:
           echo "run_daily.py ${ARGS[*]}"
           python run_daily.py "${ARGS[@]}"
 
-      # Dry-runs keep the rendered Shorts for local/competitor-quality review.  Upload them
-      # before any later cleanup/commit step so a green build cannot hide a missing MP4.
+      # Manual dispatches keep the rendered Shorts for local/competitor-quality review.
+      # Upload them before any later cleanup/commit step so a build cannot hide a missing MP4.
       - name: Upload generated clipping videos for inspection
         if: always()
         uses: actions/upload-artifact@v4
@@ -259,7 +259,7 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add state/clipped_history.json
+          git add state/clipped_history.json state/delivery_cooldowns.json
           if ! git diff --staged --quiet; then
             git commit -m "chore: update clipped history [skip ci]"
             git pull --rebase origin main || true

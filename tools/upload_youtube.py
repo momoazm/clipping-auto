@@ -89,6 +89,19 @@ def main():
     headers = {"Authorization": f"Bearer {api_key}", "x-request-id": str(uuid.uuid4())}
     try:
         r = httpx.post(f"{ZERNIO_API}/posts", json=payload, headers=headers, timeout=60)
+        if r.status_code == 429:
+            try:
+                body = r.json()
+            except Exception:
+                body = {}
+            details = body.get("details") if isinstance(body, dict) else {}
+            details = details if isinstance(details, dict) else {}
+            fail(
+                f"Zernio HTTP 429: {body.get('error') or 'account temporarily rate-limited'}",
+                platform="youtube", status_code=429, rate_limited=True,
+                rate_limited_until=details.get("rateLimitedUntil"),
+                retry_after=r.headers.get("Retry-After"),
+            )
         r.raise_for_status()
         post = r.json().get("post", {})
     except Exception as e:

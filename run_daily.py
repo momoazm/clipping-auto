@@ -12,6 +12,7 @@ TOOLS = HERE / "tools"
 TMP = HERE / ".tmp"
 CONFIG = HERE / "config" / "channels.json"
 HISTORY = HERE / "state" / "clipped_history.json"
+DELIVERY_COOLDOWNS = HERE / "state" / "delivery_cooldowns.json"
 
 sys.path.insert(0, str(TOOLS))
 from _common import log_ig_post  # noqa: E402
@@ -29,6 +30,10 @@ try:
     load_dotenv(HERE / "API.env")
 except ImportError:
     pass
+
+# Manual dispatches keep finished Shorts in the Actions artifact so the actual
+# encoded files can be reviewed. Scheduled runs still clean up after delivery.
+KEEP_RENDERED_CLIPS = os.environ.get("KEEP_RENDERED_CLIPS") == "1"
 
 # --- Zernio secret keys (passed as env vars by the workflow; in API.env for local runs) ---
 IG_ENABLED = bool(os.environ.get("ZERNIO_API")) and bool(os.environ.get("ZERNIO_INSTAGRAM_ID"))
@@ -67,6 +72,31 @@ def _extract_json(text):
             return None
     return None
 
+
+class ToolError(RuntimeError):
+    """A child tool returned a structured JSON error."""
+
+    def __init__(self, script, data):
+        self.script = script
+        self.data = data if isinstance(data, dict) else {}
+        super().__init__(f"{script}: {self.data.get('error') or 'tool failed'}")
+
+
+def _error_data(exc):
+    return exc.data if isinstance(exc, ToolError) else {}
+
+
+def _parse_utc(value):
+    if not value:
+        return None
+    try:
+        parsed = datetime.datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=datetime.timezone.utc)
+    return parsed.astimezone(datetime.timezone.utc)
+
 def run_tool(script, *args):
     cmd = [sys.executable, str(TOOLS / script), *map(str, args)]
     log("->", script, *[a for a in args])
@@ -101,7 +131,7 @@ def run_tool(script, *args):
     if data is None:
         raise RuntimeError(f"{script}: no JSON output (exit {proc.returncode}). stderr: {(proc.stderr or '')[-400:]}")
     if isinstance(data, dict) and data.get("error"):
-        raise RuntimeError(f"{script}: {data['error']}")
+        raise ToolError(script, data)
     return data
 
 def load_json(path, default):
@@ -110,6 +140,133 @@ def load_json(path, default):
             return json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         return default
+
+
+def _atomic_write_json(path, data):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.name + ".tmp")
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp, path)
+
+
+def load_delivery_cooldowns():
+    data = load_json(DELIVERY_COOLDOWNS, {})
+    return data if isinstance(data, dict) else {}
+
+
+def save_delivery_cooldown(platform, metadata):
+    """Remember a provider account cooldown so the next run does not retry blindly."""
+    now = datetime.datetime.now(datetime.timezone.utc)
+    blocked_until = _parse_utc(metadata.get("rate_limited_until"))
+    if blocked_until is None:
+        # A 429 without a provider timestamp is still unsafe to hammer. Keep a
+        # conservative one-day local cooldown until the provider is checked again.
+        blocked_until = now + datetime.timedelta(hours=24)
+    state = load_delivery_cooldowns()
+    state[platform] = {
+        "blocked_until": blocked_until.isoformat(),
+        "reason": str(metadata.get("error") or "provider rate limit")[:240],
+        "recorded_at": now.isoformat(),
+    }
+    _atomic_write_json(DELIVERY_COOLDOWNS, state)
+
+
+def active_delivery_cooldown(platform, now=None):
+    now = now or datetime.datetime.now(datetime.timezone.utc)
+    record = load_delivery_cooldowns().get(platform)
+    if not isinstance(record, dict):
+        return None
+    until = _parse_utc(record.get("blocked_until"))
+    if until and until > now:
+        return record
+    return None
+
+
+def note_rate_limit(summary_dict, platform, exc):
+    """Persist and expose a structured Zernio account cooldown."""
+    metadata = _error_data(exc)
+    if not metadata.get("rate_limited"):
+        return
+    blocked_until = metadata.get("rate_limited_until")
+    summary_dict.setdefault("rate_limited_platforms", {})[platform] = {
+        "blocked_until": blocked_until,
+        "status_code": metadata.get("status_code"),
+        "reason": str(metadata.get("error") or str(exc))[:240],
+    }
+    save_delivery_cooldown(platform, metadata)
+
+
+def recent_delivery_counts(history, now=None):
+    """Count known platform posts from the last rolling 24 hours.
+
+    Legacy history only has a date, so same-day records are conservatively treated
+    as recent. New records include published_at and platform-specific id lists.
+    """
+    now = now or datetime.datetime.now(datetime.timezone.utc)
+    cutoff = now - datetime.timedelta(hours=24)
+    counts = {"youtube": 0, "instagram": 0, "tiktok": 0}
+    records = history.get("clipped", []) if isinstance(history, dict) else []
+    for record in records:
+        if not isinstance(record, dict):
+            continue
+        published_at = _parse_utc(record.get("published_at"))
+        if published_at is not None:
+            if published_at < cutoff:
+                continue
+        else:
+            # Date-only legacy records cannot prove their time. Keep today's and
+            # yesterday's posts in the budget until the rolling window is clear.
+            try:
+                record_date = datetime.date.fromisoformat(str(record.get("date", "")))
+            except ValueError:
+                continue
+            if record_date < (now.date() - datetime.timedelta(days=1)):
+                continue
+
+        youtube_ids = record.get("youtube_post_ids")
+        if youtube_ids is None:
+            youtube_ids = record.get("clip_video_ids", [])
+        instagram_ids = record.get("instagram_post_ids")
+        if instagram_ids is None:
+            instagram_ids = record.get("platform_post_ids", [])
+        platform_ids = {
+            "youtube": youtube_ids,
+            "instagram": instagram_ids,
+            "tiktok": record.get("tiktok_post_ids", []),
+        }
+        for platform, ids in platform_ids.items():
+            counts[platform] += sum(1 for post_id in (ids or []) if post_id)
+    return counts
+
+
+def delivery_budget_guard(required_platforms, requested, cfg, now=None):
+    """Reserve a full run before rendering so a quota cannot create partial uploads."""
+    now = now or datetime.datetime.now(datetime.timezone.utc)
+    history = load_json(HISTORY, {"clipped": []})
+    counts = recent_delivery_counts(history, now=now)
+    limit = max(1, int(cfg.get("max_platform_posts_per_24h", 6)))
+    blocked = {}
+    for platform in sorted(required_platforms):
+        cooldown = active_delivery_cooldown(platform, now=now)
+        if cooldown:
+            blocked[platform] = {
+                "reason": "active_provider_cooldown",
+                "blocked_until": cooldown.get("blocked_until"),
+            }
+        elif counts.get(platform, 0) + requested > limit:
+            blocked[platform] = {
+                "reason": "rolling_24h_post_budget",
+                "blocked_until": None,
+            }
+    return {
+        "max_posts_per_24h": limit,
+        "requested": requested,
+        "recent_posts": {platform: counts.get(platform, 0) for platform in sorted(required_platforms)},
+        "blocked": blocked,
+    }
 
 def load_ledger_ids():
     """Source ids picked by a prior run, with a short cooldown for failed attempts.
@@ -208,6 +365,8 @@ def attempt_instagram_upload(short_path, caption, clip_num, summary_dict, entry_
         ig = run_tool("upload_instagram.py", "--video-url", host["url"], "--caption", caption, "--confirm")
         media_id = ig.get("post_id") or ig.get("media_id")
         entry_dict["instagram_media_id"] = media_id
+        if ig.get("duplicate"):
+            entry_dict["instagram_duplicate"] = True
         log(f"clip {clip_num}: Instagram -> {media_id}")
         if media_id:
             # Only NOW claim the weekly experiment slot -- the clip already rendered with
@@ -224,6 +383,7 @@ def attempt_instagram_upload(short_path, caption, clip_num, summary_dict, entry_
         return bool(media_id)
     except Exception as e:
         log(f"clip {clip_num}: Instagram FAILED: {e}")
+        note_rate_limit(summary_dict, "instagram", e)
         entry_dict["instagram_error"] = str(e)
         summary_dict.setdefault("instagram_errors", []).append({"clip": clip_num, "error": str(e)})
         return False
@@ -293,6 +453,16 @@ def main():
                "target_clips_per_source_video": clips_per_day,
                "minimum_clips_required": min_clips_per_run,
                "uploaded": [], "errors": [], "required_platforms": sorted(required_platforms)}
+    summary["delivery_budget"] = delivery_budget_guard(required_platforms, clips_per_day, cfg)
+    if not args.dry_run and summary["delivery_budget"]["blocked"]:
+        summary["status"] = "quota_guarded"
+        summary["required_delivery_failures"] = sorted(summary["delivery_budget"]["blocked"])
+        log("delivery budget guard stopped this run before rendering:",
+            json.dumps(summary["delivery_budget"], sort_keys=True))
+        print(json.dumps(summary, indent=2))
+        sys.exit(1)
+    if args.dry_run and summary["delivery_budget"]["blocked"]:
+        summary["delivery_budget"]["guard_bypassed"] = True
     # Crash-safe skip list: sources a prior interrupted run already picked on this machine.
     ledger_ids = load_ledger_ids()
     if ledger_ids:
@@ -443,22 +613,26 @@ def main():
         # 2. Try YouTube (If this fails, log it but keep going!) -- needs a PUBLIC url,
         # not the local path, since it now publishes via Zernio instead of OAuth.
         yt_ok = False
-        try:
-            host = run_tool("host_public.py", "--video", short)
-            up_args = ["upload_youtube.py", "--video-url", host["url"], "--title", yt_title,
-                       "--description", description, "--tags", ",".join(tag_list),
-                       "--privacy", args.privacy]
-            if not args.dry_run:
-                up_args.append("--confirm")
-            up = run_tool(*up_args)
-            if not args.dry_run:
-                yt_id = up.get("post_id")
-                uploaded_ids.append(yt_id)
-                entry["video_id"] = yt_id
-                yt_ok = bool(yt_id)
-        except Exception as e:
-            log(f"clip {n} YOUTUBE FAILED:", e)
-            entry["youtube_error"] = str(e)
+        if "youtube" in summary.get("rate_limited_platforms", {}):
+            entry["youtube_error"] = "skipped after Zernio account rate limit"
+        else:
+            try:
+                host = run_tool("host_public.py", "--video", short)
+                up_args = ["upload_youtube.py", "--video-url", host["url"], "--title", yt_title,
+                           "--description", description, "--tags", ",".join(tag_list),
+                           "--privacy", args.privacy]
+                if not args.dry_run:
+                    up_args.append("--confirm")
+                up = run_tool(*up_args)
+                if not args.dry_run:
+                    yt_id = up.get("post_id")
+                    uploaded_ids.append(yt_id)
+                    entry["video_id"] = yt_id
+                    yt_ok = bool(yt_id)
+            except Exception as e:
+                log(f"clip {n} YOUTUBE FAILED:", e)
+                note_rate_limit(summary, "youtube", e)
+                entry["youtube_error"] = str(e)
         entry["youtube_uploaded"] = yt_ok
             
         if args.dry_run:
@@ -467,8 +641,12 @@ def main():
             
         # 3. Try Instagram (This will now run even if YouTube fails)
         caption = f"{hook}\n\n{hashtag_line}"
-        ig_ok = attempt_instagram_upload(short, caption, n, summary, entry,
-                                          style=clip_style, experiment=is_experiment)
+        if "instagram" in summary.get("rate_limited_platforms", {}):
+            entry["instagram_error"] = "skipped after Zernio account rate limit"
+            ig_ok = False
+        else:
+            ig_ok = attempt_instagram_upload(short, caption, n, summary, entry,
+                                              style=clip_style, experiment=is_experiment)
         entry["instagram_uploaded"] = ig_ok
         tiktok_ok = attempt_tiktok_upload(short, caption, n, summary, entry,
                                            os.environ.get("TIKTOK_PRIVACY", "PUBLIC_TO_EVERYONE"))
@@ -479,7 +657,7 @@ def main():
         # 4. This clip is finally used (uploaded/hosted) -> delete its intermediates so .tmp/
         # doesn't accumulate across runs (2026-07-09, Moemen's request). Dry runs keep them for
         # inspection. The shared source.mp4 is removed once, after the whole clip loop.
-        if not args.dry_run:
+        if not args.dry_run and not KEEP_RENDERED_CLIPS:
             purge_files(short, reframed, caps, cues)
 
     successful_entries = [e for e in summary["uploaded"]
@@ -493,7 +671,14 @@ def main():
             "source_id": src.get("video_id", "unknown"), 
             "source_title": src_title,
             "date": summary["date"],
+            "published_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "clip_video_ids": [e.get("video_id") for e in successful_entries if e.get("video_id")],
+            "youtube_post_ids": [e.get("video_id") for e in successful_entries if e.get("video_id")],
+            "instagram_post_ids": [e.get("instagram_media_id") for e in successful_entries
+                                    if e.get("instagram_media_id")],
+            "tiktok_post_ids": [e.get("tiktok_publish_id") for e in successful_entries
+                                 if e.get("tiktok_publish_id")],
+            # Preserve the original combined field for older reporting scripts.
             "platform_post_ids": [x for e in successful_entries for x in
                                    (e.get("instagram_media_id"), e.get("tiktok_publish_id")) if x],
         })
@@ -509,7 +694,10 @@ def main():
     # any stray intermediates from clips that failed mid-render (2026-07-09, Moemen's request).
     if not args.dry_run:
         purge_files(src_path, str(TMP / "transcript.json"))
-        for pat in ("reframed_*.mp4", "caps_*.ass", "cues_*.json", "short_*.mp4"):
+        patterns = ("reframed_*.mp4", "caps_*.ass", "cues_*.json")
+        if not KEEP_RENDERED_CLIPS:
+            patterns += ("short_*.mp4",)
+        for pat in patterns:
             for p in TMP.glob(pat):
                 purge_files(str(p))
 

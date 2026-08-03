@@ -37,10 +37,11 @@ ZERNIO_API = "https://zernio.com/api/v1"
 
 
 def create_post(payload, api_key, max_tries=5):
-    """Create a Zernio post with bounded 429/5xx/network retries.
+    """Create a Zernio post with bounded transient retries and structured errors.
 
-    The old uploader made one POST. A transient shared Zernio rate limit then looked like a
-    successful workflow with no Instagram post, and the source was consumed by the orchestrator.
+    A provider response that explicitly rate-limits the connected account is not transient:
+    retrying it for several minutes only creates noise and can extend the cooldown. A duplicate
+    response is also safe to treat as delivered when Zernio gives us the existing post id.
     """
     import httpx
     backoff = 10
@@ -50,12 +51,34 @@ def create_post(payload, api_key, max_tries=5):
             r = httpx.post(f"{ZERNIO_API}/posts", json=payload,
                            headers={"Authorization": f"Bearer {api_key}",
                                     "x-request-id": str(uuid.uuid4())}, timeout=60)
+            try:
+                body = r.json()
+            except Exception:
+                body = {}
+            details = body.get("details") if isinstance(body, dict) else {}
+            details = details if isinstance(details, dict) else {}
+
+            if r.status_code == 429:
+                message = body.get("error") if isinstance(body, dict) else None
+                return None, f"Zernio HTTP 429: {message or 'account temporarily rate-limited'}", {
+                    "rate_limited": True,
+                    "status_code": 429,
+                    "rate_limited_until": details.get("rateLimitedUntil"),
+                }
+
             # Account/plan/auth errors are permanent for this run. Retrying a 403 five times
             # only delayed the workflow and hid the actionable response body in the old code.
-            if 400 <= r.status_code < 500 and r.status_code != 429:
+            if r.status_code == 409:
+                message = body.get("error") if isinstance(body, dict) else None
+                return None, f"Zernio HTTP 409: {message or 'duplicate content'}", {
+                    "duplicate": True,
+                    "status_code": 409,
+                    "existing_post_id": details.get("existingPostId"),
+                }
+            if 400 <= r.status_code < 500:
                 body = r.text[:320].strip()
-                return None, f"Zernio HTTP {r.status_code}: {body or 'request rejected'}"
-            if r.status_code == 429 or r.status_code >= 500:
+                return None, f"Zernio HTTP {r.status_code}: {body or 'request rejected'}", {}
+            if r.status_code >= 500:
                 last = f"HTTP {r.status_code}: {r.text[:200]}"
                 retry_after = (r.headers.get("Retry-After") or "").strip()
                 if attempt < max_tries - 1:
@@ -63,7 +86,7 @@ def create_post(payload, api_key, max_tries=5):
                     backoff *= 2
                     continue
             r.raise_for_status()
-            return r.json().get("post", {}), None
+            return body.get("post", {}) if isinstance(body, dict) else {}, None, {}
         except Exception as exc:
             last = str(exc)
             if attempt < max_tries - 1:
@@ -71,7 +94,7 @@ def create_post(payload, api_key, max_tries=5):
                 backoff *= 2
                 continue
             break
-    return None, f"Zernio post create failed after {max_tries} tries ({last})"
+    return None, f"Zernio post create failed after {max_tries} tries ({last})", {}
 
 
 def main():
@@ -116,8 +139,16 @@ def main():
 
     import httpx
 
-    post, create_error = create_post(payload, api_key)
+    post, create_error, create_meta = create_post(payload, api_key)
     if create_error:
+        if create_meta.get("duplicate") and create_meta.get("existing_post_id"):
+            emit({"status": "already_published", "platform": "instagram", "via": "zernio",
+                  "post_id": create_meta["existing_post_id"], "duplicate": True})
+            return
+        if create_meta.get("rate_limited"):
+            fail(create_error, platform="instagram", status_code=create_meta.get("status_code"),
+                 rate_limited=True, rate_limited_until=create_meta.get("rate_limited_until"))
+            return
         fail(create_error)
         return
 
