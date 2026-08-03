@@ -162,6 +162,7 @@ jobs:
           # Keep this workflow's destination credentials authoritative. API_ENV is a
           # shared legacy file and may contain another project's Zernio account.
           ZERNIO_API: ${{ secrets.ZERNIO_API }}
+          ZERNIO_API_KEY: ${{ secrets.ZERNIO_API }}
           ZERNIO_INSTAGRAM_ID: ${{ secrets.ZERNIO_INSTAGRAM_ID }}
           ZERNIO_YOUTUBE_ID: ${{ secrets.ZERNIO_YOUTUBE_ID }}
           TIKTOK_ACCESS_TOKEN: ${{ secrets.TIKTOK_ACCESS_TOKEN }}
@@ -177,7 +178,8 @@ jobs:
                           'TIKTOK_CLIENT_KEY', 'TIKTOK_CLIENT_SECRET'):
                   if os.environ.get(key):
                       f.write(f'{key}={os.environ[key]}\n')
-              for key in ('ZERNIO_API', 'ZERNIO_INSTAGRAM_ID', 'ZERNIO_YOUTUBE_ID'):
+              for key in ('ZERNIO_API', 'ZERNIO_API_KEY', 'ZERNIO_INSTAGRAM_ID',
+                          'ZERNIO_YOUTUBE_ID'):
                   if os.environ.get(key):
                       f.write(f'{key}={os.environ[key]}\n')
           with open('token.json', 'w', encoding='utf-8') as f:
