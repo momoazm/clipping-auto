@@ -462,7 +462,10 @@ def main():
         log("delivery budget guard stopped this run before rendering:",
             json.dumps(summary["delivery_budget"], sort_keys=True))
         print(json.dumps(summary, indent=2))
-        sys.exit(1)
+        # A full rolling quota is an intentional no-op, not a failed upload. Returning a
+        # successful process status keeps scheduled Actions green while preserving the
+        # structured reason in the log and summary above.
+        return
     if args.dry_run and summary["delivery_budget"]["blocked"]:
         summary["delivery_budget"]["guard_bypassed"] = True
     # Crash-safe skip list: sources a prior interrupted run already picked on this machine.

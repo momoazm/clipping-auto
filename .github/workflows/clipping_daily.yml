@@ -159,6 +159,7 @@ jobs:
         env:
           API_ENV: ${{ secrets.API_ENV }}
           YT_TOKEN_JSON: ${{ secrets.YT_TOKEN_JSON }}
+          YT_COOKIES: ${{ secrets.YT_COOKIES }}
           # Keep this workflow's destination credentials authoritative. API_ENV is a
           # shared legacy file and may contain another project's Zernio account.
           ZERNIO_API: ${{ secrets.ZERNIO_API }}
@@ -187,7 +188,14 @@ jobs:
           EOF
           [ -s API.env ]    || { echo "::error::API_ENV secret is empty"; exit 1; }
           [ -s token.json ] || { echo "::error::YT_TOKEN_JSON secret is empty"; exit 1; }
-          rm -f cookies.txt
+          # Optional Netscape-format cookies provide a last-resort authenticated yt-dlp session
+          # for a source that remains bot-walled after WARP/POT client fallbacks.
+          if [ -n "${YT_COOKIES:-}" ]; then
+            printf '%s\n' "$YT_COOKIES" > cookies.txt
+            chmod 600 cookies.txt
+          else
+            rm -f cookies.txt
+          fi
 
       - name: Regenerate SFX + music beds
         run: |
@@ -234,7 +242,6 @@ jobs:
             git push
           else
             echo "No source reservation change to commit."
-            exit 1
           fi
 
       - name: Run daily clipping
@@ -292,6 +299,9 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add state/clipped_history.json state/delivery_cooldowns.json
+          if [ -f state/ig_post_log.json ]; then
+            git add state/ig_post_log.json
+          fi
           if ! git diff --staged --quiet; then
             git commit -m "chore: update clipped history [skip ci]"
             git pull --rebase origin main
