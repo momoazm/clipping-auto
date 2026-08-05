@@ -1,0 +1,59 @@
+{
+  "posts": [
+    {
+      "post_id": "6a73712ed8f3efbd0186d4fd",
+      "posted_at": "2026-08-05T17:23:28.401865+00:00",
+      "style": "clean",
+      "experiment": true,
+      "resolved": false,
+      "context": {
+        "clip": "01",
+        "hook": "He Bought a $2.5M Jet — If Pilot Survives 100 Days, He Keeps It"
+      }
+    },
+    {
+      "post_id": "6a73725a078c093d45de95b7",
+      "posted_at": "2026-08-05T17:27:55.899002+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "02",
+        "hook": "Day 50: Pilot Breaks Down Hearing Wife's Voice 😭"
+      }
+    },
+    {
+      "post_id": "6a737371d2c8f9da34e76ff0",
+      "posted_at": "2026-08-05T17:32:35.650930+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "03",
+        "hook": "Family SCREAMS 'NO!' — Will He Stay 100 More Days for $500K? 🎯"
+      }
+    },
+    {
+      "post_id": "6a737474891a67dea4f1aff9",
+      "posted_at": "2026-08-05T17:36:54.678119+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "04",
+        "hook": "He Turned Down a LAMBORGHINI for an Inflatable Bed 🤯"
+      }
+    },
+    {
+      "post_id": "6a73758f25ec5da09fdc5fec",
+      "posted_at": "2026-08-05T17:41:10.820852+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "05",
+        "hook": "HE WON THE $2.5M JET — And His Family's Reaction Is Priceless 🏆"
+      }
+    }
+  ]
+}
