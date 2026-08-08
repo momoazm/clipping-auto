@@ -32,6 +32,14 @@ except ImportError:
 # encoded files can be reviewed. Scheduled runs still clean up after delivery.
 KEEP_RENDERED_CLIPS = os.environ.get("KEEP_RENDERED_CLIPS") == "1"
 
+# Hashtags improve discovery but are not a delivery prerequisite. Keep a deterministic
+# fallback so a slow or unavailable LLM provider cannot discard an otherwise-rendered clip.
+FALLBACK_HASHTAGS = [
+    "shorts", "youtubeshorts", "shortsfeed", "shortsvideo", "viral", "viralshorts",
+    "trending", "trendingshorts", "fyp", "foryou", "foryoupage", "mrbeast",
+    "mrbeastshorts", "beast", "challenge", "money", "funny", "entertainment",
+]
+
 # --- Zernio secret keys (passed as env vars by the workflow; in API.env for local runs) ---
 IG_ENABLED = bool(os.environ.get("ZERNIO_API")) and bool(os.environ.get("ZERNIO_INSTAGRAM_ID"))
 TIKTOK_ENABLED = (
@@ -457,7 +465,8 @@ def main():
                "clips_requested": clips_per_day,
                "target_clips_per_source_video": clips_per_day,
                "minimum_clips_required": min_clips_per_run,
-               "uploaded": [], "errors": [], "required_platforms": sorted(required_platforms)}
+               "uploaded": [], "errors": [], "warnings": [],
+               "required_platforms": sorted(required_platforms)}
     summary["delivery_budget"] = delivery_budget_guard(required_platforms, clips_per_day, cfg)
     if not args.dry_run and summary["delivery_budget"]["blocked"]:
         summary["status"] = "quota_guarded"
@@ -682,8 +691,20 @@ def main():
             summary["errors"].append({"clip": n, "stage": "render", "error": str(e)})
             continue
             
-        tags = run_tool("generate_hashtags.py", "--title", src_title, "--hook", hook, "--snippet", hook)
+        try:
+            tags = run_tool("generate_hashtags.py", "--title", src_title, "--hook", hook, "--snippet", hook)
+        except Exception as e:
+            # Hashtag generation is deliberately best-effort. The provider chain can spend
+            # its full timeout budget when free LLM routes are degraded; the rendered MP4 is
+            # still valid and should continue through the configured delivery paths.
+            log(f"clip {n} HASHTAG GENERATION FAILED (using fallback tags):", e)
+            summary["warnings"].append({"clip": n, "stage": "hashtags",
+                                         "error": str(e), "fallback": "base"})
+            tags = {"hashtags": FALLBACK_HASHTAGS, "provider": None,
+                    "note": "LLM hashtags unavailable; used base tags."}
         entry = {"clip": n}
+        if tags.get("provider") is None:
+            entry["hashtags_fallback"] = True
 
         # Richer metadata than a bare hook: "#Shorts" in the title (kept under YouTube's
         # 100-char limit), hashtags in the description where YouTube surfaces them, and a
