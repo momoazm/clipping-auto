@@ -422,6 +422,9 @@ def main():
                     default=os.environ.get("REQUIRED_PLATFORMS", "youtube,instagram"),
                     help="Comma-separated destinations that must publish for a zero exit.")
     args = ap.parse_args()
+    # Scheduled quality-gated runs may have no usable source on a bot-limited YouTube day. That
+    # is an intentional no-post outcome; manual runs remain red so an operator can investigate.
+    no_source_ok = os.environ.get("NO_SOURCE_OK") == "1" and not args.dry_run
 
     if args.reserve_source and (args.dry_run or args.source or args.source_reservation):
         raise RuntimeError("--reserve-source cannot be combined with --dry-run, --source, or --source-reservation")
@@ -483,6 +486,12 @@ def main():
         reserved_src = reservation.get("src") if isinstance(reservation, dict) else None
         reserved_attempts = list(reservation.get("attempted") or []) if isinstance(reservation, dict) else []
         if not isinstance(reserved_src, dict) or not reserved_src.get("video_id") or not reserved_src.get("url"):
+            if no_source_ok:
+                payload = {"status": "no_source",
+                           "detail": f"No source reservation was created; no video was published.",
+                           "quality_floor": "1080p", "attempted_sources": reserved_attempts}
+                print(json.dumps(payload, indent=2))
+                return
             raise RuntimeError(f"invalid or missing source reservation: {args.source_reservation}")
         if reserved_src["video_id"] not in reserved_attempts:
             reserved_attempts.append(reserved_src["video_id"])
@@ -493,7 +502,11 @@ def main():
             reserved_src = run_tool("find_source_video.py", "--exclude", exclude)
         except Exception as e:
             log("no source video to reserve:", e)
-            print(json.dumps({"status": "no_source", "detail": str(e)}))
+            payload = {"status": "no_source", "detail": str(e),
+                       "quality_floor": "1080p", "attempted_sources": reserved_attempts}
+            print(json.dumps(payload, indent=2))
+            if no_source_ok:
+                return
             sys.exit(1)
         reserved_attempts = [reserved_src["video_id"]]
         mark_ledger(reserved_src["video_id"])
@@ -566,7 +579,9 @@ def main():
         except Exception as e:
             log("no source video to clip today:", e)
             record_attempts(attempted_videos, args.dry_run)
-            print(json.dumps({"status": "no_source", "detail": str(e)}))
+            print(json.dumps({"status": "no_source", "detail": str(e),
+                              "quality_floor": "1080p",
+                              "attempted_sources": attempted_videos}, indent=2))
             return
 
         if src["video_id"] not in attempted_videos:
@@ -615,8 +630,15 @@ def main():
             continue
 
     if not clips:
-        log("Failed to find or process clips.")
+        detail = ("No source produced the required high-resolution clips; no video was published."
+                  if attempted_videos else "No source was available; no video was published.")
+        log(detail)
         record_attempts(attempted_videos, args.dry_run)
+        summary.update({"status": "no_source", "detail": detail,
+                        "quality_floor": "1080p", "attempted_sources": attempted_videos})
+        print(json.dumps(summary, indent=2))
+        if no_source_ok:
+            return
         sys.exit(1)
     summary["clips_selected"] = len(clips)
     if len(clips) < clips_per_day:
