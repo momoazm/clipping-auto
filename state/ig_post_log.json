@@ -54,6 +54,39 @@
         "clip": "05",
         "hook": "HE WON THE $2.5M JET — And His Family's Reaction Is Priceless 🏆"
       }
+    },
+    {
+      "post_id": "6a775bef18cc8ca4982d9871",
+      "posted_at": "2026-08-08T16:41:17.500067+00:00",
+      "style": "clean",
+      "experiment": true,
+      "resolved": false,
+      "context": {
+        "clip": "01",
+        "hook": "Hand on Wall = $1,000,000 Mansion (Last One Wins)"
+      }
+    },
+    {
+      "post_id": "6a775c9fa7c24ac0081cd133",
+      "posted_at": "2026-08-08T16:44:02.705819+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "02",
+        "hook": "He Counted to 100,000 for THIS Reaction"
+      }
+    },
+    {
+      "post_id": "6a775d966a6d20647555705c",
+      "posted_at": "2026-08-08T16:48:03.409856+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "03",
+        "hook": "MrBeast Handcuffed Them: 'Take Them Off = Eliminated'"
+      }
     }
   ]
 }
