@@ -351,7 +351,7 @@ def ensure_sfx():
             log("build_sfx failed:", e)
 
 def attempt_instagram_upload(short_path, caption, clip_num, summary_dict, entry_dict,
-                              style=None, experiment=False):
+                              public_url=None, style=None, experiment=False):
     """Publish to the pinned Instagram account and return whether it was confirmed uploaded."""
     if not IG_ENABLED:
         detail = "ZERNIO_API/ZERNIO_INSTAGRAM_ID not configured"
@@ -361,9 +361,13 @@ def attempt_instagram_upload(short_path, caption, clip_num, summary_dict, entry_
         return False
 
     try:
-        # Zernio needs a PUBLIC url, not a local file path -- host it first.
-        host = run_tool("host_public.py", "--video", short_path)
-        ig = run_tool("upload_instagram.py", "--video-url", host["url"], "--caption", caption, "--confirm")
+        # Zernio needs a PUBLIC url, not a local file path. Reuse the URL already accepted by
+        # YouTube when available: hosting the same MP4 a second time can switch providers and
+        # hand Instagram a URL that Zernio cannot fetch (for example tmpfiles' /dl/ fallback).
+        if public_url is None:
+            host = run_tool("host_public.py", "--video", short_path)
+            public_url = host["url"]
+        ig = run_tool("upload_instagram.py", "--video-url", public_url, "--caption", caption, "--confirm")
         media_id = ig.get("post_id") or ig.get("media_id")
         entry_dict["instagram_media_id"] = media_id
         if ig.get("duplicate"):
@@ -717,12 +721,14 @@ def main():
         # 2. Try YouTube (If this fails, log it but keep going!) -- needs a PUBLIC url,
         # not the local path, since it now publishes via Zernio instead of OAuth.
         yt_ok = False
+        public_url = None
         if "youtube" in summary.get("rate_limited_platforms", {}):
             entry["youtube_error"] = "skipped after Zernio account rate limit"
         else:
             try:
                 host = run_tool("host_public.py", "--video", short)
-                up_args = ["upload_youtube.py", "--video-url", host["url"], "--title", yt_title,
+                public_url = host.get("url")
+                up_args = ["upload_youtube.py", "--video-url", public_url, "--title", yt_title,
                            "--description", description, "--tags", ",".join(tag_list),
                            "--privacy", args.privacy]
                 if not args.dry_run:
@@ -750,6 +756,7 @@ def main():
             ig_ok = False
         else:
             ig_ok = attempt_instagram_upload(short, caption, n, summary, entry,
+                                              public_url=public_url,
                                               style=clip_style, experiment=is_experiment)
         entry["instagram_uploaded"] = ig_ok
         tiktok_ok = attempt_tiktok_upload(short, caption, n, summary, entry,
