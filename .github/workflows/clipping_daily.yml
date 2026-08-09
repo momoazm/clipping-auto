@@ -225,6 +225,8 @@ jobs:
           no_proxy: "127.0.0.1,localhost"
           IN_LIMIT: ${{ inputs.limit }}
           REQUIRED_PLATFORMS: youtube,instagram
+          # Scheduled quality-gated source starvation is a clean no-post; manual runs stay red.
+          NO_SOURCE_OK: ${{ github.event_name == 'schedule' && '1' || '0' }}
         run: |
           ARGS=(--reserve-source)
           if [ -n "$IN_LIMIT" ]; then ARGS+=(--limit "$IN_LIMIT"); fi
@@ -269,6 +271,9 @@ jobs:
           TIKTOK_EXPECTED_USERNAME: ${{ secrets.TIKTOK_EXPECTED_USERNAME || 'mrbeasteg' }}
           TIKTOK_PRIVACY: PUBLIC_TO_EVERYONE
           REQUIRED_PLATFORMS: youtube,instagram
+          # Keep the 1080p floor. If every source is degraded, the scheduled run exits cleanly
+          # with no upload instead of turning a quality decision into a failed Actions slot.
+          NO_SOURCE_OK: ${{ github.event_name == 'schedule' && '1' || '0' }}
           KEEP_RENDERED_CLIPS: ${{ github.event_name == 'workflow_dispatch' && '1' || '0' }}
         run: |
           ARGS=(--privacy "${IN_PRIVACY:-public}")

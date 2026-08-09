@@ -32,6 +32,14 @@ except ImportError:
 # encoded files can be reviewed. Scheduled runs still clean up after delivery.
 KEEP_RENDERED_CLIPS = os.environ.get("KEEP_RENDERED_CLIPS") == "1"
 
+# Hashtags improve discovery but are not a delivery prerequisite. Keep a deterministic
+# fallback so a slow or unavailable LLM provider cannot discard an otherwise-rendered clip.
+FALLBACK_HASHTAGS = [
+    "shorts", "youtubeshorts", "shortsfeed", "shortsvideo", "viral", "viralshorts",
+    "trending", "trendingshorts", "fyp", "foryou", "foryoupage", "mrbeast",
+    "mrbeastshorts", "beast", "challenge", "money", "funny", "entertainment",
+]
+
 # --- Zernio secret keys (passed as env vars by the workflow; in API.env for local runs) ---
 IG_ENABLED = bool(os.environ.get("ZERNIO_API")) and bool(os.environ.get("ZERNIO_INSTAGRAM_ID"))
 TIKTOK_ENABLED = (
@@ -343,7 +351,7 @@ def ensure_sfx():
             log("build_sfx failed:", e)
 
 def attempt_instagram_upload(short_path, caption, clip_num, summary_dict, entry_dict,
-                              style=None, experiment=False):
+                              public_url=None, style=None, experiment=False):
     """Publish to the pinned Instagram account and return whether it was confirmed uploaded."""
     if not IG_ENABLED:
         detail = "ZERNIO_API/ZERNIO_INSTAGRAM_ID not configured"
@@ -353,9 +361,13 @@ def attempt_instagram_upload(short_path, caption, clip_num, summary_dict, entry_
         return False
 
     try:
-        # Zernio needs a PUBLIC url, not a local file path -- host it first.
-        host = run_tool("host_public.py", "--video", short_path)
-        ig = run_tool("upload_instagram.py", "--video-url", host["url"], "--caption", caption, "--confirm")
+        # Zernio needs a PUBLIC url, not a local file path. Reuse the URL already accepted by
+        # YouTube when available: hosting the same MP4 a second time can switch providers and
+        # hand Instagram a URL that Zernio cannot fetch (for example tmpfiles' /dl/ fallback).
+        if public_url is None:
+            host = run_tool("host_public.py", "--video", short_path)
+            public_url = host["url"]
+        ig = run_tool("upload_instagram.py", "--video-url", public_url, "--caption", caption, "--confirm")
         media_id = ig.get("post_id") or ig.get("media_id")
         entry_dict["instagram_media_id"] = media_id
         if ig.get("duplicate"):
@@ -422,6 +434,9 @@ def main():
                     default=os.environ.get("REQUIRED_PLATFORMS", "youtube,instagram"),
                     help="Comma-separated destinations that must publish for a zero exit.")
     args = ap.parse_args()
+    # Scheduled quality-gated runs may have no usable source on a bot-limited YouTube day. That
+    # is an intentional no-post outcome; manual runs remain red so an operator can investigate.
+    no_source_ok = os.environ.get("NO_SOURCE_OK") == "1" and not args.dry_run
 
     if args.reserve_source and (args.dry_run or args.source or args.source_reservation):
         raise RuntimeError("--reserve-source cannot be combined with --dry-run, --source, or --source-reservation")
@@ -454,7 +469,8 @@ def main():
                "clips_requested": clips_per_day,
                "target_clips_per_source_video": clips_per_day,
                "minimum_clips_required": min_clips_per_run,
-               "uploaded": [], "errors": [], "required_platforms": sorted(required_platforms)}
+               "uploaded": [], "errors": [], "warnings": [],
+               "required_platforms": sorted(required_platforms)}
     summary["delivery_budget"] = delivery_budget_guard(required_platforms, clips_per_day, cfg)
     if not args.dry_run and summary["delivery_budget"]["blocked"]:
         summary["status"] = "quota_guarded"
@@ -483,6 +499,12 @@ def main():
         reserved_src = reservation.get("src") if isinstance(reservation, dict) else None
         reserved_attempts = list(reservation.get("attempted") or []) if isinstance(reservation, dict) else []
         if not isinstance(reserved_src, dict) or not reserved_src.get("video_id") or not reserved_src.get("url"):
+            if no_source_ok:
+                payload = {"status": "no_source",
+                           "detail": f"No source reservation was created; no video was published.",
+                           "quality_floor": "1080p", "attempted_sources": reserved_attempts}
+                print(json.dumps(payload, indent=2))
+                return
             raise RuntimeError(f"invalid or missing source reservation: {args.source_reservation}")
         if reserved_src["video_id"] not in reserved_attempts:
             reserved_attempts.append(reserved_src["video_id"])
@@ -493,7 +515,11 @@ def main():
             reserved_src = run_tool("find_source_video.py", "--exclude", exclude)
         except Exception as e:
             log("no source video to reserve:", e)
-            print(json.dumps({"status": "no_source", "detail": str(e)}))
+            payload = {"status": "no_source", "detail": str(e),
+                       "quality_floor": "1080p", "attempted_sources": reserved_attempts}
+            print(json.dumps(payload, indent=2))
+            if no_source_ok:
+                return
             sys.exit(1)
         reserved_attempts = [reserved_src["video_id"]]
         mark_ledger(reserved_src["video_id"])
@@ -566,7 +592,9 @@ def main():
         except Exception as e:
             log("no source video to clip today:", e)
             record_attempts(attempted_videos, args.dry_run)
-            print(json.dumps({"status": "no_source", "detail": str(e)}))
+            print(json.dumps({"status": "no_source", "detail": str(e),
+                              "quality_floor": "1080p",
+                              "attempted_sources": attempted_videos}, indent=2))
             return
 
         if src["video_id"] not in attempted_videos:
@@ -615,8 +643,15 @@ def main():
             continue
 
     if not clips:
-        log("Failed to find or process clips.")
+        detail = ("No source produced the required high-resolution clips; no video was published."
+                  if attempted_videos else "No source was available; no video was published.")
+        log(detail)
         record_attempts(attempted_videos, args.dry_run)
+        summary.update({"status": "no_source", "detail": detail,
+                        "quality_floor": "1080p", "attempted_sources": attempted_videos})
+        print(json.dumps(summary, indent=2))
+        if no_source_ok:
+            return
         sys.exit(1)
     summary["clips_selected"] = len(clips)
     if len(clips) < clips_per_day:
@@ -660,8 +695,20 @@ def main():
             summary["errors"].append({"clip": n, "stage": "render", "error": str(e)})
             continue
             
-        tags = run_tool("generate_hashtags.py", "--title", src_title, "--hook", hook, "--snippet", hook)
+        try:
+            tags = run_tool("generate_hashtags.py", "--title", src_title, "--hook", hook, "--snippet", hook)
+        except Exception as e:
+            # Hashtag generation is deliberately best-effort. The provider chain can spend
+            # its full timeout budget when free LLM routes are degraded; the rendered MP4 is
+            # still valid and should continue through the configured delivery paths.
+            log(f"clip {n} HASHTAG GENERATION FAILED (using fallback tags):", e)
+            summary["warnings"].append({"clip": n, "stage": "hashtags",
+                                         "error": str(e), "fallback": "base"})
+            tags = {"hashtags": FALLBACK_HASHTAGS, "provider": None,
+                    "note": "LLM hashtags unavailable; used base tags."}
         entry = {"clip": n}
+        if tags.get("provider") is None:
+            entry["hashtags_fallback"] = True
 
         # Richer metadata than a bare hook: "#Shorts" in the title (kept under YouTube's
         # 100-char limit), hashtags in the description where YouTube surfaces them, and a
@@ -674,12 +721,14 @@ def main():
         # 2. Try YouTube (If this fails, log it but keep going!) -- needs a PUBLIC url,
         # not the local path, since it now publishes via Zernio instead of OAuth.
         yt_ok = False
+        public_url = None
         if "youtube" in summary.get("rate_limited_platforms", {}):
             entry["youtube_error"] = "skipped after Zernio account rate limit"
         else:
             try:
                 host = run_tool("host_public.py", "--video", short)
-                up_args = ["upload_youtube.py", "--video-url", host["url"], "--title", yt_title,
+                public_url = host.get("url")
+                up_args = ["upload_youtube.py", "--video-url", public_url, "--title", yt_title,
                            "--description", description, "--tags", ",".join(tag_list),
                            "--privacy", args.privacy]
                 if not args.dry_run:
@@ -707,6 +756,7 @@ def main():
             ig_ok = False
         else:
             ig_ok = attempt_instagram_upload(short, caption, n, summary, entry,
+                                              public_url=public_url,
                                               style=clip_style, experiment=is_experiment)
         entry["instagram_uploaded"] = ig_ok
         tiktok_ok = attempt_tiktok_upload(short, caption, n, summary, entry,
