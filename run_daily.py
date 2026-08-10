@@ -868,7 +868,16 @@ def main():
             cues = str(TMP/f"cues_{n}.json")
             caps = str(TMP/f"caps_{n}.ass")
 
-            run_tool("reframe_crop.py", "--in", src_path, "--start", clip["start"], "--end", clip["end"], "--out", reframed)
+            reframe_args = ["reframe_crop.py", "--in", src_path, "--start", clip["start"],
+                            "--end", clip["end"], "--out", reframed]
+            # Transcript-backed physical events (leaving, elimination, grabbing, alarms,
+            # rescues, etc.) need the action in frame. The default active-speaker tracker can
+            # otherwise follow a nearby reaction face at the exact moment of the payoff.
+            if clip.get("focus_mode") == "action":
+                reframe_args += ["--mode", "action"]
+                if clip.get("action_anchor") is not None:
+                    reframe_args += ["--action-anchor", clip["action_anchor"]]
+            run_tool(*reframe_args)
             run_tool("plan_effects.py", "--start", clip["start"], "--end", clip["end"], "--emphasis", ",".join(clip.get("emphasis_words", [])), "--out", cues)
             run_tool("build_captions.py", "--start", clip["start"], "--end", clip["end"], "--style", clip_style, "--hook", hook, "--out", caps)
             run_tool("render_clip.py", "--in", reframed, "--captions", caps, "--cues", cues, "--out", short, "--max-secs", maxs)

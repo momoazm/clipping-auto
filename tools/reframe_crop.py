@@ -21,6 +21,9 @@ How it works (no torch / mediapipe -- 3.14-safe, OpenCV only):
   2b. In shots with NO detected face (common in action/wide MrBeast footage) it
      follows the MOTION CENTROID -- the column where the frame-to-frame action is --
      instead of freezing or letterboxing, so the crop stays on "the main part".
+     Action-focused clips can explicitly use ``--mode action``; that mode uses the
+     motion centroid even when faces exist, preventing a reaction face from stealing
+     the crop during a physical payoff such as an exit or elimination.
   3. The chosen center path is interpolated to per-frame and zero-phase
      (forward-backward) smoothed WITHIN each shot, then written as ffmpeg `sendcmd`
      keyframes driving the `crop` filter's x, then scaled to 1080x1920.
@@ -33,7 +36,7 @@ span is carried through so the output is previewable and reusable by render_clip
 
 Usage:
     python tools/reframe_crop.py --in video.mp4 --start 12.5 --end 58.0 \
-        [--out .tmp/reframed.mp4] [--mode auto|track|letterbox]
+        [--out .tmp/reframed.mp4] [--mode auto|track|action|letterbox]
 
 Prints JSON: {"path","mode","faces_tracked","cuts","width","height","duration"}
 """
@@ -58,7 +61,9 @@ YUNET_PATH = REPO_ROOT / "config" / "models" / "face_detection_yunet_2023mar.onn
 # gesturing" cue that reinforces the lip-motion speaker score.
 MOTION_DIFF_THRESH = 18   # per-pixel grayscale delta (0..255) that counts as motion
 MOTION_FLOOR = 0.008      # mean frame motion below this = "static" -> ignore as noise
-MOTION_LERP = 0.5         # how fast the crop chases the motion centroid in a faceless shot
+MOTION_LERP = 0.5         # how fast the normal crop chases motion in a faceless shot
+ACTION_MOTION_LERP = 0.72 # action mode should hold the physical event, not a bystander
+ACTION_HOLD_RADIUS = 0.35  # after the event, don't drift across the scene to a reaction
 
 # --- active-speaker selection tuning -----------------------------------------
 RESEED_FRAC = 0.40      # a horizontal jump bigger than this fraction of width = a cut/new subject
@@ -249,9 +254,17 @@ def detect_face_track(video, start, end):
     return samples, src_w, src_h, fps
 
 
-def choose_track(samples, reseed_gap):
-    """Pure selection: decide the crop center per sample (active speaker, with
-    hysteresis + shot cuts). Returns (times[], centers[], segments[]).
+def choose_track(samples, reseed_gap, action_focus=False, action_anchor=None):
+    """Pure selection: decide the crop center per sample.
+
+    Normal mode follows the active speaker with hysteresis. ``action_focus`` follows the
+    frame-difference motion centroid first, using the most-moving face only when a global
+    centroid is unavailable. This keeps a physical payoff (for example, a contestant
+    stepping out) in frame instead of switching to a nearby reaction face. When an
+    ``action_anchor`` is supplied, the crop locks near the physical event for the tail
+    of the clip so the post-payoff reaction cannot pull it away.
+
+    Returns (times[], centers[], segments[]).
 
     `segments` increments whenever the tracked subject CUTS (a different person or
     a scene change); build_pan_commands snaps between segments instead of gliding,
@@ -262,6 +275,7 @@ def choose_track(samples, reseed_gap):
     cur_cx = None
     seg = -1
     want = {}  # challenger bucket -> consecutive samples it has dominated
+    action_lock_cx = None
 
     def composite(d, max_lip, max_area, max_motion):
         return (W_LIP * (d["lip"] / max_lip)
@@ -272,6 +286,36 @@ def choose_track(samples, reseed_gap):
     bucket = max(1.0, reseed_gap * 0.2)
     for s in samples:
         dets = s["dets"]
+        if action_focus:
+            # In action mode the global motion centroid is the primary visual cue even when
+            # faces are detected. A reaction face can have strong lip/hand motion, but the
+            # centroid still points at the physical event across the whole shot.
+            action_cx = s.get("mcx")
+            if action_cx is None and dets:
+                action_face = max(
+                    dets,
+                    key=lambda d: (d.get("motion", 0.0), d.get("area", 0.0), d.get("score", 0.0)),
+                )
+                action_cx = action_face["cx"]
+            if action_anchor is not None and s["t"] >= action_anchor:
+                if action_lock_cx is None:
+                    action_lock_cx = action_cx if action_cx is not None else cur_cx
+                if action_lock_cx is not None and action_cx is not None:
+                    radius = max(1.0, reseed_gap * ACTION_HOLD_RADIUS)
+                    action_cx = max(action_lock_cx - radius,
+                                    min(action_lock_cx + radius, action_cx))
+                elif action_lock_cx is not None:
+                    action_cx = action_lock_cx
+            if action_cx is not None:
+                if cur_cx is None:
+                    cur_cx = action_cx; seg += 1
+                elif abs(action_cx - cur_cx) > reseed_gap:
+                    cur_cx = action_cx; seg += 1
+                else:
+                    cur_cx = cur_cx + ACTION_MOTION_LERP * (action_cx - cur_cx)
+                times.append(s["t"]); centers.append(cur_cx); segments.append(seg)
+                want.clear()
+                continue
         if not dets:
             # No face this sample. If there's motion, FOLLOW THE ACTION instead of
             # freezing/letterboxing (the MrBeast-footage win); else hold last center.
@@ -416,7 +460,9 @@ def main():
     parser.add_argument("--start", type=float, required=True)
     parser.add_argument("--end", type=float, required=True)
     parser.add_argument("--out", default=None)
-    parser.add_argument("--mode", default="auto", choices=["auto", "track", "letterbox"])
+    parser.add_argument("--mode", default="auto", choices=["auto", "track", "action", "letterbox"])
+    parser.add_argument("--action-anchor", type=float, default=None,
+                        help="Source timestamp of the physical payoff; action mode holds near it")
     args = parser.parse_args()
 
     load_env()
@@ -456,10 +502,15 @@ def main():
             return
 
         reseed_gap = src_w * RESEED_FRAC
-        times, centers, segments = choose_track(samples, reseed_gap)
+        action_anchor = None
+        if args.action_anchor is not None:
+            action_anchor = max(0.0, min(dur, args.action_anchor - args.start))
+        times, centers, segments = choose_track(
+            samples, reseed_gap, action_focus=args.mode == "action",
+            action_anchor=action_anchor)
         detected = sum(1 for s in samples if s["dets"])
         cmds_text, crop_w = build_pan_commands(times, centers, segments, src_w, src_h, dur)
-        if cmds_text is None or (args.mode == "auto" and not times):
+        if cmds_text is None or (args.mode in {"auto", "action"} and not times):
             render_letterbox(args.inp, args.start, dur, out_path)
             why = "source narrower than 9:16" if cmds_text is None else "no faces or motion detected"
             emit({"path": out_path, "mode": "letterbox", "faces_tracked": detected, "cuts": 0,
@@ -469,7 +520,8 @@ def main():
 
         cuts = (len(set(segments)) - 1) if segments else 0
         render_track(args.inp, args.start, dur, crop_w, src_h, cmds_text, out_path)
-        emit({"path": out_path, "mode": "track", "faces_tracked": detected, "cuts": cuts,
+        emit({"path": out_path, "mode": "action" if args.mode == "action" else "track",
+              "faces_tracked": detected, "cuts": cuts,
               "width": OUT_W, "height": OUT_H, "duration": round(dur, 3)})
     except FFmpegMissing as e:
         fail(str(e))
