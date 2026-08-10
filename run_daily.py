@@ -505,8 +505,8 @@ def main():
         raise RuntimeError("--source, --source-id, and --source-reservation are mutually exclusive")
     if args.source_id and args.source_reservation:
         raise RuntimeError("--source-id and --source-reservation are mutually exclusive")
-    if args.extra_clips and not args.source_id:
-        raise RuntimeError("--extra-clips requires --source-id")
+    if args.extra_clips and not (args.source_id or args.source):
+        raise RuntimeError("--extra-clips requires --source-id or --source")
 
     required_platforms = {p.strip().lower() for p in args.required_platforms.split(",") if p.strip()}
 
@@ -659,16 +659,51 @@ def main():
             record.get("source_id") if isinstance(record, dict) else record
             for record in clipped_records or []
         }
-        if src.get("video_id") in clipped_ids:
+        if src.get("video_id") in clipped_ids and not args.extra_clips:
             raise RuntimeError(
-                f"refusing to process already-clipped source {src['video_id']}"
+                f"refusing to process already-clipped source {src['video_id']} without --extra-clips"
             )
         src_path = args.source
         src_title = src.get("title") or "Video"
+        source_duration = manifest.get("source_duration") or manifest.get("duration")
+        active_source_record = source_history_record(history, src.get("video_id"))
+        active_existing_windows = source_clip_windows(active_source_record)
+        existing_windows_path = None
+        if active_existing_windows:
+            existing_windows_path = TMP / "existing_clip_windows.json"
+            _atomic_write_json(existing_windows_path, {"windows": active_existing_windows})
         try:
             ensure_sfx()
             run_tool("transcribe_video.py", "--in", src_path)
-            sel = run_tool("select_clips.py", "--count", clips_per_day, "--target-secs", target, "--max-secs", maxs)
+            selection_args = ["--count", clips_per_day, "--target-secs", target, "--max-secs", maxs]
+            if duration_mode and source_duration:
+                target_total = duration_target_count(source_duration, cfg)
+                continuing = bool(active_existing_windows) or bool(args.extra_clips)
+                desired_count = max(0, target_total - len(active_existing_windows)) if continuing else target_total
+                if args.limit is not None:
+                    desired_count = min(desired_count, args.limit)
+                summary.update({"source_duration_secs": source_duration,
+                                "duration_target_clips": target_total,
+                                "existing_clip_count": len(active_existing_windows),
+                                "remaining_target_clips": desired_count})
+                if desired_count <= 0:
+                    summary.update({"status": "already_complete", "source_id": src.get("video_id"),
+                                    "uploaded": [], "errors": [], "warnings": []})
+                    print(json.dumps(summary, indent=2))
+                    return
+                if not args.dry_run:
+                    capacity = delivery_capacity(required_platforms, cfg)
+                    if capacity < min_clips_per_run:
+                        raise RuntimeError("duration-based source has fewer than the minimum safe platform slots")
+                    clips_per_day = min(desired_count, capacity)
+                else:
+                    clips_per_day = desired_count
+                summary["clips_requested"] = clips_per_day
+                summary["target_clips_per_source_video"] = target_total
+                selection_args[1] = clips_per_day
+            if existing_windows_path:
+                selection_args += ["--exclude-windows", existing_windows_path]
+            sel = run_tool("select_clips.py", *selection_args)
             clips = sel.get("clips", [])
             if len(clips) < min_clips_per_run:
                 raise RuntimeError(
@@ -785,6 +820,8 @@ def main():
             break
         except Exception as e:
             log(f"source {src.get('video_id')} failed (attempt {video_attempts}/{max_video_attempts}):", e)
+            if args.source_id:
+                break
             continue
 
     if not clips:
