@@ -5,10 +5,20 @@
       "posted_at": "2026-08-05T17:23:28.401865+00:00",
       "style": "clean",
       "experiment": true,
-      "resolved": false,
+      "resolved": true,
       "context": {
         "clip": "01",
         "hook": "He Bought a $2.5M Jet — If Pilot Survives 100 Days, He Keeps It"
+      },
+      "result": {
+        "views": null,
+        "engagement_rate": null,
+        "baseline_views_avg": 0.0,
+        "baseline_engagement_avg": 0.0,
+        "views_delta": null,
+        "engagement_delta": null,
+        "baseline_n": 0,
+        "win": false
       }
     },
     {
