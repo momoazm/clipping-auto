@@ -324,9 +324,9 @@
       "channel": "MrBeast",
       "source_duration": 3471,
       "target_clip_count": 12,
-      "remaining_clips": 6,
-      "date": "2026-08-08",
-      "published_at": "2026-08-08T16:58:47.295749+00:00",
+      "remaining_clips": 0,
+      "date": "2026-08-10",
+      "published_at": "2026-08-10T11:10:26.027065+00:00",
       "clip_windows": [
         {
           "start": 2979.22,
@@ -357,6 +357,36 @@
           "start": 2460.199,
           "end": 2485.089,
           "video_id": "6a775fe6ec6d16f354b6c46f"
+        },
+        {
+          "start": 3072.561,
+          "end": 3107.471,
+          "video_id": "6a79a8947a281feaa7002e60"
+        },
+        {
+          "start": 2323.619,
+          "end": 2359.569,
+          "video_id": "6a79aa40d63ba9c4789442ac"
+        },
+        {
+          "start": 10.25,
+          "end": 44.54,
+          "video_id": "6a79ac2bc1bde7625c059beb"
+        },
+        {
+          "start": 473.271,
+          "end": 511.441,
+          "video_id": "6a79ae0e605cbf99e144a259"
+        },
+        {
+          "start": 1203.992,
+          "end": 1226.522,
+          "video_id": "6a79af5c51fc5ea2b47fd316"
+        },
+        {
+          "start": 1616.873,
+          "end": 1668.183,
+          "video_id": "6a79b135abb15997313d52a1"
         }
       ],
       "clip_video_ids": [
@@ -365,7 +395,13 @@
         "6a775d8e6a6d206475556fb2",
         "6a775e58d5232620b2c15a03",
         "6a775f4c8716743ace9cdbe0",
-        "6a775fe6ec6d16f354b6c46f"
+        "6a775fe6ec6d16f354b6c46f",
+        "6a79a8947a281feaa7002e60",
+        "6a79aa40d63ba9c4789442ac",
+        "6a79ac2bc1bde7625c059beb",
+        "6a79ae0e605cbf99e144a259",
+        "6a79af5c51fc5ea2b47fd316",
+        "6a79b135abb15997313d52a1"
       ],
       "youtube_post_ids": [
         "6a775b9392c5f0c1129c4171",
@@ -373,18 +409,36 @@
         "6a775d8e6a6d206475556fb2",
         "6a775e58d5232620b2c15a03",
         "6a775f4c8716743ace9cdbe0",
-        "6a775fe6ec6d16f354b6c46f"
+        "6a775fe6ec6d16f354b6c46f",
+        "6a79a8947a281feaa7002e60",
+        "6a79aa40d63ba9c4789442ac",
+        "6a79ac2bc1bde7625c059beb",
+        "6a79ae0e605cbf99e144a259",
+        "6a79af5c51fc5ea2b47fd316",
+        "6a79b135abb15997313d52a1"
       ],
       "instagram_post_ids": [
         "6a775bef18cc8ca4982d9871",
         "6a775c9fa7c24ac0081cd133",
-        "6a775d966a6d20647555705c"
+        "6a775d966a6d20647555705c",
+        "6a79a8d099e941b85db9bc79",
+        "6a79aaa902fbbd3cb7309c11",
+        "6a79ac894848e0d09194eb6a",
+        "6a79ae6bd880f90a7ed3fdc1",
+        "6a79af994f27df8d93e283dd",
+        "6a79b177d617da0978dbc0f7"
       ],
       "tiktok_post_ids": [],
       "platform_post_ids": [
         "6a775bef18cc8ca4982d9871",
         "6a775c9fa7c24ac0081cd133",
-        "6a775d966a6d20647555705c"
+        "6a775d966a6d20647555705c",
+        "6a79a8d099e941b85db9bc79",
+        "6a79aaa902fbbd3cb7309c11",
+        "6a79ac894848e0d09194eb6a",
+        "6a79ae6bd880f90a7ed3fdc1",
+        "6a79af994f27df8d93e283dd",
+        "6a79b177d617da0978dbc0f7"
       ]
     }
   ],
