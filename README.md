@@ -8,6 +8,10 @@ short clips for upload.
   MrBeast clips (`config/channels.json:min_clips_per_run`) and checks every selected clip for the
   required YouTube + Instagram delivery. A selector result with only one clip fails the source
   attempt instead of silently uploading a single Short.
+- **Visual payoff guard:** transcript candidates are checked against source storyboards before
+  rendering; high-confidence physical actions receive a fixed subject lock, while uncertain
+  speaker/reaction clips keep the safer speaker or wide framing. Vision outages fall back to the
+  transcript candidates without blocking the run.
 - **2026-07-08:** Download fix — WARP-alone was getting YouTube-bot-walled (killed posting for
   >1 day); added the free BgUtils PO-token provider (Docker localhost:4416 + yt-dlp plugin),
   verified via dry-run. `reframe_crop.py` is now motion-aware (follows the action in faceless

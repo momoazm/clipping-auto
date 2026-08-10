@@ -116,6 +116,9 @@ def run_tool(script, *args):
         # bounded inside select_clips.py. Leave enough room for the whole configured chain while
         # still returning to the source-attempt loop well before the 60-minute Actions timeout.
         "select_clips.py": 360,
+        # One bounded storyboard request plus local frame sampling. The tool itself falls back
+        # to the transcript candidates when Gemini vision is unavailable.
+        "rank_visual_clips.py": 360,
         "reframe_crop.py": 300,
         "plan_effects.py": 120,
         "build_captions.py": 120,
@@ -139,6 +142,32 @@ def run_tool(script, *args):
     if isinstance(data, dict) and data.get("error"):
         raise ToolError(script, data)
     return data
+
+
+def _visual_candidate_count(count):
+    """Keep a quality buffer without allowing the storyboard/API payload to grow unbounded."""
+    return min(8, max(count + 2, count * 2))
+
+
+def rank_visual_clips(source_path, count, selected):
+    """Attach visual payoff/subject metadata, preserving a text-only fallback."""
+    try:
+        result = run_tool(
+            "rank_visual_clips.py", "--video", source_path,
+            "--transcript", TMP / "transcript.json",
+            "--clips", TMP / "clips.json", "--count", count,
+            "--out", TMP / "clips_visual.json",
+        )
+    except Exception as exc:
+        # Vision is a quality enhancement, never a source-attempt prerequisite. A
+        # runner/network/provider stall must leave the already-valid transcript set
+        # available for rendering and delivery.
+        log("visual ranker failed; using text-selected clips:", exc)
+        return selected, {"provider": "orchestrator-fallback", "visual_fallback": True,
+                          "visual_error": str(exc), "candidate_count": len(selected)}
+    if result.get("visual_fallback"):
+        log("visual ranker used transcript fallback:", result.get("visual_error"))
+    return result.get("clips") or selected, result
 
 def load_json(path, default):
     try:
@@ -701,10 +730,17 @@ def main():
                 summary["clips_requested"] = clips_per_day
                 summary["target_clips_per_source_video"] = target_total
                 selection_args[1] = clips_per_day
+            selection_args += ["--candidate-count", _visual_candidate_count(clips_per_day)]
             if existing_windows_path:
                 selection_args += ["--exclude-windows", existing_windows_path]
             sel = run_tool("select_clips.py", *selection_args)
             clips = sel.get("clips", [])
+            clips, visual_result = rank_visual_clips(src_path, clips_per_day, clips)
+            summary["visual_ranker"] = {
+                "provider": visual_result.get("provider"),
+                "fallback": bool(visual_result.get("visual_fallback")),
+                "candidate_count": visual_result.get("candidate_count", len(clips)),
+            }
             if len(clips) < min_clips_per_run:
                 raise RuntimeError(
                     f"clip selector returned {len(clips)} clip(s); need at least {min_clips_per_run}"
@@ -793,6 +829,7 @@ def main():
                 summary["clips_requested"] = clips_per_day
                 summary["target_clips_per_source_video"] = target_total
             selection_args = ["--count", clips_per_day, "--target-secs", target, "--max-secs", maxs]
+            selection_args += ["--candidate-count", _visual_candidate_count(clips_per_day)]
             if existing_windows_path:
                 selection_args += ["--exclude-windows", existing_windows_path]
             if args.download_only:
@@ -813,6 +850,12 @@ def main():
             run_tool("transcribe_video.py", "--in", src_path)
             sel = run_tool("select_clips.py", *selection_args)
             clips = sel.get("clips", [])
+            clips, visual_result = rank_visual_clips(src_path, clips_per_day, clips)
+            summary["visual_ranker"] = {
+                "provider": visual_result.get("provider"),
+                "fallback": bool(visual_result.get("visual_fallback")),
+                "candidate_count": visual_result.get("candidate_count", len(clips)),
+            }
             if len(clips) < min_clips_per_run:
                 raise RuntimeError(
                     f"clip selector returned {len(clips)} clip(s); need at least {min_clips_per_run}"
@@ -877,6 +920,12 @@ def main():
                 reframe_args += ["--mode", "action"]
                 if clip.get("action_anchor") is not None:
                     reframe_args += ["--action-anchor", clip["action_anchor"]]
+                if clip.get("subject_x") is not None:
+                    reframe_args += ["--subject-x", clip["subject_x"]]
+            elif clip.get("focus_mode") == "wide":
+                # When the visual editor cannot identify one reliable subject, preserve the
+                # complete source scene instead of confidently zooming into a reaction.
+                reframe_args += ["--mode", "wide"]
             run_tool(*reframe_args)
             run_tool("plan_effects.py", "--start", clip["start"], "--end", clip["end"], "--emphasis", ",".join(clip.get("emphasis_words", [])), "--out", cues)
             run_tool("build_captions.py", "--start", clip["start"], "--end", clip["end"], "--style", clip_style, "--hook", hook, "--out", caps)

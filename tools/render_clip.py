@@ -39,6 +39,7 @@ from _common import (load_env, emit, fail, run, ffmpeg_bin, ffprobe_json,
 
 OUT_W, OUT_H = 1080, 1920
 CMD_FPS = 30.0            # punch-zoom keyframe density (matches output fps -> smooth)
+X264_PRESET = os.environ.get("CLIP_X264_PRESET", "fast")
 PUNCH_AMP = 0.12          # peak zoom (1.0 -> 1.12x)
 PUNCH_SIGMA = 0.16        # gaussian half-width in seconds (~0.4s visible bump)
 PUNCH_MAX = 1.14          # hard cap on zoom factor
@@ -238,7 +239,7 @@ def main():
         cmd += ["-map", "[a]"]
     cmd += [
         "-t", f"{args.max_secs:.3f}",
-        "-c:v", "libx264", "-profile:v", "high", "-preset", "medium", "-crf", "18",
+        "-c:v", "libx264", "-profile:v", "high", "-preset", X264_PRESET, "-crf", "18",
         "-pix_fmt", "yuv420p",
         "-r", "30", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart",
         os.path.abspath(out_path),
@@ -262,7 +263,7 @@ def main():
         if amap2:
             c += ["-map", "[a]"]
         c += ["-t", f"{args.max_secs:.3f}", "-c:v", "libx264", "-profile:v", "high",
-              "-preset", "medium", "-crf", "18", "-pix_fmt", "yuv420p", "-r", "30",
+              "-preset", X264_PRESET, "-crf", "18", "-pix_fmt", "yuv420p", "-r", "30",
               "-c:a", "aac", "-b:a", "192k",
               "-movflags", "+faststart", os.path.abspath(out_path)]
         return c

@@ -154,7 +154,8 @@ ACTION_TERMS = re.compile(
 ACTION_ANCHOR_TERMS = re.compile(
     r"\b(?:dropped|drops?|leav(?:e|es|ing|t)|exit(?:s|ed|ing)?|"
     r"step(?:s|ped|ping)?|eliminat(?:e|ed|ion|ing)|disqualif(?:y|ied|ication)|"
-    r"removed?|officially)\b",
+    r"removed?|officially|grab(?:s|bed|bing)?|retrieve(?:s|d|ing)?|"
+    r"rescue(?:s|d|ing)?|remote|alarm(?:s|ed|ing)?)\b",
     re.IGNORECASE,
 )
 
@@ -474,6 +475,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--transcript", default=None)
     parser.add_argument("--count", type=int, default=3)
+    parser.add_argument("--candidate-count", type=int, default=None,
+                        help="Keep this many text candidates for the later visual ranker")
     parser.add_argument("--target-secs", type=int, default=35)
     parser.add_argument("--max-secs", type=int, default=60)
     parser.add_argument("--exclude-windows", default=None,
@@ -502,6 +505,7 @@ def main():
         fail("Transcript has no usable text/timestamps.", transcript=tpath)
         return
 
+    candidate_target = max(args.count, args.candidate_count or args.count)
     # Ask for a small buffer of candidates. The best six can overlap in a long transcript;
     # collecting extra ranked options lets the non-overlap pass fill the requested six slots
     # without accepting weaker moments or cutting a winner in half.
@@ -509,7 +513,10 @@ def main():
     # Keep the request inside Groq's rolling token budget even when a continuation run has
     # many old spans to exclude. Extra candidates are useful, but a huge candidate list makes
     # the JSON response itself exceed the provider TPM limit before selection can begin.
-    candidate_request_count = args.count + min(max(3, args.count // 2) + len(excluded_windows), 3)
+    candidate_request_count = max(
+        candidate_target,
+        args.count + min(max(3, args.count // 2) + len(excluded_windows), 3),
+    )
     prompt = PROMPT_TMPL.format(
         count=candidate_request_count, target=args.target_secs, maxs=args.max_secs, body=body)
     if excluded_windows:
@@ -548,7 +555,7 @@ def main():
             continue
     if candidates is None:
         fallback = deterministic_fallback(
-            words, args.count, args.target_secs, args.max_secs, excluded_windows,
+            words, candidate_target, args.target_secs, args.max_secs, excluded_windows,
         )
         if len(fallback) < args.count:
             fail("All configured LLM providers failed and the transcript fallback could not fill "
@@ -556,7 +563,8 @@ def main():
                  fallback_count=len(fallback))
             return
         payload = {"provider": "deterministic-fallback", "count": len(fallback),
-                   "target_count": args.count, "candidates_requested": candidate_request_count,
+                   "target_count": args.count, "candidate_target": candidate_target,
+                   "candidates_requested": candidate_request_count,
                    "clips": fallback, "provider_errors": errors,
                    "note": "LLM providers unavailable; evenly distributed transcript windows used."}
         with open(out_path, "w", encoding="utf-8") as f:
@@ -604,10 +612,11 @@ def main():
     for c in clips:
         if all(c["end"] <= k["start"] or c["start"] >= k["end"] for k in kept):
             kept.append(c)
-    kept = kept[: args.count]
+    kept = kept[: candidate_target]
 
     payload = {"provider": provider, "count": len(kept),
-               "target_count": args.count, "candidates_requested": candidate_request_count,
+               "target_count": args.count, "candidate_target": candidate_target,
+               "candidates_requested": candidate_request_count,
                "clips": kept}
     if provider != "groq":
         payload["note"] = f"Primary failed; used {provider}."

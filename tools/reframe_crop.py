@@ -48,8 +48,9 @@ from _common import (load_env, emit, fail, run, ffmpeg_bin, ffprobe_json,
 
 OUT_W, OUT_H = 1080, 1920
 CMD_FPS = 30.0          # per-frame crop keyframes => no staircase stutter in the pan
-DETECT_FPS = 6.0        # how often we look for the face (finer = tracks tighter)
+DETECT_FPS = 3.0        # enough for speaker tracking; visual-anchored action clips skip detection
 DETECT_WIDTH = 640      # downscale frames before detection (bigger = catches smaller faces)
+X264_PRESET = os.environ.get("CLIP_X264_PRESET", "fast")
 EMA_ALPHA = 0.25        # smoothing strength; applied zero-phase so it does NOT lag
 YUNET_PATH = REPO_ROOT / "config" / "models" / "face_detection_yunet_2023mar.onnx"
 
@@ -254,7 +255,7 @@ def detect_face_track(video, start, end):
     return samples, src_w, src_h, fps
 
 
-def choose_track(samples, reseed_gap, action_focus=False, action_anchor=None):
+def choose_track(samples, reseed_gap, action_focus=False, action_anchor=None, subject_cx=None):
     """Pure selection: decide the crop center per sample.
 
     Normal mode follows the active speaker with hysteresis. ``action_focus`` follows the
@@ -262,7 +263,9 @@ def choose_track(samples, reseed_gap, action_focus=False, action_anchor=None):
     centroid is unavailable. This keeps a physical payoff (for example, a contestant
     stepping out) in frame instead of switching to a nearby reaction face. When an
     ``action_anchor`` is supplied, the crop locks near the physical event for the tail
-    of the clip so the post-payoff reaction cannot pull it away.
+    of the clip so the post-payoff reaction cannot pull it away. When supplied,
+    ``subject_cx`` is the visual editor's source-pixel anchor and wins over the
+    frame-difference centroid at the payoff.
 
     Returns (times[], centers[], segments[]).
 
@@ -299,8 +302,14 @@ def choose_track(samples, reseed_gap, action_focus=False, action_anchor=None):
                 action_cx = action_face["cx"]
             if action_anchor is not None and s["t"] >= action_anchor:
                 if action_lock_cx is None:
-                    action_lock_cx = action_cx if action_cx is not None else cur_cx
-                if action_lock_cx is not None and action_cx is not None:
+                    action_lock_cx = subject_cx
+                    if action_lock_cx is None:
+                        action_lock_cx = action_cx if action_cx is not None else cur_cx
+                if subject_cx is not None:
+                    # Do not let a loud reaction or overlay pull the crop away from
+                    # the contestant/action identified in the source frame.
+                    action_cx = action_lock_cx
+                elif action_lock_cx is not None and action_cx is not None:
                     radius = max(1.0, reseed_gap * ACTION_HOLD_RADIUS)
                     action_cx = max(action_lock_cx - radius,
                                     min(action_lock_cx + radius, action_cx))
@@ -431,7 +440,7 @@ def render_track(video, start, dur, crop_w, src_h, cmds_text, out_path):
         ffmpeg_bin(), "-y", "-ss", f"{start:.3f}", "-t", f"{dur:.3f}",
         "-i", os.path.abspath(video),
         "-vf", vf, "-map", "0:v:0", "-map", "0:a:0?",
-        "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-pix_fmt", "yuv420p",
+        "-c:v", "libx264", "-preset", X264_PRESET, "-crf", "18", "-pix_fmt", "yuv420p",
         "-c:a", "aac", "-b:a", "160k", os.path.abspath(out_path),
     ]
     run(cmd, cwd=str(TMP_DIR))
@@ -448,7 +457,7 @@ def render_letterbox(video, start, dur, out_path):
     cmd = [
         ffmpeg_bin(), "-y", "-ss", f"{start:.3f}", "-t", f"{dur:.3f}", "-i", str(video),
         "-vf", vf, "-map", "0:v:0", "-map", "0:a:0?",
-        "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-pix_fmt", "yuv420p",
+        "-c:v", "libx264", "-preset", X264_PRESET, "-crf", "18", "-pix_fmt", "yuv420p",
         "-c:a", "aac", "-b:a", "160k", str(out_path),
     ]
     run(cmd)
@@ -460,9 +469,12 @@ def main():
     parser.add_argument("--start", type=float, required=True)
     parser.add_argument("--end", type=float, required=True)
     parser.add_argument("--out", default=None)
-    parser.add_argument("--mode", default="auto", choices=["auto", "track", "action", "letterbox"])
+    parser.add_argument("--mode", default="auto",
+                        choices=["auto", "track", "action", "wide", "letterbox"])
     parser.add_argument("--action-anchor", type=float, default=None,
                         help="Source timestamp of the physical payoff; action mode holds near it")
+    parser.add_argument("--subject-x", type=float, default=None,
+                        help="Normalized visual-editor subject center (0 left .. 1 right)")
     args = parser.parse_args()
 
     load_env()
@@ -476,7 +488,7 @@ def main():
         return
 
     try:
-        ffprobe_json(args.inp)  # validates ffmpeg present + file readable
+        probe = ffprobe_json(args.inp)  # validates ffmpeg present + file readable
     except FFmpegMissing as e:
         fail(str(e))
         return
@@ -485,10 +497,39 @@ def main():
         return
 
     try:
-        if args.mode == "letterbox":
+        if args.mode in {"letterbox", "wide"}:
             render_letterbox(args.inp, args.start, dur, out_path)
-            emit({"path": out_path, "mode": "letterbox", "faces_tracked": 0, "cuts": 0,
+            emit({"path": out_path, "mode": args.mode, "faces_tracked": 0, "cuts": 0,
                   "width": OUT_W, "height": OUT_H, "duration": round(dur, 3)})
+            return
+
+        # A multimodal action result already identifies the intended horizontal subject
+        # in the source frame. A fixed, deterministic crop is both safer than a motion
+        # centroid and much faster than running YuNet over every frame of a 35-second
+        # clip. The crop still preserves the original video pixels; it simply stays on
+        # the reviewed subject instead of re-targeting a reaction during the payoff.
+        if args.mode == "action" and args.subject_x is not None:
+            stream = next((s for s in probe.get("streams", []) if s.get("codec_type") == "video"), {})
+            src_w = int(stream.get("width") or 0)
+            src_h = int(stream.get("height") or 0)
+            if src_w <= 0 or src_h <= 0:
+                raise RuntimeError("source video dimensions are unavailable")
+            subject_cx = max(0.0, min(1.0, args.subject_x)) * src_w
+            crop_w = int(round(src_h * OUT_W / OUT_H))
+            crop_w -= crop_w % 2
+            cmds_text, crop_w = build_pan_commands(
+                [0.0, dur], [subject_cx, subject_cx], [0, 0], src_w, src_h, dur,
+            )
+            if cmds_text is None:
+                render_letterbox(args.inp, args.start, dur, out_path)
+                emit({"path": out_path, "mode": "letterbox", "faces_tracked": 0, "cuts": 0,
+                      "subject_locked": False, "width": OUT_W, "height": OUT_H,
+                      "duration": round(dur, 3), "note": "visual subject lock could not crop source"})
+            else:
+                render_track(args.inp, args.start, dur, crop_w, src_h, cmds_text, out_path)
+                emit({"path": out_path, "mode": "action_locked", "faces_tracked": 0, "cuts": 0,
+                      "subject_locked": True, "width": OUT_W, "height": OUT_H,
+                      "duration": round(dur, 3)})
             return
 
         try:
@@ -505,9 +546,12 @@ def main():
         action_anchor = None
         if args.action_anchor is not None:
             action_anchor = max(0.0, min(dur, args.action_anchor - args.start))
+        subject_cx = None
+        if args.subject_x is not None:
+            subject_cx = max(0.0, min(1.0, args.subject_x)) * src_w
         times, centers, segments = choose_track(
             samples, reseed_gap, action_focus=args.mode == "action",
-            action_anchor=action_anchor)
+            action_anchor=action_anchor, subject_cx=subject_cx)
         detected = sum(1 for s in samples if s["dets"])
         cmds_text, crop_w = build_pan_commands(times, centers, segments, src_w, src_h, dur)
         if cmds_text is None or (args.mode in {"auto", "action"} and not times):
@@ -522,6 +566,7 @@ def main():
         render_track(args.inp, args.start, dur, crop_w, src_h, cmds_text, out_path)
         emit({"path": out_path, "mode": "action" if args.mode == "action" else "track",
               "faces_tracked": detected, "cuts": cuts,
+              "subject_locked": bool(args.mode == "action" and action_anchor is not None and subject_cx is not None),
               "width": OUT_W, "height": OUT_H, "duration": round(dur, 3)})
     except FFmpegMissing as e:
         fail(str(e))

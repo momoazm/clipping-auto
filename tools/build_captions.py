@@ -192,12 +192,16 @@ def main():
     with open(tpath, "r", encoding="utf-8") as f:
         transcript = json.load(f)
 
+    total = max(0.0, args.end - args.start)
     all_words = transcript.get("words") or []
-    words = [
-        {"w": w["w"], "start": w["start"] - args.start, "end": w["end"] - args.start}
-        for w in all_words
-        if w["end"] > args.start and w["start"] < args.end and w["w"]
-    ]
+    words = []
+    for w in all_words:
+        if w["end"] <= args.start or w["start"] >= args.end or not w["w"]:
+            continue
+        start = max(0.0, w["start"] - args.start)
+        end = min(total, w["end"] - args.start)
+        if end > start:
+            words.append({"w": w["w"], "start": start, "end": end})
     if not words:
         fail("No words fall inside this clip range; nothing to caption.",
              start=args.start, end=args.end)
@@ -205,7 +209,6 @@ def main():
 
     style_name, style = load_style(args.style)
     animate = style.get("animation", "none") == "word-highlight"
-    total = args.end - args.start
     ass_text, line_count = build_ass(words, style, animate,
                                      hook=args.hook, hook_secs=args.hook_secs,
                                      total=total, cta_secs=args.cta_secs if args.cta else 0.0,
