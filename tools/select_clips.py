@@ -23,6 +23,7 @@ Prints JSON: {"provider","count","clips":[{...}]}  and writes the same clips to 
 import argparse
 import json
 import os
+import re
 
 from _common import load_env, emit, fail, tmp_path
 
@@ -55,6 +56,12 @@ For each clip also write:
 - "suggested_title": a curiosity-driven title (<=80 chars) that makes the click feel mandatory —
   tease the payoff, don't spoil it.
 - "emphasis_words": the 2-4 highest-impact words/numbers in the clip (drive caption pop + zoom).
+- Titles must be factually grounded in the words actually spoken. Never reverse who acts or
+  who benefits; if someone drops and the remaining players' odds improve, do not say quitting
+  wins the prize.
+- Also return "focus_mode": "action" when the payoff depends on someone moving, leaving,
+  being eliminated, grabbing/building something, or a wider physical event; otherwise use
+  "speaker".
 
 The transcript is timestamped lines as [start-end] text (seconds):
 {body}
@@ -63,7 +70,8 @@ Return ONLY a JSON object, no prose, no markdown fences, in exactly this shape:
 {{"clips": [
   {{"start": <sec>, "end": <sec>, "hook": "<the opening line, verbatim-ish>",
     "reason": "<one short sentence why it'll perform>", "virality_score": <0-100 int>,
-    "suggested_title": "<punchy <=80 char title>", "emphasis_words": ["word1","word2"]}}
+    "suggested_title": "<punchy factual <=80 char title>", "focus_mode": "action|speaker",
+    "emphasis_words": ["word1","word2"]}}
 ]}}
 Order the clips best-first by virality_score."""
 
@@ -134,6 +142,84 @@ def _load_exclude_windows(path):
 def _overlaps_excluded(start, end, windows, padding=1.0):
     """Treat a one-second safety buffer around a published span as already used."""
     return any(start < w["end"] + padding and end > w["start"] - padding for w in windows)
+
+
+ACTION_TERMS = re.compile(
+    r"\b(?:drop(?:s|ped|ping)?|leave(?:s|d|aving)?|exit(?:s|ed|ing)?|"
+    r"step(?:s|ped|ping)?|eliminat(?:e|ed|ion|ing)|officially\s+(?:out|off)|"
+    r"fall(?:s|en|ing)?|run(?:s|ning)?|grab(?:s|bed|bing)?|build(?:s|ing)?|"
+    r"retrieve(?:s|d|ing)?|rescue|remote|alarm|handcuff(?:s|ed|ing)?)\b",
+    re.IGNORECASE,
+)
+ACTION_ANCHOR_TERMS = re.compile(
+    r"\b(?:dropped|drops?|leav(?:e|es|ing|t)|exit(?:s|ed|ing)?|"
+    r"step(?:s|ped|ping)?|eliminat(?:e|ed|ion|ing)|disqualif(?:y|ied|ication)|"
+    r"removed?|officially)\b",
+    re.IGNORECASE,
+)
+
+
+def _clip_words_text(words, start, end):
+    return " ".join(
+        str(w.get("w", "")).strip()
+        for w in words
+        if w.get("end", 0) > start and w.get("start", 0) < end and w.get("w")
+    ).strip()
+
+
+def _infer_focus_mode(text):
+    """Classify whether the visual payoff needs the physical event kept in frame."""
+    return "action" if ACTION_TERMS.search(text or "") else "speaker"
+
+
+def _find_action_anchor(words, start, end):
+    """Return the last strong physical-event timestamp inside a selected span."""
+    inside = [
+        w for w in words
+        if w.get("end", 0) > start and w.get("start", 0) < end and w.get("w")
+    ]
+    anchor = None
+    for i, word in enumerate(inside):
+        token = re.sub(r"[^a-z]", "", str(word.get("w", "")).lower())
+        next_token = ""
+        if i + 1 < len(inside):
+            next_token = re.sub(r"[^a-z]", "", str(inside[i + 1].get("w", "")).lower())
+        if ACTION_ANCHOR_TERMS.search(token) or (
+            token == "officially" and next_token in {"out", "off"}
+        ):
+            anchor = float(word.get("start", start))
+    return round(anchor, 3) if anchor is not None else None
+
+
+def _safe_title(raw_title, hook, clip_text):
+    """Keep model titles punchy without allowing unsupported cause/agent claims.
+
+    The selector sees transcript text, not video pixels. This small deterministic guard is
+    intentionally conservative for the common elimination wording where a model can turn
+    "someone drops and the remaining odds improve" into "quitting wins". The spoken captions
+    remain transcript-derived; this only controls the hook card and post metadata.
+    """
+    title = " ".join(str(raw_title or "").split()).strip()
+    evidence = " ".join(str(v or "") for v in (hook, clip_text))
+    low = evidence.lower()
+    drop_odds = bool(re.search(r"\b(?:everyone\s+)?who\s+drops\b", low) and "odds" in low)
+    if drop_odds:
+        title = "Someone Dropped - Now the Mansion Odds Improve!"
+    elif re.search(r"\b(?:officially\s+)?(?:out|off|eliminated)\b", low):
+        # Preserve an explicit survivor count when the transcript actually says one.
+        count = re.search(
+            r"\b(?:only\s+)?(\d{1,3}|one|two|three|four|five|six|seven|eight|nine|ten)\s+people\b",
+            low,
+        )
+        title = "Someone Is Officially Out!"
+        if count:
+            title = f"Someone Is Officially Out - Only {count.group(1)} People Remain!"
+
+    # Never let the reversed-agent phrasing survive if the evidence says the odds improve
+    # for everyone still competing.
+    if drop_odds and re.search(r"\bquit(?:s|ting)?\b.*\bwin(?:s|ning)?\b", title.lower()):
+        title = "Someone Dropped - Now the Mansion Odds Improve!"
+    return title[:80].rstrip(" -,:;") or "MrBeast Challenge Moment"
 
 
 # --- provider chain (OpenAI-compatible + Gemini + Groq SDK) ----------------
@@ -376,7 +462,9 @@ def deterministic_fallback(words, count, target_secs, max_secs, excluded_windows
             "hook": hook,
             "reason": "Evenly distributed transcript fallback after LLM provider timeouts.",
             "virality_score": 0,
-            "suggested_title": (hook[:76] or "MrBeast Challenge Moment").strip(),
+            "suggested_title": _safe_title(hook[:76], hook, text),
+            "focus_mode": _infer_focus_mode(text),
+            "action_anchor": _find_action_anchor(words, item["start"], item["end"]),
             "emphasis_words": [],
         })
     return result
@@ -485,14 +573,28 @@ def main():
         s, e = snap_to_words(words, s, e, args.target_secs, args.max_secs)
         if _overlaps_excluded(s, e, excluded_windows):
             continue
+        clip_text = _clip_words_text(words, s, e)
+        hook = c.get("hook", "")
+        reason = c.get("reason", "")
+        title = _safe_title(c.get("suggested_title", ""), hook, clip_text)
+        focus_text = " ".join(str(v or "") for v in (hook, reason, clip_text, title))
+        requested_focus = str(c.get("focus_mode", "")).strip().lower()
+        focus_mode = requested_focus if requested_focus in {"action", "speaker"} else "speaker"
+        # Transcript evidence wins over an LLM's missing/incorrect visual label. A physical
+        # event needs the action-aware crop even if the model forgot to return focus_mode.
+        if _infer_focus_mode(focus_text) == "action":
+            focus_mode = "action"
+        action_anchor = _find_action_anchor(words, s, e) if focus_mode == "action" else None
         clips.append({
             "start": s,
             "end": e,
             "duration": round(e - s, 3),
-            "hook": c.get("hook", ""),
-            "reason": c.get("reason", ""),
+            "hook": hook,
+            "reason": reason,
             "virality_score": c.get("virality_score"),
-            "suggested_title": c.get("suggested_title", ""),
+            "suggested_title": title,
+            "focus_mode": focus_mode,
+            "action_anchor": action_anchor,
             "emphasis_words": c.get("emphasis_words", []),
         })
 
