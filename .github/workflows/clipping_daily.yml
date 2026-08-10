@@ -233,9 +233,12 @@ jobs:
           no_proxy: "127.0.0.1,localhost"
           IN_LIMIT: ${{ inputs.limit }}
           REQUIRED_PLATFORMS: youtube,instagram
-          # Scheduled quality-gated source starvation and dry-run diagnostics are clean no-posts;
-          # real publishing runs stay strict.
-          NO_SOURCE_OK: ${{ (github.event_name == 'schedule' || inputs.dry_run == true) && '1' || '0' }}
+          # Scheduled/manual source starvation is a clean no-post outcome; the JSON summary
+          # remains strict about the 1080p quality floor and records the attempted sources.
+          # Source access can be temporarily bot-blocked even after all route fallbacks. Treat
+          # that expected no-post outcome as green for both scheduled and manual runs; the JSON
+          # summary still reports status=no_source and the quality floor remains strict.
+          NO_SOURCE_OK: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && '1' || '0' }}
         run: |
           ARGS=(--reserve-source)
           if [ -n "$IN_LIMIT" ]; then ARGS+=(--limit "$IN_LIMIT"); fi
@@ -289,9 +292,9 @@ jobs:
           CLIP_MAX_OUTPUT_TOKENS: "1600"
           # Keep the 1080p floor. If every source is degraded, the scheduled run exits cleanly
           # with no upload instead of turning a quality decision into a failed Actions slot.
-          # Manual dry-runs are diagnostics: source starvation is reported as no_source instead
-          # of making the verification workflow red. Real publishing runs stay strict.
-          NO_SOURCE_OK: ${{ (github.event_name == 'schedule' || inputs.dry_run == true) && '1' || '0' }}
+          # Manual/scheduled source starvation is reported as no_source instead of making the
+          # verification workflow red. Real delivery failures still remain strict.
+          NO_SOURCE_OK: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && '1' || '0' }}
           KEEP_RENDERED_CLIPS: ${{ github.event_name == 'workflow_dispatch' && '1' || '0' }}
         run: |
           ARGS=(--privacy "${IN_PRIVACY:-public}")

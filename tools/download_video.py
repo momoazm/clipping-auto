@@ -139,14 +139,12 @@ def main():
 
     proxy = os.environ.get("YTDLP_PROXY")
 
-    # Client/route chain, tried in order until one serves a >= lo ladder (2026-07-10).
-    # TV FIRST: the BgUtils PO-token provider mints tokens for BOTH `tv` and `web`, but only
-    # `web` was ever tried -- and on 07-09 YouTube started serving the web client a degraded
-    # <=360p ladder from the WARP egress even WITH a valid POT (both scheduled runs died on
-    # the floor, 5 sources each). `tv` is the least bot-walled POT-covered client (yt-dlp's
-    # own default). The no-proxy leg is BgUtils' primary design case -- POT straight from the
-    # datacenter IP -- for when the WARP range itself is what's flagged. `android` can't use
-    # a POT at all; it's a last-ditch lottery ticket.
+    # Client/route chain, tried in order until one serves a >= lo ladder (2026-08-10).
+    # YouTube can flag either the runner egress or a particular player-client handshake, so
+    # a single WARP route is not enough. Keep both direct and WARP legs for the POT-capable
+    # web/tv clients; the direct legs matter when the current WARP range is challenged.
+    # Android-only legs are intentionally omitted: they cannot use BgUtils POTs and the
+    # recent failed runs ended on their repeated "sign in to confirm" responses.
     attempts = [
         # DEFAULT FIRST (2026-07-10): on a residential IP, yt-dlp's own client mix gets the
         # full 1080p ladder while FORCED clients fail (`tv` alone returns no formats at all
@@ -154,13 +152,13 @@ def main():
         # bot-walled datacenter IP the default fails fast and the POT-covered chain below
         # still gets its shot, so this costs the cloud path nothing.
         (None, False),
-        (["android_vr"], True),
+        (None, True),
+        (["web_safari"], False),
         (["web_safari"], True),
+        (["tv"], False),
         (["tv"], True),
+        (["web"], False),
         (["web"], True),
-        (["tv", "web"], False),
-        (["ios"], True),
-        (["android"], True),
     ]
 
     deadline = time.monotonic() + DOWNLOAD_DEADLINE_SEC
