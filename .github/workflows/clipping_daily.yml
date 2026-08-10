@@ -282,6 +282,11 @@ jobs:
           TIKTOK_EXPECTED_USERNAME: ${{ secrets.TIKTOK_EXPECTED_USERNAME || 'mrbeasteg' }}
           TIKTOK_PRIVACY: PUBLIC_TO_EVERYONE
           REQUIRED_PLATFORMS: youtube,instagram
+          # Keep provider calls short; deterministic selection fallback handles transient model
+          # outages instead of letting one route consume the whole clipping job timeout.
+          CLIP_PROVIDER_TIMEOUT_SEC: "15"
+          CLIP_TEXT_CHAR_BUDGET: "12000"
+          CLIP_MAX_OUTPUT_TOKENS: "1600"
           # Keep the 1080p floor. If every source is degraded, the scheduled run exits cleanly
           # with no upload instead of turning a quality decision into a failed Actions slot.
           # Manual dry-runs are diagnostics: source starvation is reported as no_source instead
@@ -323,6 +328,9 @@ jobs:
           git add state/clipped_history.json state/delivery_cooldowns.json
           if [ -f state/ig_post_log.json ]; then
             git add state/ig_post_log.json
+          fi
+          if [ -f state/style_experiment.json ]; then
+            git add state/style_experiment.json
           fi
           if ! git diff --staged --quiet; then
             git commit -m "chore: update clipped history [skip ci]"

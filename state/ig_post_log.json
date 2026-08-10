@@ -97,6 +97,72 @@
         "clip": "03",
         "hook": "MrBeast Handcuffed Them: 'Take Them Off = Eliminated'"
       }
+    },
+    {
+      "post_id": "6a79a8d099e941b85db9bc79",
+      "posted_at": "2026-08-10T10:33:52.126782+00:00",
+      "style": "hormozi",
+      "experiment": true,
+      "resolved": false,
+      "context": {
+        "clip": "01",
+        "hook": "How a Quit Can Win You a $1M Mansion!"
+      }
+    },
+    {
+      "post_id": "6a79aaa902fbbd3cb7309c11",
+      "posted_at": "2026-08-10T10:41:11.290712+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "02",
+        "hook": "You Won $10,000 – See Their Reaction!"
+      }
+    },
+    {
+      "post_id": "6a79ac894848e0d09194eb6a",
+      "posted_at": "2026-08-10T10:49:27.178631+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "03",
+        "hook": "Million‑Dollar Mansion Up for Grabs!"
+      }
+    },
+    {
+      "post_id": "6a79ae6bd880f90a7ed3fdc1",
+      "posted_at": "2026-08-10T10:57:23.843073+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "04",
+        "hook": "The Remote Rescue Mission!"
+      }
+    },
+    {
+      "post_id": "6a79af994f27df8d93e283dd",
+      "posted_at": "2026-08-10T11:02:29.189824+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "05",
+        "hook": "Alarm Threat: Will He Survive?"
+      }
+    },
+    {
+      "post_id": "6a79b177d617da0978dbc0f7",
+      "posted_at": "2026-08-10T11:10:26.022392+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "06",
+        "hook": "Counting to 100,000 – Can He Finish?"
+      }
     }
   ]
 }

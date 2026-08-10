@@ -168,11 +168,16 @@ def _chat_groq(prompt):
     if not key:
         raise RuntimeError("GROQ_API_KEY not set")
     client = Groq(api_key=key, timeout=_provider_timeout(), max_retries=0)
+    try:
+        max_tokens = max(1200, min(4000, int(os.environ.get("CLIP_MAX_OUTPUT_TOKENS", "1600"))))
+    except (TypeError, ValueError):
+        max_tokens = 1600
     r = client.chat.completions.create(
         model=os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b"),
         messages=[{"role": "system", "content": SYSTEM}, {"role": "user", "content": prompt}],
         temperature=0.5,
         response_format={"type": "json_object"},
+        max_tokens=max_tokens,
     )
     return r.choices[0].message.content
 
@@ -249,12 +254,14 @@ def _chat_zhipu(prompt):
 # gpt-oss-120b on Groq/Cerebras (fast, big quotas) -> tail.
 # OpenRouter :free = 50 req/day (1000/day after a one-time $10 top-up); when the cap
 # trips the first two links fail fast and Groq takes over.
+# Try providers with the best observed reliability first. Every provider is optional and
+# bounded; deterministic_fallback keeps a run usable when all configured models are down.
 CHAIN = (
+    ("cerebras", _chat_cerebras),
+    ("groq", _chat_groq),
     ("openrouter-nemotron", _chat_openrouter_nemotron),
     ("openrouter-qwen-coder", _chat_openrouter_qwen_coder),
     ("zhipu", _chat_zhipu),
-    ("groq", _chat_groq),
-    ("cerebras", _chat_cerebras),
     ("gemini", _chat_gemini),
     ("mistral", _chat_mistral),
 )
@@ -306,6 +313,75 @@ def snap_to_words(words, start, end, target_secs, max_secs, min_secs=20):
     return round(s, 3), round(e, 3)
 
 
+def deterministic_fallback(words, count, target_secs, max_secs, excluded_windows):
+    """Choose evenly distributed transcript windows when every LLM is unavailable.
+
+    This is deliberately a last-resort quality floor, not a replacement for the provider
+    chain. It keeps a run from failing solely because an external model timed out, while
+    still enforcing the same source-window and clip-overlap exclusions as LLM selections.
+    """
+    if not words or count <= 0:
+        return []
+    total_end = max(float(words[-1].get("end", 0) or 0), float(target_secs))
+    ideal_anchors = [total_end * (i + 1) / (count + 1) for i in range(count)]
+    offsets = [0.0, -90.0, 90.0, -180.0, 180.0, -270.0, 270.0, -360.0, 360.0]
+
+    def make_candidate(anchor):
+        start, end = snap_to_words(
+            words, anchor - target_secs / 2, anchor + target_secs / 2,
+            target_secs, max_secs,
+        )
+        if _overlaps_excluded(start, end, excluded_windows):
+            return None
+        return start, end
+
+    selected = []
+    for ideal in ideal_anchors:
+        for offset in offsets:
+            candidate = make_candidate(max(0.0, min(total_end, ideal + offset)))
+            if not candidate:
+                continue
+            start, end = candidate
+            if any(start < other["end"] and end > other["start"] for other in selected):
+                continue
+            selected.append({"start": start, "end": end})
+            break
+
+    # If an exclusion window consumed an ideal slot, scan the remainder of the source for
+    # another clean window rather than returning fewer than the requested clips.
+    if len(selected) < count:
+        step = max(8.0, target_secs * 0.75)
+        anchor = target_secs / 2
+        while anchor <= total_end and len(selected) < count:
+            candidate = make_candidate(anchor)
+            if candidate:
+                start, end = candidate
+                if not any(start < other["end"] and end > other["start"] for other in selected):
+                    selected.append({"start": start, "end": end})
+            anchor += step
+
+    selected.sort(key=lambda item: item["start"])
+    result = []
+    for item in selected[:count]:
+        text = " ".join(
+            str(word.get("w", "")).strip()
+            for word in words
+            if word.get("start", 0) >= item["start"] and word.get("end", 0) <= item["end"]
+        ).strip()
+        hook = " ".join(text.split()[:16])
+        result.append({
+            "start": item["start"],
+            "end": item["end"],
+            "duration": round(item["end"] - item["start"], 3),
+            "hook": hook,
+            "reason": "Evenly distributed transcript fallback after LLM provider timeouts.",
+            "virality_score": 0,
+            "suggested_title": (hook[:76] or "MrBeast Challenge Moment").strip(),
+            "emphasis_words": [],
+        })
+    return result
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--transcript", default=None)
@@ -329,7 +405,11 @@ def main():
 
     words = transcript.get("words") or []
     excluded_windows = _load_exclude_windows(args.exclude_windows)
-    body = build_body(transcript)
+    try:
+        text_budget = max(8000, min(24000, int(os.environ.get("CLIP_TEXT_CHAR_BUDGET", "12000"))))
+    except (TypeError, ValueError):
+        text_budget = 12000
+    body = build_body(transcript, char_budget=text_budget)
     if not body.strip():
         fail("Transcript has no usable text/timestamps.", transcript=tpath)
         return
@@ -338,7 +418,10 @@ def main():
     # collecting extra ranked options lets the non-overlap pass fill the requested six slots
     # without accepting weaker moments or cutting a winner in half.
     # Ask for extra candidates when old spans must be removed after the provider responds.
-    candidate_request_count = args.count + max(3, args.count // 2) + len(excluded_windows)
+    # Keep the request inside Groq's rolling token budget even when a continuation run has
+    # many old spans to exclude. Extra candidates are useful, but a huge candidate list makes
+    # the JSON response itself exceed the provider TPM limit before selection can begin.
+    candidate_request_count = args.count + min(max(3, args.count // 2) + len(excluded_windows), 3)
     prompt = PROMPT_TMPL.format(
         count=candidate_request_count, target=args.target_secs, maxs=args.max_secs, body=body)
     if excluded_windows:
@@ -376,7 +459,21 @@ def main():
             errors[name] = str(e)
             continue
     if candidates is None:
-        fail("All configured LLM providers failed for clip selection.", provider_errors=errors)
+        fallback = deterministic_fallback(
+            words, args.count, args.target_secs, args.max_secs, excluded_windows,
+        )
+        if len(fallback) < args.count:
+            fail("All configured LLM providers failed and the transcript fallback could not fill "
+                 f"{args.count} non-overlapping clips.", provider_errors=errors,
+                 fallback_count=len(fallback))
+            return
+        payload = {"provider": "deterministic-fallback", "count": len(fallback),
+                   "target_count": args.count, "candidates_requested": candidate_request_count,
+                   "clips": fallback, "provider_errors": errors,
+                   "note": "LLM providers unavailable; evenly distributed transcript windows used."}
+        with open(out_path, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False, indent=2)
+        emit(payload)
         return
 
     clips = []
