@@ -434,9 +434,10 @@ def main():
                     default=os.environ.get("REQUIRED_PLATFORMS", "youtube,instagram"),
                     help="Comma-separated destinations that must publish for a zero exit.")
     args = ap.parse_args()
-    # Scheduled quality-gated runs may have no usable source on a bot-limited YouTube day. That
-    # is an intentional no-post outcome; manual runs remain red so an operator can investigate.
-    no_source_ok = os.environ.get("NO_SOURCE_OK") == "1" and not args.dry_run
+    # Scheduled quality-gated runs and explicit dry-run diagnostics may have no usable source on
+    # a bot-limited YouTube day. That is an intentional no-post outcome. Real publishing runs
+    # remain strict so an operator cannot mistake a missing source for a successful delivery.
+    no_source_ok = os.environ.get("NO_SOURCE_OK") == "1"
 
     if args.reserve_source and (args.dry_run or args.source or args.source_reservation):
         raise RuntimeError("--reserve-source cannot be combined with --dry-run, --source, or --source-reservation")

@@ -225,8 +225,9 @@ jobs:
           no_proxy: "127.0.0.1,localhost"
           IN_LIMIT: ${{ inputs.limit }}
           REQUIRED_PLATFORMS: youtube,instagram
-          # Scheduled quality-gated source starvation is a clean no-post; manual runs stay red.
-          NO_SOURCE_OK: ${{ github.event_name == 'schedule' && '1' || '0' }}
+          # Scheduled quality-gated source starvation and dry-run diagnostics are clean no-posts;
+          # real publishing runs stay strict.
+          NO_SOURCE_OK: ${{ (github.event_name == 'schedule' || inputs.dry_run == true) && '1' || '0' }}
         run: |
           ARGS=(--reserve-source)
           if [ -n "$IN_LIMIT" ]; then ARGS+=(--limit "$IN_LIMIT"); fi
@@ -273,7 +274,9 @@ jobs:
           REQUIRED_PLATFORMS: youtube,instagram
           # Keep the 1080p floor. If every source is degraded, the scheduled run exits cleanly
           # with no upload instead of turning a quality decision into a failed Actions slot.
-          NO_SOURCE_OK: ${{ github.event_name == 'schedule' && '1' || '0' }}
+          # Manual dry-runs are diagnostics: source starvation is reported as no_source instead
+          # of making the verification workflow red. Real publishing runs stay strict.
+          NO_SOURCE_OK: ${{ (github.event_name == 'schedule' || inputs.dry_run == true) && '1' || '0' }}
           KEEP_RENDERED_CLIPS: ${{ github.event_name == 'workflow_dispatch' && '1' || '0' }}
         run: |
           ARGS=(--privacy "${IN_PRIVACY:-public}")
