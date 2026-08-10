@@ -328,12 +328,36 @@
       "date": "2026-08-08",
       "published_at": "2026-08-08T16:58:47.295749+00:00",
       "clip_windows": [
-        {"start": 2979.22, "end": 3019.99, "video_id": "6a775b9392c5f0c1129c4171"},
-        {"start": 1887.698, "end": 1911.548, "video_id": "6a775c9857145b82166752dc"},
-        {"start": 749.331, "end": 780.641, "video_id": "6a775d8e6a6d206475556fb2"},
-        {"start": 427.29, "end": 463.401, "video_id": "6a775e58d5232620b2c15a03"},
-        {"start": 2680.42, "end": 2716.93, "video_id": "6a775f4c8716743ace9cdbe0"},
-        {"start": 2460.199, "end": 2485.089, "video_id": "6a775fe6ec6d16f354b6c46f"}
+        {
+          "start": 2979.22,
+          "end": 3019.99,
+          "video_id": "6a775b9392c5f0c1129c4171"
+        },
+        {
+          "start": 1887.698,
+          "end": 1911.548,
+          "video_id": "6a775c9857145b82166752dc"
+        },
+        {
+          "start": 749.331,
+          "end": 780.641,
+          "video_id": "6a775d8e6a6d206475556fb2"
+        },
+        {
+          "start": 427.29,
+          "end": 463.401,
+          "video_id": "6a775e58d5232620b2c15a03"
+        },
+        {
+          "start": 2680.42,
+          "end": 2716.93,
+          "video_id": "6a775f4c8716743ace9cdbe0"
+        },
+        {
+          "start": 2460.199,
+          "end": 2485.089,
+          "video_id": "6a775fe6ec6d16f354b6c46f"
+        }
       ],
       "clip_video_ids": [
         "6a775b9392c5f0c1129c4171",
@@ -680,6 +704,22 @@
     {
       "source_id": "Af6i6ChAVTw",
       "date": "2026-08-08"
+    },
+    {
+      "source_id": "uyiG6uw-6pA",
+      "date": "2026-08-10"
+    },
+    {
+      "source_id": "figrl0aOULs",
+      "date": "2026-08-10"
+    },
+    {
+      "source_id": "aKq8bkY5eTU",
+      "date": "2026-08-10"
+    },
+    {
+      "source_id": "zajUgQLviwk",
+      "date": "2026-08-10"
     }
   ]
 }
