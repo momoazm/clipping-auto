@@ -27,6 +27,7 @@ Usage:
 Prints JSON: dry run -> {"status":"preview",...}; real -> {"status":"uploaded","post_id",...}.
 """
 import argparse
+import json
 import os
 import time
 import uuid
@@ -34,6 +35,55 @@ import uuid
 from _common import load_env, emit, fail
 
 ZERNIO_API = "https://zernio.com/api/v1"
+
+
+def _platform_entry(post):
+    for entry in (post or {}).get("platforms", []):
+        if entry.get("platform") == "instagram":
+            return entry
+    return {}
+
+
+def _platform_detail(entry):
+    details = {key: entry.get(key) for key in ("error", "code", "message", "platformError")
+               if entry.get(key) not in (None, "", {})}
+    if not details:
+        return "provider returned no Instagram error detail"
+    return json.dumps(details, ensure_ascii=True, separators=(",", ":"))[:600]
+
+
+def retry_post(post_id, api_key, max_tries=2):
+    """Retry only failed platforms on the existing Zernio post."""
+    import httpx
+    backoff, last = 10, None
+    url = f"{ZERNIO_API}/posts/{post_id}/retry"
+    for attempt in range(max_tries):
+        try:
+            response = httpx.post(url, headers={"Authorization": f"Bearer {api_key}"}, timeout=60)
+            try:
+                body = response.json()
+            except Exception:
+                body = {}
+        except Exception as exc:
+            last = str(exc)
+            if attempt < max_tries - 1:
+                time.sleep(min(backoff, 120)); backoff *= 2
+            continue
+        raw = response.text[:320]
+        if response.status_code == 429 or response.status_code >= 500:
+            last = f"HTTP {response.status_code}: {raw}"
+            if attempt < max_tries - 1:
+                retry_after = response.headers.get("Retry-After", "")
+                wait = int(retry_after) if retry_after.isdigit() else backoff
+                time.sleep(min(wait, 120)); backoff *= 2
+            continue
+        if response.status_code >= 400:
+            return None, f"Zernio post retry failed HTTP {response.status_code}: {raw}"
+        post = body.get("post") or body.get("existingPost") if isinstance(body, dict) else None
+        if isinstance(post, dict):
+            return post, None
+        return None, f"Zernio post retry returned no post: {raw}"
+    return None, f"Zernio post retry failed after {max_tries} tries ({last})"
 
 
 def create_post(payload, api_key, max_tries=5):
@@ -46,11 +96,12 @@ def create_post(payload, api_key, max_tries=5):
     import httpx
     backoff = 10
     last = None
+    request_id = str(uuid.uuid4())
     for attempt in range(max_tries):
         try:
             r = httpx.post(f"{ZERNIO_API}/posts", json=payload,
                            headers={"Authorization": f"Bearer {api_key}",
-                                    "x-request-id": str(uuid.uuid4())}, timeout=60)
+                                    "x-request-id": request_id}, timeout=60)
             try:
                 body = r.json()
             except Exception:
@@ -86,7 +137,7 @@ def create_post(payload, api_key, max_tries=5):
                     backoff *= 2
                     continue
             r.raise_for_status()
-            return body.get("post", {}) if isinstance(body, dict) else {}, None, {}
+            return (body.get("post") or body.get("existingPost") or {}) if isinstance(body, dict) else {}, None, {}
         except Exception as exc:
             last = str(exc)
             if attempt < max_tries - 1:
@@ -106,7 +157,7 @@ def main():
     args = parser.parse_args()
 
     load_env()
-    api_key = os.environ.get("ZERNIO_API", "").strip()
+    api_key = (os.environ.get("ZERNIO_API") or os.environ.get("ZERNIO_API_KEY") or "").strip()
     account_id = os.environ.get("ZERNIO_INSTAGRAM_ID", "").strip()
     if not api_key:
         fail("ZERNIO_API not set in API.env. Sign up free at zernio.com and grab it from "
@@ -157,36 +208,49 @@ def main():
         fail(f"Zernio post create returned no post id: {post}")
         return
 
-    def platform_entry(p):
-        for entry in p.get("platforms", []):
-            if entry.get("platform") == "instagram":
-                return entry
-        return {}
-
-    entry = platform_entry(post)
+    entry = _platform_entry(post)
     status = entry.get("status") or post.get("status")
 
     # publishNow:true is meant to include the URL immediately, but Instagram-side processing
     # (container transcode) can take up to ~2 min -- poll the same way the old direct-Graph-API
     # version did if it isn't done yet.
-    deadline = time.time() + args.poll_timeout
     poll_error = None
-    while status not in ("published", "failed", "error") and time.time() < deadline:
-        time.sleep(5)
-        try:
-            s = httpx.get(f"{ZERNIO_API}/posts/{post_id}",
-                          headers={"Authorization": f"Bearer {api_key}"}, timeout=30)
-            s.raise_for_status()
-            post = s.json().get("post", post)
-            entry = platform_entry(post)
+    retry_attempted = False
+    retry_error = None
+
+    def poll_until_terminal():
+        nonlocal post, entry, status, poll_error
+        deadline = time.time() + args.poll_timeout
+        while status not in ("published", "failed", "error", "partial") and time.time() < deadline:
+            time.sleep(5)
+            try:
+                s = httpx.get(f"{ZERNIO_API}/posts/{post_id}",
+                              headers={"Authorization": f"Bearer {api_key}"}, timeout=30)
+                s.raise_for_status()
+                body = s.json()
+                post = body.get("post", post) if isinstance(body, dict) else post
+                entry = _platform_entry(post)
+                status = entry.get("status") or post.get("status")
+            except Exception as exc:
+                poll_error = str(exc)
+
+    poll_until_terminal()
+    if status in ("failed", "error", "partial"):
+        retry_attempted = True
+        retried, retry_error = retry_post(post_id, api_key)
+        if retried:
+            post = retried
+            entry = _platform_entry(post)
             status = entry.get("status") or post.get("status")
-        except Exception as exc:
-            poll_error = str(exc)
+            poll_until_terminal()
 
     if status not in ("published",):
-        fail(f"Zernio publish did not complete (status={status}).",
-             post_id=post_id, platform_status=entry, poll_error=poll_error,
-             ambiguous=status not in ("failed", "error"))
+        detail = f"Zernio publish did not complete (status={status}; {_platform_detail(entry)})."
+        if retry_error:
+            detail += f" Retry attempt: {retry_error}"
+        fail(detail, post_id=post_id, platform_status=entry, poll_error=poll_error,
+             retry_attempted=retry_attempted,
+             ambiguous=status not in ("failed", "error", "partial"))
         return
 
     emit({"status": "uploaded", "platform": "instagram", "via": "zernio",
