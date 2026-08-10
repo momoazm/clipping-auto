@@ -108,6 +108,34 @@ def _strip_fences(text):
     return t[i : j + 1] if i != -1 and j != -1 else t
 
 
+def _load_exclude_windows(path):
+    """Load source-time spans that have already been published for this video."""
+    if not path:
+        return []
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            raw = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        return []
+    if isinstance(raw, dict):
+        raw = raw.get("windows", [])
+    windows = []
+    for item in raw if isinstance(raw, list) else []:
+        try:
+            start = float(item.get("start")) if isinstance(item, dict) else float(item[0])
+            end = float(item.get("end")) if isinstance(item, dict) else float(item[1])
+        except (TypeError, ValueError, KeyError, IndexError):
+            continue
+        if end > start:
+            windows.append({"start": start, "end": end})
+    return windows
+
+
+def _overlaps_excluded(start, end, windows, padding=1.0):
+    """Treat a one-second safety buffer around a published span as already used."""
+    return any(start < w["end"] + padding and end > w["start"] - padding for w in windows)
+
+
 # --- provider chain (OpenAI-compatible + Gemini + Groq SDK) ----------------
 
 def _provider_timeout():
@@ -284,6 +312,8 @@ def main():
     parser.add_argument("--count", type=int, default=3)
     parser.add_argument("--target-secs", type=int, default=35)
     parser.add_argument("--max-secs", type=int, default=60)
+    parser.add_argument("--exclude-windows", default=None,
+                        help="JSON file containing previously published source spans")
     parser.add_argument("--out", default=None)
     args = parser.parse_args()
 
@@ -298,6 +328,7 @@ def main():
         transcript = json.load(f)
 
     words = transcript.get("words") or []
+    excluded_windows = _load_exclude_windows(args.exclude_windows)
     body = build_body(transcript)
     if not body.strip():
         fail("Transcript has no usable text/timestamps.", transcript=tpath)
@@ -306,9 +337,17 @@ def main():
     # Ask for a small buffer of candidates. The best six can overlap in a long transcript;
     # collecting extra ranked options lets the non-overlap pass fill the requested six slots
     # without accepting weaker moments or cutting a winner in half.
-    candidate_request_count = args.count + max(3, args.count // 2)
+    # Ask for extra candidates when old spans must be removed after the provider responds.
+    candidate_request_count = args.count + max(3, args.count // 2) + len(excluded_windows)
     prompt = PROMPT_TMPL.format(
         count=candidate_request_count, target=args.target_secs, maxs=args.max_secs, body=body)
+    if excluded_windows:
+        spans = ", ".join(f"{w['start']:.1f}-{w['end']:.1f}s" for w in excluded_windows)
+        prompt += (
+            "\n\nPreviously published source spans (seconds): " + spans +
+            "\nDo not select or overlap any of these spans; choose genuinely different moments "
+            "elsewhere in the source."
+        )
 
     configured_chain = tuple((name, fn) for name, fn in CHAIN if _provider_configured(name))
     if not configured_chain:
@@ -347,6 +386,8 @@ def main():
         except (KeyError, TypeError, ValueError):
             continue
         s, e = snap_to_words(words, s, e, args.target_secs, args.max_secs)
+        if _overlaps_excluded(s, e, excluded_windows):
+            continue
         clips.append({
             "start": s,
             "end": e,

@@ -2,6 +2,7 @@
 import argparse
 import datetime
 import json
+import math
 import os
 import subprocess
 import sys
@@ -145,6 +146,61 @@ def load_json(path, default):
             return json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         return default
+
+
+def source_history_record(history, source_id):
+    """Return the first durable record for a source video, if one exists."""
+    records = history.get("clipped", []) if isinstance(history, dict) else []
+    for record in records or []:
+        if isinstance(record, dict) and record.get("source_id") == source_id:
+            return record
+    return None
+
+
+def source_clip_windows(record):
+    """Normalize previously published source spans for overlap-safe continuation runs."""
+    windows = []
+    raw = record.get("clip_windows", []) if isinstance(record, dict) else []
+    for item in raw or []:
+        try:
+            start = float(item.get("start"))
+            end = float(item.get("end"))
+        except (AttributeError, TypeError, ValueError):
+            continue
+        if end > start:
+            window = {"start": start, "end": end}
+            if isinstance(item, dict) and item.get("video_id"):
+                window["video_id"] = item["video_id"]
+            windows.append(window)
+    return windows
+
+
+def duration_target_count(duration, cfg):
+    """Return the total desired clips for a source under the configured duration rule."""
+    mode = str(cfg.get("clip_count_mode", "fixed")).strip().lower()
+    if mode != "duration":
+        return int(cfg.get("clips_per_day", 6))
+    try:
+        interval = max(1.0, float(cfg.get("clip_every_secs", 300)))
+        seconds = max(1.0, float(duration or 0))
+    except (TypeError, ValueError):
+        return int(cfg.get("clips_per_day", 6))
+    minimum = max(1, int(cfg.get("min_clips_per_run", 2)))
+    return max(minimum, int(math.ceil(seconds / interval)))
+
+
+def delivery_capacity(required_platforms, cfg, now=None):
+    """Return the number of posts still safe for every required platform in this window."""
+    now = now or datetime.datetime.now(datetime.timezone.utc)
+    history = load_json(HISTORY, {"clipped": []})
+    counts = recent_delivery_counts(history, now=now)
+    limit = max(1, int(cfg.get("max_platform_posts_per_24h", 6)))
+    capacities = []
+    for platform in sorted(required_platforms):
+        if active_delivery_cooldown(platform, now=now):
+            return 0
+        capacities.append(max(0, limit - counts.get(platform, 0)))
+    return min(capacities) if capacities else limit
 
 
 def _atomic_write_json(path, data):
@@ -426,6 +482,10 @@ def main():
                     help="Reserve one unused source in tracked history before processing")
     ap.add_argument("--source", default=None,
                     help="Process this pre-downloaded source file (skips find+download)")
+    ap.add_argument("--source-id", default=None,
+                    help="Process this exact YouTube source id, even if it has prior clips")
+    ap.add_argument("--extra-clips", action="store_true",
+                    help="For --source-id, select only new non-overlapping spans")
     ap.add_argument("--source-meta", default=None,
                     help="Manifest written by --download-only (source info + attempted ids)")
     ap.add_argument("--source-reservation", default=None,
@@ -439,16 +499,21 @@ def main():
     # remain strict so an operator cannot mistake a missing source for a successful delivery.
     no_source_ok = os.environ.get("NO_SOURCE_OK") == "1"
 
-    if args.reserve_source and (args.dry_run or args.source or args.source_reservation):
+    if args.reserve_source and (args.dry_run or args.source or args.source_id or args.source_reservation):
         raise RuntimeError("--reserve-source cannot be combined with --dry-run, --source, or --source-reservation")
-    if args.source and args.source_reservation:
-        raise RuntimeError("--source and --source-reservation are mutually exclusive")
+    if args.source and (args.source_id or args.source_reservation):
+        raise RuntimeError("--source, --source-id, and --source-reservation are mutually exclusive")
+    if args.source_id and args.source_reservation:
+        raise RuntimeError("--source-id and --source-reservation are mutually exclusive")
+    if args.extra_clips and not args.source_id:
+        raise RuntimeError("--extra-clips requires --source-id")
 
     required_platforms = {p.strip().lower() for p in args.required_platforms.split(",") if p.strip()}
 
     TMP.mkdir(parents=True, exist_ok=True)
     cfg = load_json(CONFIG, {})
     clips_per_day = int(cfg.get("clips_per_day", 6))
+    duration_mode = str(cfg.get("clip_count_mode", "fixed")).strip().lower() == "duration"
     min_clips_per_run = int(cfg.get("min_clips_per_run", 2))
     if min_clips_per_run < 2:
         raise RuntimeError("config min_clips_per_run must be at least 2")
@@ -465,15 +530,36 @@ def main():
     target = int(cfg.get("target_secs", 35))
     maxs = int(cfg.get("max_secs", 60))
     max_video_attempts = int(cfg.get("max_video_attempts", 5))
+    history = load_json(HISTORY, {"clipped": []})
+    requested_record = source_history_record(history, args.source_id) if args.source_id else None
+    requested_windows = source_clip_windows(requested_record)
+    if args.source_id and requested_record and not args.extra_clips:
+        raise RuntimeError("--source-id already exists in history; add --extra-clips to avoid duplicate spans")
+    if args.source_id and args.extra_clips and requested_record:
+        known_target = requested_record.get("target_clip_count")
+        if known_target is not None and len(requested_windows) >= int(known_target):
+            summary = {"date": datetime.date.today().isoformat(), "dry_run": args.dry_run,
+                       "status": "already_complete", "source_id": args.source_id,
+                       "target_clip_count": int(known_target),
+                       "existing_clip_count": len(requested_windows), "uploaded": [],
+                       "errors": [], "warnings": []}
+            print(json.dumps(summary, indent=2))
+            return
 
     summary = {"date": datetime.date.today().isoformat(), "dry_run": args.dry_run,
                "clips_requested": clips_per_day,
                "target_clips_per_source_video": clips_per_day,
+               "clip_count_mode": "duration" if duration_mode else "fixed",
+               "clip_every_secs": int(cfg.get("clip_every_secs", 300)) if duration_mode else None,
                "minimum_clips_required": min_clips_per_run,
                "uploaded": [], "errors": [], "warnings": [],
                "required_platforms": sorted(required_platforms)}
     summary["delivery_budget"] = delivery_budget_guard(required_platforms, clips_per_day, cfg)
-    if not args.dry_run and summary["delivery_budget"]["blocked"]:
+    # Duration-based runs do not know the exact source length until download metadata arrives.
+    # Defer the strict guard in that mode; the post-download guard below uses the real target
+    # and caps a long source to the remaining safe platform capacity.
+    defer_budget_guard = duration_mode and args.limit is None
+    if not args.dry_run and summary["delivery_budget"]["blocked"] and not defer_budget_guard:
         summary["status"] = "quota_guarded"
         summary["required_delivery_failures"] = sorted(summary["delivery_budget"]["blocked"])
         log("delivery budget guard stopped this run before rendering:",
@@ -510,6 +596,16 @@ def main():
         if reserved_src["video_id"] not in reserved_attempts:
             reserved_attempts.append(reserved_src["video_id"])
 
+    if args.source_id:
+        reserved_src = {
+            "video_id": args.source_id,
+            "url": f"https://www.youtube.com/watch?v={args.source_id}",
+            "title": (requested_record or {}).get("source_title", ""),
+            "channel": (requested_record or {}).get("channel", "MrBeast"),
+            "reason": "explicit source id",
+        }
+        reserved_attempts = [args.source_id]
+
     if args.reserve_source:
         exclude = ",".join(sorted(ledger_ids))
         try:
@@ -543,6 +639,10 @@ def main():
     src_path = ""
     src_title = ""
     src = {}
+    active_source_record = requested_record
+    active_existing_windows = list(requested_windows)
+    source_duration = None
+    existing_windows_path = None
 
     if args.source:
         # Hybrid cloud half: the laptop job already downloaded the source on a
@@ -616,6 +716,50 @@ def main():
             src_path = dl.get("path", src_path)
             log(f"downloaded source at {dl.get('width')}x{dl.get('height')}")  # visible res check
             src_title = src.get("title") or "Video"
+            source_duration = dl.get("duration")
+            active_source_record = source_history_record(history, src.get("video_id"))
+            active_existing_windows = source_clip_windows(active_source_record)
+            existing_windows_path = None
+            if active_existing_windows:
+                existing_windows_path = TMP / "existing_clip_windows.json"
+                _atomic_write_json(existing_windows_path, {"windows": active_existing_windows})
+
+            if duration_mode:
+                target_total = duration_target_count(source_duration, cfg)
+                continuing = bool(active_existing_windows) or bool(args.extra_clips)
+                desired_count = max(0, target_total - len(active_existing_windows)) if continuing else target_total
+                if args.limit is not None:
+                    desired_count = min(desired_count, args.limit)
+                summary.update({"source_duration_secs": source_duration,
+                                "duration_target_clips": target_total,
+                                "existing_clip_count": len(active_existing_windows),
+                                "remaining_target_clips": desired_count})
+                if desired_count <= 0:
+                    summary.update({"status": "already_complete", "source_id": src.get("video_id"),
+                                    "uploaded": [], "errors": [], "warnings": []})
+                    print(json.dumps(summary, indent=2))
+                    return
+                if not args.dry_run:
+                    capacity = delivery_capacity(required_platforms, cfg)
+                    summary["delivery_budget"]["duration_target"] = target_total
+                    summary["delivery_budget"]["existing_clip_count"] = len(active_existing_windows)
+                    summary["delivery_budget"]["available_capacity"] = capacity
+                    if capacity < min_clips_per_run:
+                        summary["status"] = "quota_guarded"
+                        summary["required_delivery_failures"] = sorted(required_platforms)
+                        log("duration-based run stopped by provider budget/cooldown:",
+                            json.dumps(summary["delivery_budget"], sort_keys=True))
+                        print(json.dumps(summary, indent=2))
+                        return
+                    clips_per_day = min(desired_count, capacity)
+                    summary["delivery_budget"]["capped_by_platform_budget"] = clips_per_day < desired_count
+                else:
+                    clips_per_day = desired_count
+                summary["clips_requested"] = clips_per_day
+                summary["target_clips_per_source_video"] = target_total
+            selection_args = ["--count", clips_per_day, "--target-secs", target, "--max-secs", maxs]
+            if existing_windows_path:
+                selection_args += ["--exclude-windows", existing_windows_path]
             if args.download_only:
                 # Hybrid laptop half: hand the source + everything the cloud job needs
                 # to resume (src info, this run's failed picks) to the artifact and stop.
@@ -632,7 +776,7 @@ def main():
                 return
             ensure_sfx()
             run_tool("transcribe_video.py", "--in", src_path)
-            sel = run_tool("select_clips.py", "--count", clips_per_day, "--target-secs", target, "--max-secs", maxs)
+            sel = run_tool("select_clips.py", *selection_args)
             clips = sel.get("clips", [])
             if len(clips) < min_clips_per_run:
                 raise RuntimeError(
@@ -707,7 +851,7 @@ def main():
                                          "error": str(e), "fallback": "base"})
             tags = {"hashtags": FALLBACK_HASHTAGS, "provider": None,
                     "note": "LLM hashtags unavailable; used base tags."}
-        entry = {"clip": n}
+        entry = {"clip": n, "source_start": clip["start"], "source_end": clip["end"]}
         if tags.get("provider") is None:
             entry["hashtags_fallback"] = True
 
@@ -779,21 +923,54 @@ def main():
         hist = load_json(HISTORY, {"clipped": []})
         if isinstance(hist, list):
             hist = {"clipped": hist}
-        hist.setdefault("clipped", []).append({
-            "source_id": src.get("video_id", "unknown"), 
+        source_id = src.get("video_id", "unknown")
+        record = source_history_record(hist, source_id)
+        if record is None:
+            record = {"source_id": source_id, "clip_video_ids": [],
+                      "youtube_post_ids": [], "instagram_post_ids": [],
+                      "tiktok_post_ids": [], "platform_post_ids": [], "clip_windows": []}
+            hist.setdefault("clipped", []).append(record)
+
+        def extend_unique(field, values):
+            current = list(record.get(field) or [])
+            for value in values:
+                if value and value not in current:
+                    current.append(value)
+            record[field] = current
+
+        extend_unique("clip_video_ids", [e.get("video_id") for e in successful_entries])
+        extend_unique("youtube_post_ids", [e.get("video_id") for e in successful_entries])
+        extend_unique("instagram_post_ids", [e.get("instagram_media_id") for e in successful_entries])
+        extend_unique("tiktok_post_ids", [e.get("tiktok_publish_id") for e in successful_entries])
+        # Preserve the original combined field for older reporting scripts.
+        extend_unique("platform_post_ids", [x for e in successful_entries
+                                             for x in (e.get("instagram_media_id"),
+                                                       e.get("tiktok_publish_id")) if x])
+
+        known_windows = source_clip_windows(record)
+        for entry in successful_entries:
+            try:
+                start, end = float(entry["source_start"]), float(entry["source_end"])
+            except (KeyError, TypeError, ValueError):
+                continue
+            if not any(abs(w["start"] - start) < 0.01 and abs(w["end"] - end) < 0.01
+                       for w in known_windows):
+                known_windows.append({"start": start, "end": end,
+                                      "video_id": entry.get("video_id")})
+
+        record.update({
             "source_title": src_title,
+            "channel": src.get("channel") or record.get("channel") or "MrBeast",
             "date": summary["date"],
             "published_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-            "clip_video_ids": [e.get("video_id") for e in successful_entries if e.get("video_id")],
-            "youtube_post_ids": [e.get("video_id") for e in successful_entries if e.get("video_id")],
-            "instagram_post_ids": [e.get("instagram_media_id") for e in successful_entries
-                                    if e.get("instagram_media_id")],
-            "tiktok_post_ids": [e.get("tiktok_publish_id") for e in successful_entries
-                                 if e.get("tiktok_publish_id")],
-            # Preserve the original combined field for older reporting scripts.
-            "platform_post_ids": [x for e in successful_entries for x in
-                                   (e.get("instagram_media_id"), e.get("tiktok_publish_id")) if x],
+            "clip_windows": known_windows,
         })
+        if source_duration:
+            record["source_duration"] = source_duration
+        target_count = summary.get("duration_target_clips") or record.get("target_clip_count")
+        if target_count is not None:
+            record["target_clip_count"] = int(target_count)
+            record["remaining_clips"] = max(0, int(target_count) - len(known_windows))
         with open(HISTORY, "w", encoding="utf-8") as f:
             json.dump(hist, f, ensure_ascii=False, indent=2)
         log(f"history updated: source posted on {len(successful_entries)} clip(s)")
@@ -806,7 +983,7 @@ def main():
     # any stray intermediates from clips that failed mid-render (2026-07-09, Moemen's request).
     if not args.dry_run:
         purge_files(src_path, str(TMP / "transcript.json"))
-        patterns = ("reframed_*.mp4", "caps_*.ass", "cues_*.json")
+        patterns = ("reframed_*.mp4", "caps_*.ass", "cues_*.json", "existing_clip_windows.json")
         if not KEEP_RENDERED_CLIPS:
             patterns += ("short_*.mp4",)
         for pat in patterns:

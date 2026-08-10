@@ -59,6 +59,27 @@ def history_ids(state):
     return ids
 
 
+def incomplete_sources(state):
+    """Return source records whose duration-based clip plan is not finished yet."""
+    records = state.get("clipped", []) if isinstance(state, dict) else []
+    out = []
+    for record in records or []:
+        if not isinstance(record, dict) or not record.get("source_id"):
+            continue
+        windows = record.get("clip_windows") or []
+        target = record.get("target_clip_count")
+        remaining = record.get("remaining_clips")
+        try:
+            target = int(target) if target is not None else None
+            remaining = int(remaining) if remaining is not None else None
+        except (TypeError, ValueError):
+            continue
+        if (remaining is not None and remaining > 0) or (
+                target is not None and target > len(windows)):
+            out.append(record)
+    return out
+
+
 def channel_latest(url, depth):
     """Flat-extract a channel's newest uploads (newest first). No download, no API key."""
     from yt_dlp import YoutubeDL
@@ -106,12 +127,33 @@ def main():
         fail(f"channels config not found/invalid: {cfg_path}")
         return
 
-    skip = history_ids(load_json(hist_path, {"clipped": []}))
+    state = load_json(hist_path, {"clipped": []})
+    incomplete = incomplete_sources(state)
+    incomplete_ids = {record["source_id"] for record in incomplete}
+    # A source with a remaining duration-based plan is intentionally eligible again. All
+    # completed/attempted sources remain permanently skipped, as before.
+    skip = history_ids(state) - incomplete_ids
     skip |= {x.strip() for x in (args.exclude or "").split(",") if x.strip()}
     channels = cfg.get("channels", [])
     depth = int(cfg.get("scan_depth", 25))
     errors = {}
     cache = {}
+
+    # Finish an unfinished long-video plan before selecting a new source. This lets a 55-minute
+    # video produce six safe uploads per day under the provider budget, then continue with the
+    # remaining non-overlapping spans on the next run.
+    channel_order = {ch.get("name"): i for i, ch in enumerate(channels)}
+    for record in sorted(incomplete, key=lambda item: channel_order.get(item.get("channel"), 999)):
+        sid = record.get("source_id")
+        if sid in skip:
+            continue
+        emit({"video_id": sid, "url": f"https://www.youtube.com/watch?v={sid}",
+              "title": record.get("source_title") or "", "channel": record.get("channel", ""),
+              "reason": "continue duration-based clip plan",
+              "source_duration": record.get("source_duration"),
+              "target_clip_count": record.get("target_clip_count"),
+              "remaining_clips": record.get("remaining_clips")})
+        return
 
     # Phase 1: each channel's NEWEST upload only, in subscriber-rank order. First channel
     # whose newest isn't already used wins; if it is used, drop to the next big channel.

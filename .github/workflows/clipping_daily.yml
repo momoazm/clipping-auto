@@ -20,7 +20,7 @@ name: Daily MrBeast clipping
 
 on:
   schedule:
-    # One scheduled six-clip source run per day. The connected Zernio accounts returned
+    # One scheduled duration-based source run per day. The connected Zernio accounts returned
     # a rolling 24-hour rate limit after the first six posts, so a second blind slot was
     # creating partial deliveries. Manual dispatch remains available with a lower limit
     # after the rolling budget clears. Cron fires ~40 min early; the hold step releases
@@ -38,9 +38,17 @@ on:
         options: [public, unlisted, private]
         default: public
       limit:
-        description: "Max clips this run (blank = config default of 6; minimum 2)"
+        description: "Max clips this run (blank = duration rule; minimum 2)"
         type: string
         default: ""
+      source_id:
+        description: "Optional exact YouTube source id to continue"
+        type: string
+        default: ""
+      extra_clips:
+        description: "Allow additional non-overlapping clips from an already-clipped source"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -219,7 +227,7 @@ jobs:
       # closes the runner-cancellation window: even if the expensive job is killed, the next
       # run sees the reservation and cannot select the same long-form video again.
       - name: Reserve source before processing
-        if: ${{ inputs.dry_run != true }}
+        if: ${{ inputs.dry_run != true && inputs.source_id == '' }}
         env:
           YTDLP_PROXY: socks5://127.0.0.1:40000
           no_proxy: "127.0.0.1,localhost"
@@ -234,7 +242,7 @@ jobs:
           python run_daily.py "${ARGS[@]}"
 
       - name: Commit source reservation
-        if: ${{ success() && inputs.dry_run != 'true' }}
+        if: ${{ success() && inputs.dry_run != 'true' && inputs.source_id == '' }}
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -261,6 +269,8 @@ jobs:
           IN_PRIVACY: ${{ inputs.privacy }}
           IN_DRYRUN: ${{ inputs.dry_run }}
           IN_LIMIT: ${{ inputs.limit }}
+          IN_SOURCE_ID: ${{ inputs.source_id }}
+          IN_EXTRA_CLIPS: ${{ inputs.extra_clips }}
           # Zernio creds straight from their own secrets -- read via os.environ, never written to API.env
           ZERNIO_API: ${{ secrets.ZERNIO_API }}
           ZERNIO_INSTAGRAM_ID: ${{ secrets.ZERNIO_INSTAGRAM_ID }}
@@ -282,7 +292,11 @@ jobs:
           ARGS=(--privacy "${IN_PRIVACY:-public}")
           if [ "$IN_DRYRUN" == "true" ]; then ARGS+=(--dry-run); fi
           if [ -n "$IN_LIMIT" ]; then ARGS+=(--limit "$IN_LIMIT"); fi
-          if [ "$IN_DRYRUN" != "true" ]; then ARGS+=(--source-reservation .tmp/source_reservation.json); fi
+          if [ -n "$IN_SOURCE_ID" ]; then ARGS+=(--source-id "$IN_SOURCE_ID"); fi
+          if [ "$IN_EXTRA_CLIPS" == "true" ]; then ARGS+=(--extra-clips); fi
+          if [ "$IN_DRYRUN" != "true" ] && [ -z "$IN_SOURCE_ID" ]; then
+            ARGS+=(--source-reservation .tmp/source_reservation.json)
+          fi
           echo "run_daily.py ${ARGS[*]}"
           python run_daily.py "${ARGS[@]}"
 
