@@ -475,6 +475,13 @@ def attempt_instagram_upload(short_path, caption, clip_num, summary_dict, entry_
         log(f"clip {clip_num}: Instagram FAILED: {e}")
         note_rate_limit(summary_dict, "instagram", e)
         entry_dict["instagram_error"] = str(e)
+        metadata = _error_data(e)
+        if metadata:
+            entry_dict["instagram_delivery_diagnostics"] = {
+                key: metadata.get(key) for key in
+                ("post_id", "retry_attempted", "ambiguous", "platform_status", "poll_error")
+                if metadata.get(key) not in (None, "", {})
+            }
         summary_dict.setdefault("instagram_errors", []).append({"clip": clip_num, "error": str(e)})
         return False
 
@@ -1105,6 +1112,31 @@ def main():
             summary["status"] = "uploaded"
         else:
             summary["status"] = "built_no_delivery"
+
+    # Persist a compact, artifact-safe contract beside the rendered clips.  It lets a manual run
+    # prove source routing, duration-based count, delivery outcomes, and the media floor without
+    # reopening the full Actions log.  It contains no credentials or public host URLs.
+    summary["quality_contract"] = {
+        "source_policy": "MrBeast channel family",
+        "clip_count_rule": "one clip per five minutes, bounded by platform budget",
+        "vertical": "1080x1920",
+        "max_duration_sec": 59,
+        "audio_required": True,
+        "no_low_resolution_fallback": True,
+    }
+    _atomic_write_json(TMP / "run_summary.json", summary)
+    _atomic_write_json(TMP / "delivery_manifest.json", {
+        "status": summary.get("status", "built"),
+        "source_id": src.get("video_id"),
+        "source_title": src_title,
+        "source_duration_secs": source_duration,
+        "clips_requested": summary.get("clips_requested"),
+        "clips_selected": summary.get("clips_selected"),
+        "uploaded": summary.get("uploaded", []),
+        "required_platforms": sorted(required_platforms),
+        "required_delivery_failures": summary.get("required_delivery_failures", []),
+        "quality_contract": summary["quality_contract"],
+    })
 
     print(json.dumps(summary, indent=2))
     if required_failures:

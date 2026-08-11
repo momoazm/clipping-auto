@@ -37,6 +37,24 @@ def account_name(account):
     return normalize(account.get("username") or account.get("handle") or account.get("displayName"))
 
 
+def account_readiness(account):
+    """Return an explicit provider readiness signal without guessing missing fields."""
+    bad = {"disconnected", "disconnect", "inactive", "disabled", "expired", "error", "failed", "revoked"}
+    good = {"connected", "active", "ready", "ok"}
+    for key in ("status", "connectionStatus", "connection_state", "state"):
+        value = normalize(account.get(key))
+        if value in bad:
+            return "not_ready", f"{key}={value}"
+        if value in good:
+            return "ready", f"{key}={value}"
+    for key in ("connected", "isConnected", "active", "enabled"):
+        if key in account and account.get(key) is False:
+            return "not_ready", f"{key}=false"
+        if key in account and account.get(key) is True:
+            return "ready", f"{key}=true"
+    return "unknown", "provider did not expose a readiness field"
+
+
 def zernio_accounts():
     import httpx
 
@@ -58,7 +76,7 @@ def zernio_accounts():
     return accounts
 
 
-def verify_zernio(accounts, platform, expected, env_key):
+def verify_zernio(accounts, platform, expected, env_key, require_ready=False):
     configured = os.environ.get(env_key, "").strip()
     if not configured:
         stop(f"Zernio account check: {env_key} is empty")
@@ -73,8 +91,11 @@ def verify_zernio(accounts, platform, expected, env_key):
              f"not {platform}")
     if expected and actual_name != normalize(expected):
         stop(f"Zernio account check: {platform} is @{actual_name or 'unknown'}, "
-             f"expected @{normalize(expected)}")
-    return actual_name
+              f"expected @{normalize(expected)}")
+    readiness_state, readiness_detail = account_readiness(match)
+    if require_ready and readiness_state == "not_ready":
+        stop(f"Zernio account check: {platform} @{actual_name} is not ready ({readiness_detail})")
+    return actual_name, {"state": readiness_state, "detail": readiness_detail}
 
 
 def persist_tiktok_tokens(token, refresh=None):
@@ -194,6 +215,8 @@ def main():
     parser.add_argument("--youtube", default=None, help="Expected YouTube username")
     parser.add_argument("--tiktok", default=os.environ.get("TIKTOK_EXPECTED_USERNAME"),
                         help="Expected TikTok username")
+    parser.add_argument("--require-ready", action="store_true",
+                        help="Fail when Zernio explicitly reports a disconnected account")
     args = parser.parse_args()
 
     try:
@@ -204,16 +227,21 @@ def main():
 
     accounts = zernio_accounts()
     verified = {}
+    readiness = {}
     if args.instagram:
-        verified["instagram"] = "@" + verify_zernio(accounts, "instagram", args.instagram,
-                                                      "ZERNIO_INSTAGRAM_ID")
+        actual, info = verify_zernio(accounts, "instagram", args.instagram,
+                                     "ZERNIO_INSTAGRAM_ID", args.require_ready)
+        verified["instagram"] = "@" + actual
+        readiness["instagram"] = info
     if args.youtube:
-        verified["youtube"] = "@" + verify_zernio(accounts, "youtube", args.youtube,
-                                                    "ZERNIO_YOUTUBE_ID")
+        actual, info = verify_zernio(accounts, "youtube", args.youtube,
+                                     "ZERNIO_YOUTUBE_ID", args.require_ready)
+        verified["youtube"] = "@" + actual
+        readiness["youtube"] = info
     if args.tiktok:
         actual = verify_tiktok(args.tiktok)
         verified["tiktok"] = ("@" + actual) if actual else "skipped: credentials not configured"
-    print(json.dumps({"status": "verified", "accounts": verified}, ensure_ascii=True))
+    print(json.dumps({"status": "verified", "accounts": verified, "readiness": readiness}, ensure_ascii=True))
 
 
 if __name__ == "__main__":

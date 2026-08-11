@@ -221,7 +221,7 @@ jobs:
           TIKTOK_CLIENT_KEY: ${{ secrets.TIKTOK_CLIENT_KEY }}
           TIKTOK_CLIENT_SECRET: ${{ secrets.TIKTOK_CLIENT_SECRET }}
           TIKTOK_EXPECTED_USERNAME: ${{ secrets.TIKTOK_EXPECTED_USERNAME || 'mrbeasteg' }}
-        run: python tools/verify_accounts.py --instagram mrbeasteg --youtube itsmomoclips --tiktok "$TIKTOK_EXPECTED_USERNAME"
+        run: python tools/verify_accounts.py --instagram mrbeasteg --youtube itsmomoclips --tiktok "$TIKTOK_EXPECTED_USERNAME" --require-ready
 
       # Reserve the source in tracked history before download/transcription/rendering. This
       # closes the runner-cancellation window: even if the expensive job is killed, the next
@@ -315,10 +315,38 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: momobeast-clips-${{ github.run_id }}
-          path: .tmp/short_*.mp4
+          # The JSON contracts remain useful even when source access returns a clean no_source.
+          # The MP4 glob is intentionally retained for manual media review only.
+          path: |
+            .tmp/short_*.mp4
+            .tmp/run_summary.json
+            .tmp/delivery_manifest.json
           if-no-files-found: warn
           include-hidden-files: true
           retention-days: 7
+
+      - name: Validate generated clipping media contract
+        if: ${{ always() && hashFiles('.tmp/short_*.mp4') != '' }}
+        run: |
+          python3 - <<'EOF'
+          import glob, json, subprocess
+          files = sorted(glob.glob('.tmp/short_*.mp4'))
+          checked = []
+          for path in files:
+              probe = json.loads(subprocess.check_output([
+                  'ffprobe', '-v', 'error', '-print_format', 'json',
+                  '-show_streams', '-show_format', path
+              ]))
+              video = next((s for s in probe.get('streams', []) if s.get('codec_type') == 'video'), {})
+              audio = any(s.get('codec_type') == 'audio' for s in probe.get('streams', []))
+              duration = float((probe.get('format') or {}).get('duration') or 0)
+              if (video.get('width'), video.get('height')) != (1080, 1920):
+                  raise SystemExit(f'{path}: expected 1080x1920, got {video.get("width")}x{video.get("height")}')
+              if not audio or not (0 < duration < 60):
+                  raise SystemExit(f'{path}: audio={audio}, duration={duration}')
+              checked.append({'file': path, 'duration_sec': round(duration, 2)})
+          print(json.dumps({'status': 'media_contract_ok', 'files': checked}))
+          EOF
 
       # always() so the no-repeat memory is committed even when the run FAILS -- that's
       # how a source that broke this run gets remembered and isn't re-picked next time
