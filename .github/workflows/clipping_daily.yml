@@ -57,7 +57,8 @@ permissions:
 # Queue a second run instead of letting concurrent runners race on the same source/final.mp4.
 concurrency:
   group: clipping-auto-daily
-  cancel-in-progress: false
+  # Preserve an in-flight live post; only duplicate dry-run diagnostics may be cancelled.
+  cancel-in-progress: ${{ inputs.dry_run == true }}
 
 jobs:
   clip-and-upload:
@@ -295,7 +296,7 @@ jobs:
           # Manual/scheduled source starvation is reported as no_source instead of making the
           # verification workflow red. Real delivery failures still remain strict.
           NO_SOURCE_OK: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && '1' || '0' }}
-          KEEP_RENDERED_CLIPS: ${{ github.event_name == 'workflow_dispatch' && '1' || '0' }}
+          KEEP_RENDERED_CLIPS: ${{ inputs.dry_run == true && '1' || '0' }}
         run: |
           ARGS=(--privacy "${IN_PRIVACY:-public}")
           if [ "$IN_DRYRUN" == "true" ]; then ARGS+=(--dry-run); fi
@@ -308,17 +309,29 @@ jobs:
           echo "run_daily.py ${ARGS[*]}"
           python run_daily.py "${ARGS[@]}"
 
-      # Manual dispatches keep the rendered Shorts for local/competitor-quality review.
-      # Upload them before any later cleanup/commit step so a build cannot hide a missing MP4.
-      - name: Upload generated clipping videos for inspection
+      - name: Upload clipping diagnostics on failure or dry-run
+        if: ${{ always() && (failure() || inputs.dry_run == true) }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: momobeast-clips-debug-${{ github.run_id }}
+          path: |
+            .tmp/short_*.mp4
+            .tmp/run_summary.json
+            .tmp/delivery_manifest.json
+          if-no-files-found: ignore
+          include-hidden-files: true
+          retention-days: 3
+
+      - name: Upload clipping run metadata
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: momobeast-clips-${{ github.run_id }}
-          path: .tmp/short_*.mp4
-          if-no-files-found: warn
-          include-hidden-files: true
-          retention-days: 7
+          name: momobeast-run-${{ github.run_id }}
+          path: |
+            .tmp/run_summary.json
+            .tmp/delivery_manifest.json
+          if-no-files-found: ignore
+          retention-days: 3
 
       # always() so the no-repeat memory is committed even when the run FAILS -- that's
       # how a source that broke this run gets remembered and isn't re-picked next time
