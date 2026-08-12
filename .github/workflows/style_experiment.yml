@@ -16,6 +16,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: video-workflow-style-experiment
+  cancel-in-progress: true
+
 jobs:
   check-experiment:
     runs-on: ubuntu-latest
