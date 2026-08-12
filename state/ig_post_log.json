@@ -174,6 +174,28 @@
         "clip": "01",
         "hook": "From no legs to mountain hike – the ultimate prosthetic challenge"
       }
+    },
+    {
+      "post_id": "6a7ca308a448f8ab2266fc39",
+      "posted_at": "2026-08-12T16:45:42.583928+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "01",
+        "hook": "Boom! Watch the Crazy 4‑Hit Streak!"
+      }
+    },
+    {
+      "post_id": "6a7ca3cec12af967b4360549",
+      "posted_at": "2026-08-12T16:48:55.057834+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "02",
+        "hook": "Speed vs. The Fastest Man on Earth – Who Wins?"
+      }
     }
   ]
 }
