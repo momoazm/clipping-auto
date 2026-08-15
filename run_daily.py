@@ -123,6 +123,7 @@ def run_tool(script, *args):
         "plan_effects.py": 120,
         "build_captions.py": 120,
         "render_clip.py": 300,
+        "prepare_upload_media.py": 240,
         "generate_hashtags.py": 120,
         "build_sfx.py": 120,
         "host_public.py": 240,
@@ -469,7 +470,10 @@ def attempt_instagram_upload(short_path, caption, clip_num, summary_dict, entry_
                     log("pick_weekly_style --consume failed:", e)
                     experiment = False
             log_ig_post(media_id, style=style, experiment=experiment,
-                        context={"clip": clip_num, "hook": caption.split("\n", 1)[0][:120]})
+                        context={"clip": clip_num, "hook": caption.split("\n", 1)[0][:120],
+                                 "hook_signal_score": entry_dict.get("hook_signal_score"),
+                                 "duration_sec": entry_dict.get("duration_sec"),
+                                 "focus_mode": entry_dict.get("focus_mode")})
         return bool(media_id)
     except Exception as e:
         log(f"clip {clip_num}: Instagram FAILED: {e}")
@@ -937,6 +941,10 @@ def main():
             run_tool("plan_effects.py", "--start", clip["start"], "--end", clip["end"], "--emphasis", ",".join(clip.get("emphasis_words", [])), "--out", cues)
             run_tool("build_captions.py", "--start", clip["start"], "--end", clip["end"], "--style", clip_style, "--hook", hook, "--out", caps)
             run_tool("render_clip.py", "--in", reframed, "--captions", caps, "--cues", cues, "--out", short, "--max-secs", maxs)
+            # Instagram rejected recent uploads with a codec/container processing error even
+            # though render_clip completed. Re-encode the exact upload artifact in place and
+            # refuse delivery unless the strict H.264/AAC/faststart contract passes.
+            media = run_tool("prepare_upload_media.py", "--input", short, "--output", short)
         except Exception as e:
             log(f"clip {n} RENDER FAILED:", e)
             summary["errors"].append({"clip": n, "stage": "render", "error": str(e)})
@@ -954,6 +962,10 @@ def main():
             tags = {"hashtags": FALLBACK_HASHTAGS, "provider": None,
                     "note": "LLM hashtags unavailable; used base tags."}
         entry = {"clip": n, "source_start": clip["start"], "source_end": clip["end"]}
+        entry["media_contract"] = media.get("contract") if isinstance(media, dict) else None
+        entry["duration_sec"] = clip.get("duration")
+        entry["hook_signal_score"] = clip.get("hook_signal_score")
+        entry["focus_mode"] = clip.get("focus_mode")
         if tags.get("provider") is None:
             entry["hashtags_fallback"] = True
 
@@ -1122,6 +1134,10 @@ def main():
         "vertical": "1080x1920",
         "max_duration_sec": 59,
         "audio_required": True,
+        "video_codec": "h264",
+        "audio_codec": "aac",
+        "pixel_format": "yuv420p",
+        "faststart": True,
         "no_low_resolution_fallback": True,
     }
     _atomic_write_json(TMP / "run_summary.json", summary)

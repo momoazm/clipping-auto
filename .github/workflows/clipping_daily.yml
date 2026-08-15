@@ -322,13 +322,24 @@ jobs:
                   '-show_streams', '-show_format', path
               ]))
               video = next((s for s in probe.get('streams', []) if s.get('codec_type') == 'video'), {})
-              audio = any(s.get('codec_type') == 'audio' for s in probe.get('streams', []))
+              audio_stream = next((s for s in probe.get('streams', []) if s.get('codec_type') == 'audio'), {})
+              audio = bool(audio_stream)
               duration = float((probe.get('format') or {}).get('duration') or 0)
+              with open(path, 'rb') as handle:
+                  blob = handle.read()
+              faststart = blob.find(b'moov') >= 0 and (
+                  blob.find(b'mdat') < 0 or blob.find(b'moov') < blob.find(b'mdat'))
               if (video.get('width'), video.get('height')) != (1080, 1920):
                   raise SystemExit(f'{path}: expected 1080x1920, got {video.get("width")}x{video.get("height")}')
-              if not audio or not (0 < duration < 60):
-                  raise SystemExit(f'{path}: audio={audio}, duration={duration}')
-              checked.append({'file': path, 'duration_sec': round(duration, 2)})
+              if (video.get('codec_name'), video.get('pix_fmt')) != ('h264', 'yuv420p'):
+                  raise SystemExit(f'{path}: expected h264/yuv420p, got {video.get("codec_name")}/{video.get("pix_fmt")}')
+              if (audio_stream.get('codec_name'), str(audio_stream.get('sample_rate')), audio_stream.get('channels')) not in {
+                  ('aac', '44100', 1), ('aac', '44100', 2), ('aac', '48000', 1), ('aac', '48000', 2)
+              }:
+                  raise SystemExit(f'{path}: expected AAC 44.1/48k mono/stereo, got {audio_stream}')
+              if not audio or not (0 < duration < 60) or not faststart:
+                  raise SystemExit(f'{path}: audio={audio}, duration={duration}, faststart={faststart}')
+              checked.append({'file': path, 'duration_sec': round(duration, 2), 'faststart': faststart})
           print(json.dumps({'status': 'media_contract_ok', 'files': checked}))
           EOF
 
