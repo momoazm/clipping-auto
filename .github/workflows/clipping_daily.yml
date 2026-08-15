@@ -346,6 +346,7 @@ jobs:
       - name: Upload clipping diagnostics on failure or dry-run
         if: ${{ always() && (failure() || inputs.dry_run == true) }}
         uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: momobeast-clips-debug-${{ github.run_id }}
           path: |
@@ -359,6 +360,7 @@ jobs:
       - name: Upload clipping run metadata
         if: always()
         uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: momobeast-run-${{ github.run_id }}
           path: |
