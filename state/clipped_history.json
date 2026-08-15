@@ -551,6 +551,72 @@
       "source_duration": 1365,
       "target_clip_count": 5,
       "remaining_clips": 0
+    },
+    {
+      "source_id": "gVE2t-LRK-s",
+      "clip_video_ids": [
+        "6a8094c2950267e6c9211876",
+        "6a80956757efc2aad26adf77",
+        "6a809677d6199242944e2825",
+        "6a80973bd5cfe38c3b12bfc3",
+        "6a8097eea7f4fd39f45f2bdd"
+      ],
+      "youtube_post_ids": [
+        "6a8094c2950267e6c9211876",
+        "6a80956757efc2aad26adf77",
+        "6a809677d6199242944e2825",
+        "6a80973bd5cfe38c3b12bfc3",
+        "6a8097eea7f4fd39f45f2bdd"
+      ],
+      "instagram_post_ids": [
+        "6a8094c996d0e66940dc218d",
+        "6a80956edfba6dba2e4adca5",
+        "6a80967e9f1c3c5584f583ee",
+        "6a809741d5cfe38c3b12c276",
+        "6a8097f520c21730ba21b1f6"
+      ],
+      "tiktok_post_ids": [],
+      "platform_post_ids": [
+        "6a8094c996d0e66940dc218d",
+        "6a80956edfba6dba2e4adca5",
+        "6a80967e9f1c3c5584f583ee",
+        "6a809741d5cfe38c3b12c276",
+        "6a8097f520c21730ba21b1f6"
+      ],
+      "clip_windows": [
+        {
+          "start": 1444.073,
+          "end": 1454.183,
+          "video_id": "6a8094c2950267e6c9211876"
+        },
+        {
+          "start": 527.631,
+          "end": 561.341,
+          "video_id": "6a80956757efc2aad26adf77"
+        },
+        {
+          "start": 1353.833,
+          "end": 1411.523,
+          "video_id": "6a809677d6199242944e2825"
+        },
+        {
+          "start": 209.15,
+          "end": 244.0,
+          "video_id": "6a80973bd5cfe38c3b12bfc3"
+        },
+        {
+          "start": 247.01,
+          "end": 286.12,
+          "video_id": "6a8097eea7f4fd39f45f2bdd"
+        }
+      ],
+      "source_title": "Whatever You Hide As, You Keep!",
+      "channel": "MrBeast Gaming",
+      "date": "2026-08-15",
+      "published_at": "2026-08-15T16:47:32.303693+00:00",
+      "source_duration": 1460,
+      "target_clip_count": 5,
+      "remaining_clips": 0
     }
   ],
   "attempted": [

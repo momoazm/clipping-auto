@@ -196,6 +196,61 @@
         "clip": "02",
         "hook": "Speed vs. The Fastest Man on Earth – Who Wins?"
       }
+    },
+    {
+      "post_id": "6a8094c996d0e66940dc218d",
+      "posted_at": "2026-08-15T16:33:47.848419+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "01",
+        "hook": "You Just Won a New Car! Live Reaction"
+      }
+    },
+    {
+      "post_id": "6a80956edfba6dba2e4adca5",
+      "posted_at": "2026-08-15T16:37:16.348255+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "02",
+        "hook": "I See Him, He Runs… Got Him! Epic Hide‑and‑Seek Finish"
+      }
+    },
+    {
+      "post_id": "6a80967e9f1c3c5584f583ee",
+      "posted_at": "2026-08-15T16:41:42.663589+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "03",
+        "hook": "Only Two Players Left – Who Will Claim the Prize?"
+      }
+    },
+    {
+      "post_id": "6a809741d5cfe38c3b12c276",
+      "posted_at": "2026-08-15T16:44:25.061095+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "04",
+        "hook": "Someone Is Officially Out!"
+      }
+    },
+    {
+      "post_id": "6a8097f520c21730ba21b1f6",
+      "posted_at": "2026-08-15T16:47:32.298619+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "05",
+        "hook": "Someone’s Right On Top Of Me! Panic in the Game"
+      }
     }
   ]
 }
