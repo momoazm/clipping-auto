@@ -246,7 +246,7 @@ jobs:
           python run_daily.py "${ARGS[@]}"
 
       - name: Commit source reservation
-        if: ${{ success() && inputs.dry_run != 'true' && inputs.source_id == '' }}
+        if: ${{ success() && inputs.dry_run != true && inputs.source_id == '' }}
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -373,7 +373,7 @@ jobs:
       # how a source that broke this run gets remembered and isn't re-picked next time
       # (without it, the next checkout resets the file and the same video repeats).
       - name: Commit updated history
-        if: ${{ always() && inputs.dry_run != 'true' }}
+        if: ${{ always() && inputs.dry_run != true }}
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
