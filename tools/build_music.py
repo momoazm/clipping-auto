@@ -69,7 +69,7 @@ def main():
         parts.append("".join(labels) + f"amix=inputs={n}:normalize=0[mix]")
         parts.append(
             f"[mix]{spec['tail']},afade=t=in:d=3,afade=t=out:st={DUR-4}:d=4,"
-            "volume=0.5[out]")
+            "volume=24.0,alimiter=limit=0.90[out]")
         cmd += [
             "-filter_complex", ";".join(parts), "-map", "[out]",
             "-ac", "2", "-ar", str(SR), "-c:a", "libmp3lame", "-b:a", "160k",

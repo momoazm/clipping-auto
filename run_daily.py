@@ -436,6 +436,18 @@ def ensure_sfx():
         except Exception as e:
             log("build_sfx failed:", e)
 
+
+def hook_variant(clip, hook):
+    """Stable label for measuring which opening promise wins without guessing later."""
+    focus = clip.get("focus_mode")
+    if focus == "action":
+        return "action_payoff"
+    if focus == "wide":
+        return "wide_context"
+    if "?" in hook:
+        return "question"
+    return "specific_claim"
+
 def attempt_instagram_upload(short_path, caption, clip_num, summary_dict, entry_dict,
                               public_url=None, style=None, experiment=False):
     """Publish to the pinned Instagram account and return whether it was confirmed uploaded."""
@@ -473,7 +485,9 @@ def attempt_instagram_upload(short_path, caption, clip_num, summary_dict, entry_
                         context={"clip": clip_num, "hook": caption.split("\n", 1)[0][:120],
                                  "hook_signal_score": entry_dict.get("hook_signal_score"),
                                  "duration_sec": entry_dict.get("duration_sec"),
-                                 "focus_mode": entry_dict.get("focus_mode")})
+                                 "focus_mode": entry_dict.get("focus_mode"),
+                                 "hook_variant": entry_dict.get("hook_variant"),
+                                 "audio": entry_dict.get("audio")})
         return bool(media_id)
     except Exception as e:
         log(f"clip {clip_num}: Instagram FAILED: {e}")
@@ -917,6 +931,7 @@ def main():
                 log("pick_weekly_style failed (falling back to hormozi):", e)
 
         # 1. Process the video (if this fails, skip to next clip)
+        render_meta = {}
         try:
             reframed = str(TMP/f"reframed_{n}.mp4")
             cues = str(TMP/f"cues_{n}.json")
@@ -940,7 +955,10 @@ def main():
             run_tool(*reframe_args)
             run_tool("plan_effects.py", "--start", clip["start"], "--end", clip["end"], "--emphasis", ",".join(clip.get("emphasis_words", [])), "--out", cues)
             run_tool("build_captions.py", "--start", clip["start"], "--end", clip["end"], "--style", clip_style, "--hook", hook, "--out", caps)
-            run_tool("render_clip.py", "--in", reframed, "--captions", caps, "--cues", cues, "--out", short, "--max-secs", maxs)
+            render_meta = run_tool(
+                "render_clip.py", "--in", reframed, "--captions", caps, "--cues", cues,
+                "--out", short, "--max-secs", maxs, "--music", "auto", "--adaptive-music",
+            )
             # Instagram rejected recent uploads with a codec/container processing error even
             # though render_clip completed. Re-encode the exact upload artifact in place and
             # refuse delivery unless the strict H.264/AAC/faststart contract passes.
@@ -966,6 +984,12 @@ def main():
         entry["duration_sec"] = clip.get("duration")
         entry["hook_signal_score"] = clip.get("hook_signal_score")
         entry["focus_mode"] = clip.get("focus_mode")
+        entry["hook_variant"] = hook_variant(clip, hook)
+        entry["audio"] = {
+            key: render_meta.get(key)
+            for key in ("music", "music_mode", "source_mean_volume_db", "music_volume", "effects")
+            if isinstance(render_meta, dict) and key in render_meta
+        }
         if tags.get("provider") is None:
             entry["hashtags_fallback"] = True
 
