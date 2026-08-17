@@ -163,6 +163,50 @@
         "clip": "06",
         "hook": "Counting to 100,000 – Can He Finish?"
       }
+    },
+    {
+      "post_id": "6a82d89628eb0eddbf1c86c3",
+      "posted_at": "2026-08-17T09:48:31.385243+00:00",
+      "style": "brand",
+      "experiment": true,
+      "resolved": false,
+      "context": {
+        "clip": "01",
+        "hook": "Bryce Harper vs $100K charity – massive home run showdown!",
+        "hook_signal_score": 77,
+        "duration_sec": 49.59,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -9.9,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6a82d9d1c46ad48f0539f7fe",
+      "posted_at": "2026-08-17T09:53:12.993147+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "02",
+        "hook": "Speed challenges the fastest man – tie at the finish line!",
+        "hook_signal_score": 71,
+        "duration_sec": 51.954,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -9.4,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
     }
   ]
 }

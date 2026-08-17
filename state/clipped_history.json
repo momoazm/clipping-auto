@@ -440,6 +440,45 @@
         "6a79af994f27df8d93e283dd",
         "6a79b177d617da0978dbc0f7"
       ]
+    },
+    {
+      "source_id": "0BjlBnfHcHM",
+      "clip_video_ids": [
+        "6a82d88e66356b22e18c449a",
+        "6a82d9cabd27dcca82847bee"
+      ],
+      "youtube_post_ids": [
+        "6a82d88e66356b22e18c449a",
+        "6a82d9cabd27dcca82847bee"
+      ],
+      "instagram_post_ids": [
+        "6a82d89628eb0eddbf1c86c3",
+        "6a82d9d1c46ad48f0539f7fe"
+      ],
+      "tiktok_post_ids": [],
+      "platform_post_ids": [
+        "6a82d89628eb0eddbf1c86c3",
+        "6a82d9d1c46ad48f0539f7fe"
+      ],
+      "clip_windows": [
+        {
+          "start": 395.274,
+          "end": 444.864,
+          "video_id": "6a82d88e66356b22e18c449a"
+        },
+        {
+          "start": 1015.838,
+          "end": 1067.792,
+          "video_id": "6a82d9cabd27dcca82847bee"
+        }
+      ],
+      "source_title": "Beat Ronaldo, Win $1,000,000",
+      "channel": "MrBeast",
+      "date": "2026-08-17",
+      "published_at": "2026-08-17T09:53:12.998794+00:00",
+      "source_duration": 1365,
+      "target_clip_count": 5,
+      "remaining_clips": 3
     }
   ],
   "attempted": [
