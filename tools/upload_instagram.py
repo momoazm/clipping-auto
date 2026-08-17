@@ -52,7 +52,7 @@ def _platform_detail(entry):
     return json.dumps(details, ensure_ascii=True, separators=(",", ":"))[:600]
 
 
-def retry_post(post_id, api_key, max_tries=2):
+def retry_post(post_id, api_key, max_tries=3):
     """Retry only failed platforms on the existing Zernio post."""
     import httpx
     backoff, last = 10, None

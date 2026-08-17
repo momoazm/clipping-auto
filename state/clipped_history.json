@@ -493,66 +493,6 @@
       "remaining_clips": 0
     },
     {
-      "source_id": "0BjlBnfHcHM",
-      "clip_video_ids": [
-        "6a7ca301a448f8ab2266f959",
-        "6a7ca3c55f0ae106a61e4aca",
-        "6a7df41badfc0ec3422b4491",
-        "6a7df53bc33eaa52c896fb45",
-        "6a7df610aaa7e19533574fdd"
-      ],
-      "youtube_post_ids": [
-        "6a7ca301a448f8ab2266f959",
-        "6a7ca3c55f0ae106a61e4aca",
-        "6a7df41badfc0ec3422b4491",
-        "6a7df53bc33eaa52c896fb45",
-        "6a7df610aaa7e19533574fdd"
-      ],
-      "instagram_post_ids": [
-        "6a7ca308a448f8ab2266fc39",
-        "6a7ca3cec12af967b4360549"
-      ],
-      "tiktok_post_ids": [],
-      "platform_post_ids": [
-        "6a7ca308a448f8ab2266fc39",
-        "6a7ca3cec12af967b4360549"
-      ],
-      "clip_windows": [
-        {
-          "start": 499.534,
-          "end": 523.344,
-          "video_id": "6a7ca301a448f8ab2266f959"
-        },
-        {
-          "start": 1000.938,
-          "end": 1055.352,
-          "video_id": "6a7ca3c55f0ae106a61e4aca"
-        },
-        {
-          "start": 1246.182,
-          "end": 1288.192,
-          "video_id": "6a7df41badfc0ec3422b4491"
-        },
-        {
-          "start": 0.0,
-          "end": 37.56,
-          "video_id": "6a7df53bc33eaa52c896fb45"
-        },
-        {
-          "start": 395.274,
-          "end": 429.484,
-          "video_id": "6a7df610aaa7e19533574fdd"
-        }
-      ],
-      "source_title": "Beat Ronaldo, Win $1,000,000",
-      "channel": "MrBeast",
-      "date": "2026-08-13",
-      "published_at": "2026-08-13T16:53:10.548135+00:00",
-      "source_duration": 1365,
-      "target_clip_count": 5,
-      "remaining_clips": 0
-    },
-    {
       "source_id": "gVE2t-LRK-s",
       "clip_video_ids": [
         "6a8094c2950267e6c9211876",
@@ -617,6 +557,45 @@
       "source_duration": 1460,
       "target_clip_count": 5,
       "remaining_clips": 0
+    },
+    {
+      "source_id": "0BjlBnfHcHM",
+      "clip_video_ids": [
+        "6a82d88e66356b22e18c449a",
+        "6a82d9cabd27dcca82847bee"
+      ],
+      "youtube_post_ids": [
+        "6a82d88e66356b22e18c449a",
+        "6a82d9cabd27dcca82847bee"
+      ],
+      "instagram_post_ids": [
+        "6a82d89628eb0eddbf1c86c3",
+        "6a82d9d1c46ad48f0539f7fe"
+      ],
+      "tiktok_post_ids": [],
+      "platform_post_ids": [
+        "6a82d89628eb0eddbf1c86c3",
+        "6a82d9d1c46ad48f0539f7fe"
+      ],
+      "clip_windows": [
+        {
+          "start": 395.274,
+          "end": 444.864,
+          "video_id": "6a82d88e66356b22e18c449a"
+        },
+        {
+          "start": 1015.838,
+          "end": 1067.792,
+          "video_id": "6a82d9cabd27dcca82847bee"
+        }
+      ],
+      "source_title": "Beat Ronaldo, Win $1,000,000",
+      "channel": "MrBeast",
+      "date": "2026-08-17",
+      "published_at": "2026-08-17T09:53:12.998794+00:00",
+      "source_duration": 1365,
+      "target_clip_count": 5,
+      "remaining_clips": 3
     }
   ],
   "attempted": [
@@ -641,15 +620,15 @@
       "date": "2026-07-03"
     },
     {
-      "source_id": "nH9R0Jpqeqc",
-      "date": "2026-07-04"
-    },
-    {
       "source_id": "5OLs1GWB4OA",
       "date": "2026-07-04"
     },
     {
       "source_id": "9WEQts7b8Pw",
+      "date": "2026-07-04"
+    },
+    {
+      "source_id": "nH9R0Jpqeqc",
       "date": "2026-07-04"
     },
     {
@@ -665,6 +644,10 @@
       "date": "2026-07-06"
     },
     {
+      "source_id": "3RmOvxilbPM",
+      "date": "2026-07-07"
+    },
+    {
       "source_id": "8bMh8azh3CY",
       "date": "2026-07-07"
     },
@@ -673,7 +656,7 @@
       "date": "2026-07-07"
     },
     {
-      "source_id": "3RmOvxilbPM",
+      "source_id": "F0OkwXKcPSE",
       "date": "2026-07-07"
     },
     {
@@ -685,19 +668,11 @@
       "date": "2026-07-07"
     },
     {
-      "source_id": "F0OkwXKcPSE",
-      "date": "2026-07-07"
-    },
-    {
-      "source_id": "zo7i8VTpfNM",
-      "date": "2026-07-08"
-    },
-    {
       "source_id": "4l97aNza_Zc",
       "date": "2026-07-08"
     },
     {
-      "source_id": "_AbFXuGDRTs",
+      "source_id": "5F5MKI_jXJw",
       "date": "2026-07-08"
     },
     {
@@ -709,23 +684,15 @@
       "date": "2026-07-08"
     },
     {
-      "source_id": "5F5MKI_jXJw",
+      "source_id": "_AbFXuGDRTs",
       "date": "2026-07-08"
     },
     {
-      "source_id": "FO9kMeIQI7M",
-      "date": "2026-07-09"
+      "source_id": "zo7i8VTpfNM",
+      "date": "2026-07-08"
     },
     {
-      "source_id": "Caxv8tLATnc",
-      "date": "2026-07-09"
-    },
-    {
-      "source_id": "Vo6QTBMdUfU",
-      "date": "2026-07-09"
-    },
-    {
-      "source_id": "QF5YpZI1wnk",
+      "source_id": "2FE7pOBbRn8",
       "date": "2026-07-09"
     },
     {
@@ -733,7 +700,23 @@
       "date": "2026-07-09"
     },
     {
-      "source_id": "wyKNY1_HnTc",
+      "source_id": "90lzlq8AEX0",
+      "date": "2026-07-09"
+    },
+    {
+      "source_id": "Caxv8tLATnc",
+      "date": "2026-07-09"
+    },
+    {
+      "source_id": "FO9kMeIQI7M",
+      "date": "2026-07-09"
+    },
+    {
+      "source_id": "QF5YpZI1wnk",
+      "date": "2026-07-09"
+    },
+    {
+      "source_id": "Vo6QTBMdUfU",
       "date": "2026-07-09"
     },
     {
@@ -745,19 +728,11 @@
       "date": "2026-07-09"
     },
     {
-      "source_id": "90lzlq8AEX0",
+      "source_id": "wyKNY1_HnTc",
       "date": "2026-07-09"
     },
     {
-      "source_id": "2FE7pOBbRn8",
-      "date": "2026-07-09"
-    },
-    {
-      "source_id": "zPbrkmdcTfo",
-      "date": "2026-07-10"
-    },
-    {
-      "source_id": "DWCl2dN6hpg",
+      "source_id": "1Vg00spYj2g",
       "date": "2026-07-10"
     },
     {
@@ -765,11 +740,15 @@
       "date": "2026-07-10"
     },
     {
+      "source_id": "DWCl2dN6hpg",
+      "date": "2026-07-10"
+    },
+    {
       "source_id": "qTMKHZelGAs",
       "date": "2026-07-10"
     },
     {
-      "source_id": "1Vg00spYj2g",
+      "source_id": "zPbrkmdcTfo",
       "date": "2026-07-10"
     },
     {
@@ -781,7 +760,7 @@
       "date": "2026-07-11"
     },
     {
-      "source_id": "npNmyb-qqGw",
+      "source_id": "9OHRtUHezTk",
       "date": "2026-07-12"
     },
     {
@@ -789,7 +768,11 @@
       "date": "2026-07-12"
     },
     {
-      "source_id": "9OHRtUHezTk",
+      "source_id": "jEG8wuUE1pY",
+      "date": "2026-07-12"
+    },
+    {
+      "source_id": "npNmyb-qqGw",
       "date": "2026-07-12"
     },
     {
@@ -797,23 +780,11 @@
       "date": "2026-07-12"
     },
     {
-      "source_id": "jEG8wuUE1pY",
-      "date": "2026-07-12"
-    },
-    {
-      "source_id": "C8HhPQ8qc1k",
-      "date": "2026-07-13"
-    },
-    {
-      "source_id": "bReHusqxnvw",
-      "date": "2026-07-13"
-    },
-    {
       "source_id": "1atCTSRJHH0",
       "date": "2026-07-13"
     },
     {
-      "source_id": "IYjSmlWG-4A",
+      "source_id": "C8HhPQ8qc1k",
       "date": "2026-07-13"
     },
     {
@@ -821,7 +792,11 @@
       "date": "2026-07-13"
     },
     {
-      "source_id": "ZGNj5lOtNnI",
+      "source_id": "I4bxOuhl8TE",
+      "date": "2026-07-13"
+    },
+    {
+      "source_id": "IYjSmlWG-4A",
       "date": "2026-07-13"
     },
     {
@@ -829,7 +804,15 @@
       "date": "2026-07-13"
     },
     {
-      "source_id": "I4bxOuhl8TE",
+      "source_id": "RcTLBsXvzQk",
+      "date": "2026-07-13"
+    },
+    {
+      "source_id": "ZGNj5lOtNnI",
+      "date": "2026-07-13"
+    },
+    {
+      "source_id": "bReHusqxnvw",
       "date": "2026-07-13"
     },
     {
@@ -837,15 +820,15 @@
       "date": "2026-07-13"
     },
     {
-      "source_id": "RcTLBsXvzQk",
-      "date": "2026-07-13"
-    },
-    {
       "source_id": "5gAAAOkqaxg",
       "date": "2026-07-14"
     },
     {
-      "source_id": "HR1ig6u9-6A",
+      "source_id": "8kWrN2bgvSA",
+      "date": "2026-07-14"
+    },
+    {
+      "source_id": "9ridm0GeHRg",
       "date": "2026-07-14"
     },
     {
@@ -857,7 +840,7 @@
       "date": "2026-07-14"
     },
     {
-      "source_id": "9ridm0GeHRg",
+      "source_id": "HR1ig6u9-6A",
       "date": "2026-07-14"
     },
     {
@@ -865,11 +848,7 @@
       "date": "2026-07-14"
     },
     {
-      "source_id": "qFYcwbu-H-s",
-      "date": "2026-07-14"
-    },
-    {
-      "source_id": "8kWrN2bgvSA",
+      "source_id": "Xzkzp2Y1t0o",
       "date": "2026-07-14"
     },
     {
@@ -877,15 +856,11 @@
       "date": "2026-07-14"
     },
     {
-      "source_id": "Xzkzp2Y1t0o",
+      "source_id": "qFYcwbu-H-s",
       "date": "2026-07-14"
     },
     {
-      "source_id": "pgvBPAsDf2A",
-      "date": "2026-07-15"
-    },
-    {
-      "source_id": "_t9LL1VcG3Q",
+      "source_id": "5orcB4yyjoU",
       "date": "2026-07-15"
     },
     {
@@ -897,7 +872,11 @@
       "date": "2026-07-15"
     },
     {
-      "source_id": "5orcB4yyjoU",
+      "source_id": "_t9LL1VcG3Q",
+      "date": "2026-07-15"
+    },
+    {
+      "source_id": "pgvBPAsDf2A",
       "date": "2026-07-15"
     },
     {
@@ -913,15 +892,7 @@
       "date": "2026-08-05"
     },
     {
-      "source_id": "FWAdfuPpLOc",
-      "date": "2026-08-07"
-    },
-    {
-      "source_id": "pe_ejTiIcSs",
-      "date": "2026-08-07"
-    },
-    {
-      "source_id": "hTSaweR8qMI",
+      "source_id": "-4GmbBoYQjE",
       "date": "2026-08-07"
     },
     {
@@ -929,7 +900,15 @@
       "date": "2026-08-07"
     },
     {
-      "source_id": "-4GmbBoYQjE",
+      "source_id": "FWAdfuPpLOc",
+      "date": "2026-08-07"
+    },
+    {
+      "source_id": "hTSaweR8qMI",
+      "date": "2026-08-07"
+    },
+    {
+      "source_id": "pe_ejTiIcSs",
       "date": "2026-08-07"
     },
     {
@@ -937,11 +916,7 @@
       "date": "2026-08-08"
     },
     {
-      "source_id": "uyiG6uw-6pA",
-      "date": "2026-08-10"
-    },
-    {
-      "source_id": "figrl0aOULs",
+      "source_id": "NDsO1LT_0lw",
       "date": "2026-08-10"
     },
     {
@@ -949,11 +924,15 @@
       "date": "2026-08-10"
     },
     {
-      "source_id": "zajUgQLviwk",
+      "source_id": "figrl0aOULs",
       "date": "2026-08-10"
     },
     {
-      "source_id": "NDsO1LT_0lw",
+      "source_id": "uyiG6uw-6pA",
+      "date": "2026-08-10"
+    },
+    {
+      "source_id": "zajUgQLviwk",
       "date": "2026-08-10"
     },
     {
@@ -975,6 +954,30 @@
     {
       "source_id": "bn0Kh9c4Zv4",
       "date": "2026-08-16"
+    },
+    {
+      "source_id": "0BjlBnfHcHM",
+      "date": "2026-08-17"
+    },
+    {
+      "source_id": "NDsO1LT_0lw",
+      "date": "2026-08-17"
+    },
+    {
+      "source_id": "SM66GDRyIVY",
+      "date": "2026-08-17"
+    },
+    {
+      "source_id": "gVE2t-LRK-s",
+      "date": "2026-08-17"
+    },
+    {
+      "source_id": "gs8qfL9PNac",
+      "date": "2026-08-17"
+    },
+    {
+      "source_id": "sF5LYGgKbUA",
+      "date": "2026-08-17"
     }
   ]
 }

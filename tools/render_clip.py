@@ -33,6 +33,7 @@ Prints JSON: {"path","duration","width","height","byte_size","speed","captions",
 import argparse
 import json
 import os
+import re
 
 from _common import (load_env, emit, fail, run, ffmpeg_bin, ffprobe_json,
                      tmp_path, REPO_ROOT, FFmpegMissing)
@@ -59,6 +60,19 @@ def probe_duration(path):
         return float(ffprobe_json(path).get("format", {}).get("duration") or 0)
     except Exception:
         return 0.0
+
+
+def mean_volume_db(path):
+    """Return the source mean volume for adaptive bed decisions, if measurable."""
+    try:
+        proc = run([
+            ffmpeg_bin(), "-hide_banner", "-nostats", "-i", str(path),
+            "-map", "0:a:0?", "-af", "volumedetect", "-f", "null", "-",
+        ], timeout=30)
+    except Exception:
+        return None
+    match = re.search(r"mean_volume:\s*(-?\d+(?:\.\d+)?) dB", proc.stderr or "")
+    return float(match.group(1)) if match else None
 
 
 def resolve_music(arg):
@@ -111,7 +125,11 @@ def main():
     parser.add_argument("--out", default=None)
     parser.add_argument("--speed", type=float, default=1.0, help="Uniform speed (0.5-2.0)")
     parser.add_argument("--music", default=None, help='Music bed path, "auto", or "none"')
-    parser.add_argument("--music-volume", type=float, default=0.18)
+    parser.add_argument("--music-volume", type=float, default=0.10)
+    parser.add_argument(
+        "--adaptive-music", action="store_true",
+        help="Leave a loud source voice-only; otherwise add a quiet ducked rights-safe bed.",
+    )
     parser.add_argument("--no-sfx", action="store_true", help="Ignore SFX cues even if --cues given")
     parser.add_argument("--no-punch", action="store_true", help="Ignore punch-ins even if --cues given")
     parser.add_argument("--max-secs", type=float, default=60.0)
@@ -145,8 +163,6 @@ def main():
         if not args.no_punch:
             punch_ins = [float(t) for t in cues.get("punch_ins", [])]
 
-    music_path = resolve_music(args.music)
-
     try:
         ffmpeg = ffmpeg_bin()
     except FFmpegMissing as e:
@@ -155,6 +171,22 @@ def main():
 
     audio_present = has_audio(args.inp)
     dur = probe_duration(args.inp)
+    source_mean_db = mean_volume_db(args.inp) if audio_present else None
+    music_path = resolve_music(args.music)
+    music_mode = "off"
+    if music_path:
+        music_mode = "explicit_bed_only" if not audio_present else "explicit_ducked_bed"
+    if args.music and args.music.lower() == "auto" and args.adaptive_music:
+        # A loud source already has the signal that drives retention. A bed under it adds
+        # masking and can make speech/action cues harder to follow, so only quiet clips get it.
+        if audio_present and source_mean_db is not None and source_mean_db >= -23.0:
+            music_path = None
+            music_mode = "source_audio_only"
+        elif audio_present:
+            music_mode = "adaptive_ducked_bed"
+            args.music_volume = min(args.music_volume, 0.09)
+        else:
+            music_mode = "adaptive_bed_only"
 
     # --- video chain: captions -> punch zoom -> speed -> scale ---------------
     vchain = []
@@ -188,8 +220,14 @@ def main():
         map_audio = True
         chains.append("[0:a]loudnorm=I=-14:TP=-1.5:LRA=11[voice]")
         if music_path:
-            chains.append(f"[{music_idx}:a]volume={args.music_volume}[mraw]")
-            chains.append("[mraw][voice]sidechaincompress=threshold=0.03:ratio=8:attack=5:release=250[ducked]")
+            chains.append(
+                f"[{music_idx}:a]aresample=44100,highpass=f=80,lowpass=f=9000,"
+                f"volume={args.music_volume}[mraw]"
+            )
+            chains.append(
+                "[mraw][voice]sidechaincompress=threshold=0.035:ratio=10:"
+                "attack=5:release=300[ducked]"
+            )
             chains.append("[voice][ducked]amix=inputs=2:duration=first:dropout_transition=0[base]")
             base = "[base]"
         else:
@@ -285,6 +323,9 @@ def main():
             fail(f"render failed (full + simple): {e2}")
             return
 
+    if effects == "simple" and music_path:
+        music_mode = "fallback_source_audio_only" if audio_present else "fallback_no_music"
+
     out_dur = probe_duration(out_path)
     emit({
         "path": out_path,
@@ -295,6 +336,9 @@ def main():
         "speed": speed,
         "captions": bool(args.captions),
         "music": os.path.basename(music_path) if music_path else None,
+        "music_mode": music_mode,
+        "source_mean_volume_db": source_mean_db,
+        "music_volume": round(args.music_volume, 3) if music_path else 0.0,
         "sfx_count": len(sfx_cues),
         "punch_ins": len(punch_ins),
         "effects": effects,

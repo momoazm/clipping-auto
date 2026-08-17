@@ -59,8 +59,8 @@ jobs:
           fi
           if ! git diff --staged --quiet; then
             git commit -m "chore: resolve weekly style experiment [skip ci]"
-            git pull --rebase origin main
-            git push
+            git pull --rebase origin "${GITHUB_REF_NAME:-main}"
+            git push origin "HEAD:${GITHUB_REF_NAME:-main}"
           else
             echo "No log change to commit."
           fi

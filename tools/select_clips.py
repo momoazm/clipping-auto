@@ -49,6 +49,9 @@ The hook is the most important factor for virality. For each clip:
   resolution, or a cliffhanger that rewards finishing (which lifts completion + loops).
 - Target length about {target} seconds; HARD MAX {maxs} seconds. Shorter, tighter clips finish
   more often — prefer the tightest cut that still delivers the full moment; never exceed the max.
+- Performance rule from the account's strongest Instagram posts: prefer a complete 28-45 second
+  story when the payoff fits; use 50-60 seconds only when cutting it would remove the actual
+  reveal. A specific action + consequence beats a generic reaction-only moment.
 - Clips must not overlap each other.
 
 For each clip also write:
@@ -158,6 +161,40 @@ ACTION_ANCHOR_TERMS = re.compile(
     r"rescue(?:s|d|ing)?|remote|alarm(?:s|ed|ing)?)\b",
     re.IGNORECASE,
 )
+
+HOOK_CONCRETE_TERMS = re.compile(
+    r"\b(?:called\s+out|roast(?:ed|s|ing)?|cringe|rigged|caught|busted|exposed|"
+    r"meltdown|rage|eliminat(?:ed|ion)|quit(?:s|ting)?|mansion|million|\$\s?\d+|"
+    r"alarm|remote|handcuff(?:ed|s)?|rescue|last\s+one|wins?|los(?:es|t)|"
+    r"step(?:ped)?\s+out|drops?|breaks?|falls?|fails?)\b",
+    re.IGNORECASE,
+)
+GENERIC_HOOK_TERMS = re.compile(
+    r"\b(?:wild|crazy|insane|epic|funny)\s+(?:moment|moments|reaction|reactions|clip|clips)|"
+    r"top\s+moments?|best\s+moments?|see\s+what\s+happens?\b",
+    re.IGNORECASE,
+)
+
+
+def hook_signal_score(title, hook, reason, clip_text, duration=None):
+    """Return a deterministic quality signal for a concrete, self-contained hook."""
+    evidence = " ".join(str(value or "") for value in (title, hook, reason, clip_text))
+    score = 35
+    score += min(30, len(HOOK_CONCRETE_TERMS.findall(evidence)) * 8)
+    if re.search(r"\$\s?\d|\b(?:one|two|three|million|thousand)\b", evidence, re.IGNORECASE):
+        score += 8
+    if _infer_focus_mode(evidence) == "action":
+        score += 10
+    score -= min(24, len(GENERIC_HOOK_TERMS.findall(evidence)) * 8)
+    try:
+        seconds = float(duration)
+        if 28 <= seconds <= 45:
+            score += 7
+        elif seconds > 50:
+            score -= 6
+    except (TypeError, ValueError):
+        pass
+    return max(0, min(100, int(score)))
 
 
 def _clip_words_text(words, start, end):
@@ -466,6 +503,8 @@ def deterministic_fallback(words, count, target_secs, max_secs, excluded_windows
             "suggested_title": _safe_title(hook[:76], hook, text),
             "focus_mode": _infer_focus_mode(text),
             "action_anchor": _find_action_anchor(words, item["start"], item["end"]),
+            "hook_signal_score": hook_signal_score(hook, hook, "", text,
+                                                    item["end"] - item["start"]),
             "emphasis_words": [],
         })
     return result
@@ -593,6 +632,7 @@ def main():
         if _infer_focus_mode(focus_text) == "action":
             focus_mode = "action"
         action_anchor = _find_action_anchor(words, s, e) if focus_mode == "action" else None
+        signal_score = hook_signal_score(title, hook, reason, clip_text, e - s)
         clips.append({
             "start": s,
             "end": e,
@@ -600,6 +640,7 @@ def main():
             "hook": hook,
             "reason": reason,
             "virality_score": c.get("virality_score"),
+            "hook_signal_score": signal_score,
             "suggested_title": title,
             "focus_mode": focus_mode,
             "action_anchor": action_anchor,
@@ -607,7 +648,18 @@ def main():
         })
 
     # Drop overlaps (keep higher score / earlier), sort best-first.
-    clips.sort(key=lambda x: (-(x.get("virality_score") or 0), x["start"]))
+    def selection_key(item):
+        try:
+            model_score = float(item.get("virality_score") or 0)
+        except (TypeError, ValueError):
+            model_score = 0.0
+        # Preserve the model's judgement while preventing a generic high score from hiding a
+        # concrete action/consequence hook. The deterministic signal is deliberately a tie-break-
+        # sized component, not a replacement for the provider.
+        combined = model_score * 0.75 + float(item.get("hook_signal_score") or 0) * 0.25
+        return (-combined, item["start"])
+
+    clips.sort(key=selection_key)
     kept = []
     for c in clips:
         if all(c["end"] <= k["start"] or c["start"] >= k["end"] for k in kept):

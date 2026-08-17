@@ -168,7 +168,9 @@ jobs:
         env:
           API_ENV: ${{ secrets.API_ENV }}
           YT_TOKEN_JSON: ${{ secrets.YT_TOKEN_JSON }}
-          YT_COOKIES: ${{ secrets.YT_COOKIES }}
+          # The repository secret is named YOUTUBE_COOKIES; keep the local env name
+          # compatible with download_video.py and yt-dlp's existing cookies.txt path.
+          YT_COOKIES: ${{ secrets.YOUTUBE_COOKIES }}
           # Keep this workflow's destination credentials authoritative. API_ENV is a
           # shared legacy file and may contain another project's Zernio account.
           ZERNIO_API: ${{ secrets.ZERNIO_API }}
@@ -222,7 +224,7 @@ jobs:
           TIKTOK_CLIENT_KEY: ${{ secrets.TIKTOK_CLIENT_KEY }}
           TIKTOK_CLIENT_SECRET: ${{ secrets.TIKTOK_CLIENT_SECRET }}
           TIKTOK_EXPECTED_USERNAME: ${{ secrets.TIKTOK_EXPECTED_USERNAME || 'mrbeasteg' }}
-        run: python tools/verify_accounts.py --instagram mrbeasteg --youtube itsmomoclips --tiktok "$TIKTOK_EXPECTED_USERNAME"
+        run: python tools/verify_accounts.py --instagram mrbeasteg --youtube itsmomoclips --tiktok "$TIKTOK_EXPECTED_USERNAME" --require-ready
 
       # Reserve the source in tracked history before download/transcription/rendering. This
       # closes the runner-cancellation window: even if the expensive job is killed, the next
@@ -246,15 +248,15 @@ jobs:
           python run_daily.py "${ARGS[@]}"
 
       - name: Commit source reservation
-        if: ${{ success() && inputs.dry_run != 'true' && inputs.source_id == '' }}
+        if: ${{ success() && inputs.dry_run != true && inputs.source_id == '' }}
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add state/clipped_history.json
           if ! git diff --staged --quiet; then
             git commit -m "chore: reserve clipping source [skip ci]"
-            git pull --rebase origin main
-            git push
+            git pull --rebase origin "${GITHUB_REF_NAME:-main}"
+            git push origin "HEAD:${GITHUB_REF_NAME:-main}"
           else
             echo "No source reservation change to commit."
           fi
@@ -309,9 +311,44 @@ jobs:
           echo "run_daily.py ${ARGS[*]}"
           python run_daily.py "${ARGS[@]}"
 
+      - name: Validate generated clipping media contract
+        if: ${{ always() && hashFiles('.tmp/short_*.mp4') != '' }}
+        run: |
+          python3 - <<'EOF'
+          import glob, json, subprocess
+          files = sorted(glob.glob('.tmp/short_*.mp4'))
+          checked = []
+          for path in files:
+              probe = json.loads(subprocess.check_output([
+                  'ffprobe', '-v', 'error', '-print_format', 'json',
+                  '-show_streams', '-show_format', path
+              ]))
+              video = next((s for s in probe.get('streams', []) if s.get('codec_type') == 'video'), {})
+              audio_stream = next((s for s in probe.get('streams', []) if s.get('codec_type') == 'audio'), {})
+              audio = bool(audio_stream)
+              duration = float((probe.get('format') or {}).get('duration') or 0)
+              with open(path, 'rb') as handle:
+                  blob = handle.read()
+              faststart = blob.find(b'moov') >= 0 and (
+                  blob.find(b'mdat') < 0 or blob.find(b'moov') < blob.find(b'mdat'))
+              if (video.get('width'), video.get('height')) != (1080, 1920):
+                  raise SystemExit(f'{path}: expected 1080x1920, got {video.get("width")}x{video.get("height")}')
+              if (video.get('codec_name'), video.get('pix_fmt')) != ('h264', 'yuv420p'):
+                  raise SystemExit(f'{path}: expected h264/yuv420p, got {video.get("codec_name")}/{video.get("pix_fmt")}')
+              if (audio_stream.get('codec_name'), str(audio_stream.get('sample_rate')), audio_stream.get('channels')) not in {
+                  ('aac', '44100', 1), ('aac', '44100', 2), ('aac', '48000', 1), ('aac', '48000', 2)
+              }:
+                  raise SystemExit(f'{path}: expected AAC 44.1/48k mono/stereo, got {audio_stream}')
+              if not audio or not (0 < duration < 60) or not faststart:
+                  raise SystemExit(f'{path}: audio={audio}, duration={duration}, faststart={faststart}')
+              checked.append({'file': path, 'duration_sec': round(duration, 2), 'faststart': faststart})
+          print(json.dumps({'status': 'media_contract_ok', 'files': checked}))
+          EOF
+
       - name: Upload clipping diagnostics on failure or dry-run
         if: ${{ always() && (failure() || inputs.dry_run == true) }}
         uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: momobeast-clips-debug-${{ github.run_id }}
           path: |
@@ -325,6 +362,7 @@ jobs:
       - name: Upload clipping run metadata
         if: always()
         uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: momobeast-run-${{ github.run_id }}
           path: |
@@ -337,7 +375,7 @@ jobs:
       # how a source that broke this run gets remembered and isn't re-picked next time
       # (without it, the next checkout resets the file and the same video repeats).
       - name: Commit updated history
-        if: ${{ always() && inputs.dry_run != 'true' }}
+        if: ${{ always() && inputs.dry_run != true }}
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -350,8 +388,8 @@ jobs:
           fi
           if ! git diff --staged --quiet; then
             git commit -m "chore: update clipped history [skip ci]"
-            git pull --rebase origin main
-            git push
+            git pull --rebase origin "${GITHUB_REF_NAME:-main}"
+            git push origin "HEAD:${GITHUB_REF_NAME:-main}"
           else
             echo "No history change to commit."
           fi
