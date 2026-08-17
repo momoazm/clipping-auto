@@ -596,6 +596,63 @@
       "source_duration": 1365,
       "target_clip_count": 5,
       "remaining_clips": 3
+    },
+    {
+      "source_id": "ndAQfTzlVjc",
+      "clip_video_ids": [
+        "6a833abcd5de8db4989a00b3",
+        "6a833b788911135c3bbe0a4d",
+        "6a833c57126589cc288df5a6",
+        "6a833d243de095be9555e472"
+      ],
+      "youtube_post_ids": [
+        "6a833abcd5de8db4989a00b3",
+        "6a833b788911135c3bbe0a4d",
+        "6a833c57126589cc288df5a6",
+        "6a833d243de095be9555e472"
+      ],
+      "instagram_post_ids": [
+        "6a833ac3bd606a8b87da7597",
+        "6a833b7fe86e5827abf02fa6",
+        "6a833c5e6885b74fcfcc65b3",
+        "6a833d2b47a25381c766d7ba"
+      ],
+      "tiktok_post_ids": [],
+      "platform_post_ids": [
+        "6a833ac3bd606a8b87da7597",
+        "6a833b7fe86e5827abf02fa6",
+        "6a833c5e6885b74fcfcc65b3",
+        "6a833d2b47a25381c766d7ba"
+      ],
+      "clip_windows": [
+        {
+          "start": 903.848,
+          "end": 927.898,
+          "video_id": "6a833abcd5de8db4989a00b3"
+        },
+        {
+          "start": 659.002,
+          "end": 688.892,
+          "video_id": "6a833b788911135c3bbe0a4d"
+        },
+        {
+          "start": 363.276,
+          "end": 397.986,
+          "video_id": "6a833c57126589cc288df5a6"
+        },
+        {
+          "start": 728.182,
+          "end": 750.272,
+          "video_id": "6a833d243de095be9555e472"
+        }
+      ],
+      "source_title": "7 Days Stranded In A Cave",
+      "channel": "MrBeast",
+      "date": "2026-08-17",
+      "published_at": "2026-08-17T16:56:52.173911+00:00",
+      "source_duration": 1078,
+      "target_clip_count": 4,
+      "remaining_clips": 0
     }
   ],
   "attempted": [
@@ -977,6 +1034,14 @@
     },
     {
       "source_id": "sF5LYGgKbUA",
+      "date": "2026-08-17"
+    },
+    {
+      "source_id": "snX5YyflrGw",
+      "date": "2026-08-17"
+    },
+    {
+      "source_id": "aRcUVhVlSHg",
       "date": "2026-08-17"
     }
   ]

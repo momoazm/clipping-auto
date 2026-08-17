@@ -295,6 +295,94 @@
           "effects": "full"
         }
       }
+    },
+    {
+      "post_id": "6a833ac3bd606a8b87da7597",
+      "posted_at": "2026-08-17T16:46:35.800776+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "01",
+        "hook": "This Cave Chamber Doesn't Look Like Earth — Glow Worm Reveal",
+        "hook_signal_score": 35,
+        "duration_sec": 24.05,
+        "focus_mode": "wide",
+        "hook_variant": "wide_context",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -9.4,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6a833b7fe86e5827abf02fa6",
+      "posted_at": "2026-08-17T16:49:43.663969+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "02",
+        "hook": "No Bottom, No Vision — The Moment They Could've Fallen Forever",
+        "hook_signal_score": 60,
+        "duration_sec": 29.89,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -9.4,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6a833c5e6885b74fcfcc65b3",
+      "posted_at": "2026-08-17T16:54:20.564951+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "03",
+        "hook": "Someone Is Officially Out!",
+        "hook_signal_score": 52,
+        "duration_sec": 34.71,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -9.0,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6a833d2b47a25381c766d7ba",
+      "posted_at": "2026-08-17T16:56:52.170048+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "04",
+        "hook": "Someone Is Officially Out!",
+        "hook_signal_score": 53,
+        "duration_sec": 22.09,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -8.3,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
     }
   ]
 }
