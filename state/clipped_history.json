@@ -442,6 +442,123 @@
       ]
     },
     {
+      "source_id": "SM66GDRyIVY",
+      "clip_video_ids": [
+        "6a7b523c3597cac59c889211",
+        "6a7b52ec86bd6ca27d9862ed",
+        "6a7b53cfb4e7eef7fbfa1575",
+        "6a7b54aeeb7816ec43f36758"
+      ],
+      "youtube_post_ids": [
+        "6a7b523c3597cac59c889211",
+        "6a7b52ec86bd6ca27d9862ed",
+        "6a7b53cfb4e7eef7fbfa1575",
+        "6a7b54aeeb7816ec43f36758"
+      ],
+      "instagram_post_ids": [
+        "6a7b5245dfbe5ebb8f1c90cb"
+      ],
+      "tiktok_post_ids": [],
+      "platform_post_ids": [
+        "6a7b5245dfbe5ebb8f1c90cb"
+      ],
+      "clip_windows": [
+        {
+          "start": 706.738,
+          "end": 741.628,
+          "video_id": "6a7b523c3597cac59c889211"
+        },
+        {
+          "start": 175.91,
+          "end": 209.9,
+          "video_id": "6a7b52ec86bd6ca27d9862ed"
+        },
+        {
+          "start": 769.418,
+          "end": 791.248,
+          "video_id": "6a7b53cfb4e7eef7fbfa1575"
+        },
+        {
+          "start": 73.05,
+          "end": 100.38,
+          "video_id": "6a7b54aeeb7816ec43f36758"
+        }
+      ],
+      "source_title": "I Helped 2,000 People Walk Again",
+      "channel": "MrBeast",
+      "date": "2026-08-11",
+      "published_at": "2026-08-11T17:01:59.939703+00:00",
+      "source_duration": 930,
+      "target_clip_count": 4,
+      "remaining_clips": 0
+    },
+    {
+      "source_id": "gVE2t-LRK-s",
+      "clip_video_ids": [
+        "6a8094c2950267e6c9211876",
+        "6a80956757efc2aad26adf77",
+        "6a809677d6199242944e2825",
+        "6a80973bd5cfe38c3b12bfc3",
+        "6a8097eea7f4fd39f45f2bdd"
+      ],
+      "youtube_post_ids": [
+        "6a8094c2950267e6c9211876",
+        "6a80956757efc2aad26adf77",
+        "6a809677d6199242944e2825",
+        "6a80973bd5cfe38c3b12bfc3",
+        "6a8097eea7f4fd39f45f2bdd"
+      ],
+      "instagram_post_ids": [
+        "6a8094c996d0e66940dc218d",
+        "6a80956edfba6dba2e4adca5",
+        "6a80967e9f1c3c5584f583ee",
+        "6a809741d5cfe38c3b12c276",
+        "6a8097f520c21730ba21b1f6"
+      ],
+      "tiktok_post_ids": [],
+      "platform_post_ids": [
+        "6a8094c996d0e66940dc218d",
+        "6a80956edfba6dba2e4adca5",
+        "6a80967e9f1c3c5584f583ee",
+        "6a809741d5cfe38c3b12c276",
+        "6a8097f520c21730ba21b1f6"
+      ],
+      "clip_windows": [
+        {
+          "start": 1444.073,
+          "end": 1454.183,
+          "video_id": "6a8094c2950267e6c9211876"
+        },
+        {
+          "start": 527.631,
+          "end": 561.341,
+          "video_id": "6a80956757efc2aad26adf77"
+        },
+        {
+          "start": 1353.833,
+          "end": 1411.523,
+          "video_id": "6a809677d6199242944e2825"
+        },
+        {
+          "start": 209.15,
+          "end": 244.0,
+          "video_id": "6a80973bd5cfe38c3b12bfc3"
+        },
+        {
+          "start": 247.01,
+          "end": 286.12,
+          "video_id": "6a8097eea7f4fd39f45f2bdd"
+        }
+      ],
+      "source_title": "Whatever You Hide As, You Keep!",
+      "channel": "MrBeast Gaming",
+      "date": "2026-08-15",
+      "published_at": "2026-08-15T16:47:32.303693+00:00",
+      "source_duration": 1460,
+      "target_clip_count": 5,
+      "remaining_clips": 0
+    },
+    {
       "source_id": "0BjlBnfHcHM",
       "clip_video_ids": [
         "6a82d88e66356b22e18c449a",
@@ -503,15 +620,15 @@
       "date": "2026-07-03"
     },
     {
-      "source_id": "nH9R0Jpqeqc",
-      "date": "2026-07-04"
-    },
-    {
       "source_id": "5OLs1GWB4OA",
       "date": "2026-07-04"
     },
     {
       "source_id": "9WEQts7b8Pw",
+      "date": "2026-07-04"
+    },
+    {
+      "source_id": "nH9R0Jpqeqc",
       "date": "2026-07-04"
     },
     {
@@ -527,6 +644,10 @@
       "date": "2026-07-06"
     },
     {
+      "source_id": "3RmOvxilbPM",
+      "date": "2026-07-07"
+    },
+    {
       "source_id": "8bMh8azh3CY",
       "date": "2026-07-07"
     },
@@ -535,7 +656,7 @@
       "date": "2026-07-07"
     },
     {
-      "source_id": "3RmOvxilbPM",
+      "source_id": "F0OkwXKcPSE",
       "date": "2026-07-07"
     },
     {
@@ -547,19 +668,11 @@
       "date": "2026-07-07"
     },
     {
-      "source_id": "F0OkwXKcPSE",
-      "date": "2026-07-07"
-    },
-    {
-      "source_id": "zo7i8VTpfNM",
-      "date": "2026-07-08"
-    },
-    {
       "source_id": "4l97aNza_Zc",
       "date": "2026-07-08"
     },
     {
-      "source_id": "_AbFXuGDRTs",
+      "source_id": "5F5MKI_jXJw",
       "date": "2026-07-08"
     },
     {
@@ -571,23 +684,15 @@
       "date": "2026-07-08"
     },
     {
-      "source_id": "5F5MKI_jXJw",
+      "source_id": "_AbFXuGDRTs",
       "date": "2026-07-08"
     },
     {
-      "source_id": "FO9kMeIQI7M",
-      "date": "2026-07-09"
+      "source_id": "zo7i8VTpfNM",
+      "date": "2026-07-08"
     },
     {
-      "source_id": "Caxv8tLATnc",
-      "date": "2026-07-09"
-    },
-    {
-      "source_id": "Vo6QTBMdUfU",
-      "date": "2026-07-09"
-    },
-    {
-      "source_id": "QF5YpZI1wnk",
+      "source_id": "2FE7pOBbRn8",
       "date": "2026-07-09"
     },
     {
@@ -595,7 +700,23 @@
       "date": "2026-07-09"
     },
     {
-      "source_id": "wyKNY1_HnTc",
+      "source_id": "90lzlq8AEX0",
+      "date": "2026-07-09"
+    },
+    {
+      "source_id": "Caxv8tLATnc",
+      "date": "2026-07-09"
+    },
+    {
+      "source_id": "FO9kMeIQI7M",
+      "date": "2026-07-09"
+    },
+    {
+      "source_id": "QF5YpZI1wnk",
+      "date": "2026-07-09"
+    },
+    {
+      "source_id": "Vo6QTBMdUfU",
       "date": "2026-07-09"
     },
     {
@@ -607,19 +728,11 @@
       "date": "2026-07-09"
     },
     {
-      "source_id": "90lzlq8AEX0",
+      "source_id": "wyKNY1_HnTc",
       "date": "2026-07-09"
     },
     {
-      "source_id": "2FE7pOBbRn8",
-      "date": "2026-07-09"
-    },
-    {
-      "source_id": "zPbrkmdcTfo",
-      "date": "2026-07-10"
-    },
-    {
-      "source_id": "DWCl2dN6hpg",
+      "source_id": "1Vg00spYj2g",
       "date": "2026-07-10"
     },
     {
@@ -627,11 +740,15 @@
       "date": "2026-07-10"
     },
     {
+      "source_id": "DWCl2dN6hpg",
+      "date": "2026-07-10"
+    },
+    {
       "source_id": "qTMKHZelGAs",
       "date": "2026-07-10"
     },
     {
-      "source_id": "1Vg00spYj2g",
+      "source_id": "zPbrkmdcTfo",
       "date": "2026-07-10"
     },
     {
@@ -643,7 +760,7 @@
       "date": "2026-07-11"
     },
     {
-      "source_id": "npNmyb-qqGw",
+      "source_id": "9OHRtUHezTk",
       "date": "2026-07-12"
     },
     {
@@ -651,7 +768,11 @@
       "date": "2026-07-12"
     },
     {
-      "source_id": "9OHRtUHezTk",
+      "source_id": "jEG8wuUE1pY",
+      "date": "2026-07-12"
+    },
+    {
+      "source_id": "npNmyb-qqGw",
       "date": "2026-07-12"
     },
     {
@@ -659,23 +780,11 @@
       "date": "2026-07-12"
     },
     {
-      "source_id": "jEG8wuUE1pY",
-      "date": "2026-07-12"
-    },
-    {
-      "source_id": "C8HhPQ8qc1k",
-      "date": "2026-07-13"
-    },
-    {
-      "source_id": "bReHusqxnvw",
-      "date": "2026-07-13"
-    },
-    {
       "source_id": "1atCTSRJHH0",
       "date": "2026-07-13"
     },
     {
-      "source_id": "IYjSmlWG-4A",
+      "source_id": "C8HhPQ8qc1k",
       "date": "2026-07-13"
     },
     {
@@ -683,7 +792,11 @@
       "date": "2026-07-13"
     },
     {
-      "source_id": "ZGNj5lOtNnI",
+      "source_id": "I4bxOuhl8TE",
+      "date": "2026-07-13"
+    },
+    {
+      "source_id": "IYjSmlWG-4A",
       "date": "2026-07-13"
     },
     {
@@ -691,7 +804,15 @@
       "date": "2026-07-13"
     },
     {
-      "source_id": "I4bxOuhl8TE",
+      "source_id": "RcTLBsXvzQk",
+      "date": "2026-07-13"
+    },
+    {
+      "source_id": "ZGNj5lOtNnI",
+      "date": "2026-07-13"
+    },
+    {
+      "source_id": "bReHusqxnvw",
       "date": "2026-07-13"
     },
     {
@@ -699,15 +820,15 @@
       "date": "2026-07-13"
     },
     {
-      "source_id": "RcTLBsXvzQk",
-      "date": "2026-07-13"
-    },
-    {
       "source_id": "5gAAAOkqaxg",
       "date": "2026-07-14"
     },
     {
-      "source_id": "HR1ig6u9-6A",
+      "source_id": "8kWrN2bgvSA",
+      "date": "2026-07-14"
+    },
+    {
+      "source_id": "9ridm0GeHRg",
       "date": "2026-07-14"
     },
     {
@@ -719,7 +840,7 @@
       "date": "2026-07-14"
     },
     {
-      "source_id": "9ridm0GeHRg",
+      "source_id": "HR1ig6u9-6A",
       "date": "2026-07-14"
     },
     {
@@ -727,11 +848,7 @@
       "date": "2026-07-14"
     },
     {
-      "source_id": "qFYcwbu-H-s",
-      "date": "2026-07-14"
-    },
-    {
-      "source_id": "8kWrN2bgvSA",
+      "source_id": "Xzkzp2Y1t0o",
       "date": "2026-07-14"
     },
     {
@@ -739,15 +856,11 @@
       "date": "2026-07-14"
     },
     {
-      "source_id": "Xzkzp2Y1t0o",
+      "source_id": "qFYcwbu-H-s",
       "date": "2026-07-14"
     },
     {
-      "source_id": "pgvBPAsDf2A",
-      "date": "2026-07-15"
-    },
-    {
-      "source_id": "_t9LL1VcG3Q",
+      "source_id": "5orcB4yyjoU",
       "date": "2026-07-15"
     },
     {
@@ -759,7 +872,11 @@
       "date": "2026-07-15"
     },
     {
-      "source_id": "5orcB4yyjoU",
+      "source_id": "_t9LL1VcG3Q",
+      "date": "2026-07-15"
+    },
+    {
+      "source_id": "pgvBPAsDf2A",
       "date": "2026-07-15"
     },
     {
@@ -775,15 +892,7 @@
       "date": "2026-08-05"
     },
     {
-      "source_id": "FWAdfuPpLOc",
-      "date": "2026-08-07"
-    },
-    {
-      "source_id": "pe_ejTiIcSs",
-      "date": "2026-08-07"
-    },
-    {
-      "source_id": "hTSaweR8qMI",
+      "source_id": "-4GmbBoYQjE",
       "date": "2026-08-07"
     },
     {
@@ -791,7 +900,15 @@
       "date": "2026-08-07"
     },
     {
-      "source_id": "-4GmbBoYQjE",
+      "source_id": "FWAdfuPpLOc",
+      "date": "2026-08-07"
+    },
+    {
+      "source_id": "hTSaweR8qMI",
+      "date": "2026-08-07"
+    },
+    {
+      "source_id": "pe_ejTiIcSs",
       "date": "2026-08-07"
     },
     {
@@ -799,11 +916,7 @@
       "date": "2026-08-08"
     },
     {
-      "source_id": "uyiG6uw-6pA",
-      "date": "2026-08-10"
-    },
-    {
-      "source_id": "figrl0aOULs",
+      "source_id": "NDsO1LT_0lw",
       "date": "2026-08-10"
     },
     {
@@ -811,11 +924,39 @@
       "date": "2026-08-10"
     },
     {
+      "source_id": "figrl0aOULs",
+      "date": "2026-08-10"
+    },
+    {
+      "source_id": "uyiG6uw-6pA",
+      "date": "2026-08-10"
+    },
+    {
       "source_id": "zajUgQLviwk",
       "date": "2026-08-10"
     },
     {
+      "source_id": "sF5LYGgKbUA",
+      "date": "2026-08-11"
+    },
+    {
+      "source_id": "gs8qfL9PNac",
+      "date": "2026-08-12"
+    },
+    {
+      "source_id": "Xj0Jtjg3lHQ",
+      "date": "2026-08-14"
+    },
+    {
       "source_id": "gVE2t-LRK-s",
+      "date": "2026-08-15"
+    },
+    {
+      "source_id": "bn0Kh9c4Zv4",
+      "date": "2026-08-16"
+    },
+    {
+      "source_id": "0BjlBnfHcHM",
       "date": "2026-08-17"
     },
     {
@@ -823,11 +964,11 @@
       "date": "2026-08-17"
     },
     {
-      "source_id": "sF5LYGgKbUA",
+      "source_id": "SM66GDRyIVY",
       "date": "2026-08-17"
     },
     {
-      "source_id": "SM66GDRyIVY",
+      "source_id": "gVE2t-LRK-s",
       "date": "2026-08-17"
     },
     {
@@ -835,7 +976,7 @@
       "date": "2026-08-17"
     },
     {
-      "source_id": "0BjlBnfHcHM",
+      "source_id": "sF5LYGgKbUA",
       "date": "2026-08-17"
     }
   ]
