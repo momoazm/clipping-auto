@@ -70,10 +70,20 @@
       "posted_at": "2026-08-08T16:41:17.500067+00:00",
       "style": "clean",
       "experiment": true,
-      "resolved": false,
+      "resolved": true,
       "context": {
         "clip": "01",
         "hook": "Hand on Wall = $1,000,000 Mansion (Last One Wins)"
+      },
+      "result": {
+        "views": null,
+        "engagement_rate": null,
+        "baseline_views_avg": 0.0,
+        "baseline_engagement_avg": 0.0,
+        "views_delta": null,
+        "engagement_delta": null,
+        "baseline_n": 4,
+        "win": false
       }
     },
     {
@@ -103,10 +113,20 @@
       "posted_at": "2026-08-10T10:33:52.126782+00:00",
       "style": "hormozi",
       "experiment": true,
-      "resolved": false,
+      "resolved": true,
       "context": {
         "clip": "01",
         "hook": "How a Quit Can Win You a $1M Mansion!"
+      },
+      "result": {
+        "views": null,
+        "engagement_rate": null,
+        "baseline_views_avg": 0.0,
+        "baseline_engagement_avg": 0.0,
+        "views_delta": null,
+        "engagement_delta": null,
+        "baseline_n": 6,
+        "win": false
       }
     },
     {
