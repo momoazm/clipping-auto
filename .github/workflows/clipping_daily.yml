@@ -168,7 +168,9 @@ jobs:
         env:
           API_ENV: ${{ secrets.API_ENV }}
           YT_TOKEN_JSON: ${{ secrets.YT_TOKEN_JSON }}
-          YT_COOKIES: ${{ secrets.YT_COOKIES }}
+          # The repository secret is named YOUTUBE_COOKIES; keep the local env name
+          # compatible with download_video.py and yt-dlp's existing cookies.txt path.
+          YT_COOKIES: ${{ secrets.YOUTUBE_COOKIES }}
           # Keep this workflow's destination credentials authoritative. API_ENV is a
           # shared legacy file and may contain another project's Zernio account.
           ZERNIO_API: ${{ secrets.ZERNIO_API }}
