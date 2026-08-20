@@ -383,6 +383,72 @@
           "effects": "full"
         }
       }
+    },
+    {
+      "post_id": "6a872d0b707304cda56d9a01",
+      "posted_at": "2026-08-20T16:37:13.383985+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "01",
+        "hook": "Meet the 1v1 opponent who could win $1,000,000",
+        "hook_signal_score": 66,
+        "duration_sec": 35.35,
+        "focus_mode": "speaker",
+        "hook_variant": "specific_claim",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -9.3,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6a872dc6ee01e37437e3f4f7",
+      "posted_at": "2026-08-20T16:40:17.789980+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "02",
+        "hook": "100 grand on the line — who wins?",
+        "hook_signal_score": 50,
+        "duration_sec": 35.13,
+        "focus_mode": "speaker",
+        "hook_variant": "question",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -8.9,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6a872e642f1a7119c6835355",
+      "posted_at": "2026-08-20T16:43:09.892989+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "03",
+        "hook": "Ronaldo vs fan in $1M shootout — lucky shirt moment",
+        "hook_signal_score": 66,
+        "duration_sec": 30.41,
+        "focus_mode": "speaker",
+        "hook_variant": "specific_claim",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -8.7,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
     }
   ]
 }

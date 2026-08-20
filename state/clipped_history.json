@@ -562,20 +562,32 @@
       "source_id": "0BjlBnfHcHM",
       "clip_video_ids": [
         "6a82d88e66356b22e18c449a",
-        "6a82d9cabd27dcca82847bee"
+        "6a82d9cabd27dcca82847bee",
+        "6a872d0474331fa555c3e9b4",
+        "6a872dbf67136c2e2f5e4fe9",
+        "6a872e5e1fbd8324339ac821"
       ],
       "youtube_post_ids": [
         "6a82d88e66356b22e18c449a",
-        "6a82d9cabd27dcca82847bee"
+        "6a82d9cabd27dcca82847bee",
+        "6a872d0474331fa555c3e9b4",
+        "6a872dbf67136c2e2f5e4fe9",
+        "6a872e5e1fbd8324339ac821"
       ],
       "instagram_post_ids": [
         "6a82d89628eb0eddbf1c86c3",
-        "6a82d9d1c46ad48f0539f7fe"
+        "6a82d9d1c46ad48f0539f7fe",
+        "6a872d0b707304cda56d9a01",
+        "6a872dc6ee01e37437e3f4f7",
+        "6a872e642f1a7119c6835355"
       ],
       "tiktok_post_ids": [],
       "platform_post_ids": [
         "6a82d89628eb0eddbf1c86c3",
-        "6a82d9d1c46ad48f0539f7fe"
+        "6a82d9d1c46ad48f0539f7fe",
+        "6a872d0b707304cda56d9a01",
+        "6a872dc6ee01e37437e3f4f7",
+        "6a872e642f1a7119c6835355"
       ],
       "clip_windows": [
         {
@@ -587,15 +599,30 @@
           "start": 1015.838,
           "end": 1067.792,
           "video_id": "6a82d9cabd27dcca82847bee"
+        },
+        {
+          "start": 19.11,
+          "end": 54.46,
+          "video_id": "6a872d0474331fa555c3e9b4"
+        },
+        {
+          "start": 108.05,
+          "end": 143.18,
+          "video_id": "6a872dbf67136c2e2f5e4fe9"
+        },
+        {
+          "start": 1118.362,
+          "end": 1148.772,
+          "video_id": "6a872e5e1fbd8324339ac821"
         }
       ],
       "source_title": "Beat Ronaldo, Win $1,000,000",
       "channel": "MrBeast",
-      "date": "2026-08-17",
-      "published_at": "2026-08-17T09:53:12.998794+00:00",
+      "date": "2026-08-20",
+      "published_at": "2026-08-20T16:43:09.897090+00:00",
       "source_duration": 1365,
       "target_clip_count": 5,
-      "remaining_clips": 3
+      "remaining_clips": 0
     },
     {
       "source_id": "ndAQfTzlVjc",
