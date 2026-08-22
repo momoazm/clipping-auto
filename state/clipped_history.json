@@ -680,6 +680,63 @@
       "source_duration": 1078,
       "target_clip_count": 4,
       "remaining_clips": 0
+    },
+    {
+      "source_id": "F6PqxbvOCUI",
+      "clip_video_ids": [
+        "6a89d05a40fdc566874b6631",
+        "6a89d0fa4d37c3e74cfb7ecf",
+        "6a89d18872df9dd3d50d3f81",
+        "6a89d247bb812f32f6e12f4f"
+      ],
+      "youtube_post_ids": [
+        "6a89d05a40fdc566874b6631",
+        "6a89d0fa4d37c3e74cfb7ecf",
+        "6a89d18872df9dd3d50d3f81",
+        "6a89d247bb812f32f6e12f4f"
+      ],
+      "instagram_post_ids": [
+        "6a89d06140fdc566874b6761",
+        "6a89d1014d37c3e74cfb818c",
+        "6a89d18e5c5054677bb3603a",
+        "6a89d25052e5819d189c0e23"
+      ],
+      "tiktok_post_ids": [],
+      "platform_post_ids": [
+        "6a89d06140fdc566874b6761",
+        "6a89d1014d37c3e74cfb818c",
+        "6a89d18e5c5054677bb3603a",
+        "6a89d25052e5819d189c0e23"
+      ],
+      "clip_windows": [
+        {
+          "start": 271.433,
+          "end": 304.863,
+          "video_id": "6a89d05a40fdc566874b6631"
+        },
+        {
+          "start": 402.393,
+          "end": 430.704,
+          "video_id": "6a89d0fa4d37c3e74cfb7ecf"
+        },
+        {
+          "start": 58.29,
+          "end": 83.22,
+          "video_id": "6a89d18872df9dd3d50d3f81"
+        },
+        {
+          "start": 159.55,
+          "end": 196.12,
+          "video_id": "6a89d247bb812f32f6e12f4f"
+        }
+      ],
+      "source_title": "Protect The Yacht, Keep It!",
+      "channel": "MrBeast",
+      "date": "2026-08-22",
+      "published_at": "2026-08-22T16:46:54.184399+00:00",
+      "source_duration": 907,
+      "target_clip_count": 4,
+      "remaining_clips": 0
     }
   ],
   "attempted": [

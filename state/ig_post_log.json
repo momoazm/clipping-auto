@@ -449,6 +449,94 @@
           "effects": "full"
         }
       }
+    },
+    {
+      "post_id": "6a89d06140fdc566874b6761",
+      "posted_at": "2026-08-22T16:38:33.687655+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "01",
+        "hook": "Someone Is Officially Out!",
+        "hook_signal_score": 68,
+        "duration_sec": 33.43,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -10.1,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6a89d1014d37c3e74cfb818c",
+      "posted_at": "2026-08-22T16:41:18.507517+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "02",
+        "hook": "1 Million Fireworks + Flaming Arrows Attack Now!",
+        "hook_signal_score": 66,
+        "duration_sec": 28.311,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -9.6,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6a89d18e5c5054677bb3603a",
+      "posted_at": "2026-08-22T16:43:34.586177+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "03",
+        "hook": "Yacht vs 100 Cannonballs - Will It Survive?",
+        "hook_signal_score": 35,
+        "duration_sec": 24.93,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -9.0,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6a89d25052e5819d189c0e23",
+      "posted_at": "2026-08-22T16:46:54.180431+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "04",
+        "hook": "15 Sea Bombs Surrounding His Yacht - What?",
+        "hook_signal_score": 42,
+        "duration_sec": 36.57,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -9.5,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
     }
   ]
 }
