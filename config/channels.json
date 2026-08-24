@@ -9,6 +9,7 @@
   "max_video_attempts": 5,
   "target_secs": 35,
   "max_secs": 60,
+  "upload_stagger_secs": 300,
   "channels": [
     {"name": "MrBeast", "url": "https://www.youtube.com/@MrBeast/videos"},
     {"name": "MrBeast Gaming", "url": "https://www.youtube.com/@MrBeastGaming/videos"},

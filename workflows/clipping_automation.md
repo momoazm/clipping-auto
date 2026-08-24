@@ -183,3 +183,18 @@ JSON object to stdout — parse it before moving on. Intermediates land in `.tmp
   pattern already shipped to `ranking shorts`' `build_ranking_video.py`/`build_clip.py`
   (see that project's decision log 2026-07-12) — text overlay burned onto already-playing
   footage, not a spoken TTS line or a bolt-on end screen, per short-form CTA research.
+
+- **Most-successful-video store + first full analytics review (2026-08-24):** new
+  `tools/update_best_videos.py` pulls Zernio analytics for BOTH platform workflows, picks each
+  one's most successful video (views -> engagement_rate -> recency tie-break), and writes it to
+  `state/best_videos.json` with a metrics-backed `why_most_successful` rationale (retention
+  ratio, engagement vs account median, which hook patterns the title uses). `run_daily.py`
+  refreshes it after every real run; standalone run works too. Review of all history (227 YT /
+  143 IG posts): Instagram winner "15 Sea Bombs Surrounding His Yacht - What?" (499 views =
+  3.8x median, ~57% retention, best engagement among high-view posts -- specific-number +
+  open curiosity-gap hook on spectacle action). YouTube winner only 30 views (median 0;
+  131/227 posts at zero) -- reach, not content, is the bottleneck. Shipped fixes: YT hashtag
+  dedupe (description already embeds hashtag_line; --tags doubled it), `upload_stagger_secs:
+  300` in channels.json so publishes stop landing minutes apart, select_clips prompt prefers
+  proven hook patterns. Caveat: IG insights lag up to ~24h; the store reflects whatever is
+  resolved at refresh time.

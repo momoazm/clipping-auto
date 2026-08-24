@@ -6,6 +6,7 @@ import math
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -584,6 +585,10 @@ def main():
     target = int(cfg.get("target_secs", 35))
     maxs = int(cfg.get("max_secs", 60))
     max_video_attempts = int(cfg.get("max_video_attempts", 5))
+    # Space out publishes instead of burst-dumping every clip within minutes -- the
+    # 2026-08-24 analytics review showed clips pushed back-to-back cluster at the
+    # bottom of each day's reach (bulk dumps from a small account look spammy).
+    stagger_secs = int(cfg.get("upload_stagger_secs", 300))
     history = load_json(HISTORY, {"clipped": []})
     requested_record = source_history_record(history, args.source_id) if args.source_id else None
     requested_windows = source_clip_windows(requested_record)
@@ -1011,8 +1016,11 @@ def main():
             try:
                 host = run_tool("host_public.py", "--video", short)
                 public_url = host.get("url")
+                # No --tags here: the description already embeds hashtag_line, and
+                # upload_youtube folds --tags into the description too -- the duplicate
+                # hashtag blocks read as spam to YouTube (2026-08-24 analytics review).
                 up_args = ["upload_youtube.py", "--video-url", public_url, "--title", yt_title,
-                           "--description", description, "--tags", ",".join(tag_list),
+                           "--description", description,
                            "--privacy", args.privacy]
                 if not args.dry_run:
                     up_args.append("--confirm")
@@ -1053,6 +1061,12 @@ def main():
         # inspection. The shared source.mp4 is removed once, after the whole clip loop.
         if not args.dry_run and not KEEP_RENDERED_CLIPS:
             purge_files(short, reframed, caps, cues)
+
+        # Stagger publishes: sleep before the NEXT clip so posts don't land minutes
+        # apart. Skipped after the final clip and in dry runs.
+        if not args.dry_run and idx < len(clips) and stagger_secs > 0:
+            log(f"stagger: sleeping {stagger_secs}s before publishing the next clip")
+            time.sleep(stagger_secs)
 
     successful_entries = [e for e in summary["uploaded"]
                           if e.get("video_id") or e.get("instagram_media_id") or e.get("tiktok_publish_id")]
@@ -1177,6 +1191,15 @@ def main():
         "required_delivery_failures": summary.get("required_delivery_failures", []),
         "quality_contract": summary["quality_contract"],
     })
+
+    # Refresh the "most successful video per platform" store (state/best_videos.json)
+    # with the latest analytics -- best effort, never fails the run (2026-08-24).
+    if not args.dry_run:
+        try:
+            update = run_tool("update_best_videos.py")
+            log("best-videos store refreshed:", json.dumps(update))
+        except Exception as e:
+            log("update_best_videos failed (non-fatal):", e)
 
     print(json.dumps(summary, indent=2))
     if required_failures:
