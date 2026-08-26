@@ -1208,6 +1208,18 @@ def main():
         except Exception as e:
             log("update_best_videos failed (non-fatal):", e)
 
+    # Stage every state change this run made. The workflow's history-commit step only
+    # whitelists some files, and on 08-25 one unstaged extra (state/best_videos.json)
+    # made its final `git pull --rebase` abort -- losing the whole history push, so the
+    # next run nearly re-clipped the same source. Staging here keeps the tree clean no
+    # matter which state file a tool writes (2026-08-26). Best effort either way.
+    if not args.dry_run:
+        try:
+            subprocess.run(["git", "add", "-A", "--", "state/"], cwd=str(HERE),
+                           check=True, capture_output=True, timeout=60)
+        except Exception as e:
+            log("git add state/ failed (non-fatal):", e)
+
     print(json.dumps(summary, indent=2))
     if required_failures:
         sys.exit(1)
