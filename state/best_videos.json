@@ -1,6 +1,6 @@
 {
   "_note": "Most successful video per platform workflow (YouTube / Instagram), auto-refreshed by tools/update_best_videos.py after each real run_daily pass. 'why_most_successful' is computed from the winner's metrics vs account medians -- see the tool docstring for the ranking rule.",
-  "updated_at": "2026-08-26T17:03:39.405899+00:00",
+  "updated_at": "2026-08-26T17:33:55.121602+00:00",
   "ranking_rule": "views desc, then engagement_rate desc, then recency",
   "platforms": {
     "youtube": {

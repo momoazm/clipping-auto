@@ -833,6 +833,52 @@
       "source_duration": 1246,
       "target_clip_count": 5,
       "remaining_clips": 2
+    },
+    {
+      "source_id": "5FlveALbzFk",
+      "clip_video_ids": [
+        "6a8f1e7b369031f7db2076c6",
+        "6a8f2094af1b8ba5f6d95980",
+        "6a8f22b62088539f3e3ab9a3"
+      ],
+      "youtube_post_ids": [
+        "6a8f1e7b369031f7db2076c6",
+        "6a8f2094af1b8ba5f6d95980",
+        "6a8f22b62088539f3e3ab9a3"
+      ],
+      "instagram_post_ids": [
+        "6a8f1e82e0d58b16f5d9f89e",
+        "6a8f209a4a007457d59bdb65"
+      ],
+      "tiktok_post_ids": [],
+      "platform_post_ids": [
+        "6a8f1e82e0d58b16f5d9f89e",
+        "6a8f209a4a007457d59bdb65"
+      ],
+      "clip_windows": [
+        {
+          "start": 110.67,
+          "end": 143.42,
+          "video_id": "6a8f1e7b369031f7db2076c6"
+        },
+        {
+          "start": 148.69,
+          "end": 178.107,
+          "video_id": "6a8f2094af1b8ba5f6d95980"
+        },
+        {
+          "start": 46.47,
+          "end": 87.94,
+          "video_id": "6a8f22b62088539f3e3ab9a3"
+        }
+      ],
+      "source_title": "50 YouTubers Fight For $100,000",
+      "channel": "MrBeast Gaming",
+      "date": "2026-08-26",
+      "published_at": "2026-08-26T17:33:50.427337+00:00",
+      "source_duration": 629,
+      "target_clip_count": 3,
+      "remaining_clips": 0
     }
   ],
   "attempted": [

@@ -633,6 +633,50 @@
           "effects": "full"
         }
       }
+    },
+    {
+      "post_id": "6a8f1e82e0d58b16f5d9f89e",
+      "posted_at": "2026-08-26T17:14:24.136907+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "01",
+        "hook": "Someone Is Officially Out!",
+        "hook_signal_score": 84,
+        "duration_sec": 32.75,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -12.8,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6a8f209a4a007457d59bdb65",
+      "posted_at": "2026-08-26T17:22:26.312788+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "02",
+        "hook": "Someone Is Officially Out!",
+        "hook_signal_score": 76,
+        "duration_sec": 29.417,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -10.8,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
     }
   ]
 }
