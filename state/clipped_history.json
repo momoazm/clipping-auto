@@ -737,6 +737,54 @@
       "source_duration": 907,
       "target_clip_count": 4,
       "remaining_clips": 0
+    },
+    {
+      "source_id": "ZqHsuM07hXk",
+      "clip_video_ids": [
+        "6a8dc50d4681d8f9f20c1343",
+        "6a8dc6fee20144482e2aa818",
+        "6a8dc9278ad78100437a9e88"
+      ],
+      "youtube_post_ids": [
+        "6a8dc50d4681d8f9f20c1343",
+        "6a8dc6fee20144482e2aa818",
+        "6a8dc9278ad78100437a9e88"
+      ],
+      "instagram_post_ids": [
+        "6a8dc51376722081a63461bb",
+        "6a8dc70469f15eb8ad408e84",
+        "6a8dc92f0d2f886dd38fcda5"
+      ],
+      "tiktok_post_ids": [],
+      "platform_post_ids": [
+        "6a8dc51376722081a63461bb",
+        "6a8dc70469f15eb8ad408e84",
+        "6a8dc92f0d2f886dd38fcda5"
+      ],
+      "clip_windows": [
+        {
+          "start": 726.813,
+          "end": 737.143,
+          "video_id": "6a8dc50d4681d8f9f20c1343"
+        },
+        {
+          "start": 143.83,
+          "end": 167.7,
+          "video_id": "6a8dc6fee20144482e2aa818"
+        },
+        {
+          "start": 654.233,
+          "end": 688.723,
+          "video_id": "6a8dc9278ad78100437a9e88"
+        }
+      ],
+      "source_title": "Escape 50 Cops, Win $100,000",
+      "channel": "MrBeast",
+      "date": "2026-08-25",
+      "published_at": "2026-08-25T16:57:29+00:00",
+      "source_duration": 740,
+      "target_clip_count": 3,
+      "remaining_clips": 0
     }
   ],
   "attempted": [
@@ -1178,6 +1226,10 @@
     },
     {
       "source_id": "xiFsAjUDwdU",
+      "date": "2026-08-25"
+    },
+    {
+      "source_id": "ZqHsuM07hXk",
       "date": "2026-08-25"
     }
   ]
