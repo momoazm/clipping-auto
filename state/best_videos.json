@@ -1,6 +1,6 @@
 {
   "_note": "Most successful video per platform workflow (YouTube / Instagram), auto-refreshed by tools/update_best_videos.py after each real run_daily pass. 'why_most_successful' is computed from the winner's metrics vs account medians -- see the tool docstring for the ranking rule.",
-  "updated_at": "2026-08-24T13:02:23.404169+00:00",
+  "updated_at": "2026-08-26T17:03:39.405899+00:00",
   "ranking_rule": "views desc, then engagement_rate desc, then recency",
   "platforms": {
     "youtube": {
@@ -31,25 +31,25 @@
     "instagram": {
       "account_id": "6a3d7b8d9d9472faaee69b3b",
       "posts_analyzed": 100,
-      "median_views": 132.5,
+      "median_views": 134.0,
       "most_successful_video": {
         "id": "6a89e59f77555aae016e0b83",
         "url": "https://www.instagram.com/reel/DcWX8SrFH5s/",
         "title": "15 Sea Bombs Surrounding His Yacht - What?",
         "published_at": "2026-08-22T16:46:43.000Z",
-        "views": 499,
+        "views": 500,
         "likes": 12,
         "comments": 0,
         "shares": 0,
         "saves": 1,
-        "engagement_rate": 2.61,
+        "engagement_rate": 2.6,
         "duration_seconds": 36,
-        "avg_watch_time_ms": 20660,
-        "retention_ratio": 0.574,
+        "avg_watch_time_ms": 20577,
+        "retention_ratio": 0.572,
         "why_most_successful": [
-          "views 499 = 3.8x the account median (132.5)",
+          "views 500 = 3.7x the account median (134.0)",
           "average watch time covers ~57% of the clip -- strong retention, the main distribution signal for Reels/Shorts",
-          "engagement rate 2.61% at/above the account median (0.78%)",
+          "engagement rate 2.6% at/above the account median (0.78%)",
           "hook uses proven pattern(s): specific_number, curiosity_gap",
           "13 interactions (12 likes, 1 saves, 0 shares) signal quality to the algorithm"
         ]

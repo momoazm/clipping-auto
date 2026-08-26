@@ -567,6 +567,72 @@
           "effects": "full"
         }
       }
+    },
+    {
+      "post_id": "6a8f1830d1547633920de087",
+      "posted_at": "2026-08-26T16:47:15.461860+00:00",
+      "style": "clean",
+      "experiment": true,
+      "resolved": false,
+      "context": {
+        "clip": "01",
+        "hook": "He Found A Secret Treasury Room — Then Trapped Himself Inside Forever",
+        "hook_signal_score": 52,
+        "duration_sec": 36.345,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -17.0,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6a8f1a34bdaebb843dac391c",
+      "posted_at": "2026-08-26T16:54:49.017063+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "02",
+        "hook": "An Octopus Got Too Big And Started Destroying This $1,000 Theme Park",
+        "hook_signal_score": 43,
+        "duration_sec": 21.406,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -22.7,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6a8f1c032d34504e2eae9f91",
+      "posted_at": "2026-08-26T17:03:34.736290+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "03",
+        "hook": "Is That A LAKE OF HONEY Inside This $2,500 Minecraft Cake?",
+        "hook_signal_score": 53,
+        "duration_sec": 20.71,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -21.4,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
     }
   ]
 }
