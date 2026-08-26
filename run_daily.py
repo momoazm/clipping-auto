@@ -1000,11 +1000,18 @@ def main():
 
         # Richer metadata than a bare hook: "#Shorts" in the title (kept under YouTube's
         # 100-char limit), hashtags in the description where YouTube surfaces them, and a
-        # source credit (standard practice for clip channels).
+        # source credit (standard clip-channel etiquette): "Credit:" + the source link in the
+        # YouTube description, and an "IB: <creator>" line on the Instagram/TikTok captions.
         tag_list = tags.get("hashtags", [])
         yt_title = hook if len(hook) > 92 else f"{hook} #Shorts"
         hashtag_line = " ".join(f"#{t}" for t in tag_list[:10])
-        description = f"{hook}\n\n{hashtag_line}\n\nCredit: {src.get('channel') or 'MrBeast'}"
+        src_channel = (src.get("channel") or "MrBeast").strip() or "MrBeast"
+        src_url = (src.get("url") or "").strip()
+        credit_block = f"Credit: {src_channel}"
+        if src_url:
+            credit_block += f"\nSource: {src_url}"
+        description = f"{hook}\n\n{hashtag_line}\n\n{credit_block}"
+        ib_line = f"IB: {src_channel}"
 
         # 2. Try YouTube (If this fails, log it but keep going!) -- needs a PUBLIC url,
         # not the local path, since it now publishes via Zernio instead of OAuth.
@@ -1041,7 +1048,7 @@ def main():
             continue
             
         # 3. Try Instagram (This will now run even if YouTube fails)
-        caption = f"{hook}\n\n{hashtag_line}"
+        caption = f"{hook}\n\n{hashtag_line}\n\n{ib_line}"
         if "instagram" in summary.get("rate_limited_platforms", {}):
             entry["instagram_error"] = "skipped after Zernio account rate limit"
             ig_ok = False
