@@ -573,7 +573,7 @@
       "posted_at": "2026-08-26T16:47:15.461860+00:00",
       "style": "clean",
       "experiment": true,
-      "resolved": false,
+      "resolved": true,
       "context": {
         "clip": "01",
         "hook": "He Found A Secret Treasury Room — Then Trapped Himself Inside Forever",
@@ -588,6 +588,16 @@
           "music_volume": 0.0,
           "effects": "full"
         }
+      },
+      "result": {
+        "views": null,
+        "engagement_rate": null,
+        "baseline_views_avg": 0.0,
+        "baseline_engagement_avg": 0.0,
+        "views_delta": null,
+        "engagement_delta": null,
+        "baseline_n": 6,
+        "win": false
       }
     },
     {
