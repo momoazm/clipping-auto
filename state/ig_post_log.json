@@ -687,6 +687,50 @@
           "effects": "full"
         }
       }
+    },
+    {
+      "post_id": "6a95f15524230e2e6019f2f0",
+      "posted_at": "2026-08-31T21:26:28.824062+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "02",
+        "hook": "Someone Is Officially Out!",
+        "hook_signal_score": 52,
+        "duration_sec": 33.47,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -8.3,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6a95f359c7c7e27dbfc26c95",
+      "posted_at": "2026-08-31T21:35:23.867119+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "03",
+        "hook": "Chandler's Mom Summons SATAN to Win",
+        "hook_signal_score": 58,
+        "duration_sec": 28.603,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -10.2,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
     }
   ]
 }

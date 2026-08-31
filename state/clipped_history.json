@@ -879,6 +879,52 @@
       "source_duration": 629,
       "target_clip_count": 3,
       "remaining_clips": 0
+    },
+    {
+      "source_id": "IyEBRZsLZc8",
+      "clip_video_ids": [
+        "6a95eee25ce327f75889b930",
+        "6a95f14af97ee99bd5a21886",
+        "6a95f34fc7c7e27dbfc268ba"
+      ],
+      "youtube_post_ids": [
+        "6a95eee25ce327f75889b930",
+        "6a95f14af97ee99bd5a21886",
+        "6a95f34fc7c7e27dbfc268ba"
+      ],
+      "instagram_post_ids": [
+        "6a95f15524230e2e6019f2f0",
+        "6a95f359c7c7e27dbfc26c95"
+      ],
+      "tiktok_post_ids": [],
+      "platform_post_ids": [
+        "6a95f15524230e2e6019f2f0",
+        "6a95f359c7c7e27dbfc26c95"
+      ],
+      "clip_windows": [
+        {
+          "start": 333.997,
+          "end": 358.947,
+          "video_id": "6a95eee25ce327f75889b930"
+        },
+        {
+          "start": 379.617,
+          "end": 413.087,
+          "video_id": "6a95f14af97ee99bd5a21886"
+        },
+        {
+          "start": 469.337,
+          "end": 497.94,
+          "video_id": "6a95f34fc7c7e27dbfc268ba"
+        }
+      ],
+      "source_title": "1,000 Tanks Vs Titan Enderman!",
+      "channel": "MrBeast Gaming",
+      "date": "2026-08-31",
+      "published_at": "2026-08-31T21:35:23.873952+00:00",
+      "source_duration": 657,
+      "target_clip_count": 3,
+      "remaining_clips": 0
     }
   ],
   "attempted": [
