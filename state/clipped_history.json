@@ -791,23 +791,29 @@
       "clip_video_ids": [
         "6a8f182a892e10b299c3f48e",
         "6a8f1a2ca3d7795cb68f1e98",
-        "6a8f1bf8b348150ec51abcdb"
+        "6a8f1bf8b348150ec51abcdb",
+        "6a972167b695ce9f84a0ee02",
+        "6a9724670fc78398be6d94c6"
       ],
       "youtube_post_ids": [
         "6a8f182a892e10b299c3f48e",
         "6a8f1a2ca3d7795cb68f1e98",
-        "6a8f1bf8b348150ec51abcdb"
+        "6a8f1bf8b348150ec51abcdb",
+        "6a972167b695ce9f84a0ee02",
+        "6a9724670fc78398be6d94c6"
       ],
       "instagram_post_ids": [
         "6a8f1830d1547633920de087",
         "6a8f1a34bdaebb843dac391c",
-        "6a8f1c032d34504e2eae9f91"
+        "6a8f1c032d34504e2eae9f91",
+        "6a972474289255f2d6918b0d"
       ],
       "tiktok_post_ids": [],
       "platform_post_ids": [
         "6a8f1830d1547633920de087",
         "6a8f1a34bdaebb843dac391c",
-        "6a8f1c032d34504e2eae9f91"
+        "6a8f1c032d34504e2eae9f91",
+        "6a972474289255f2d6918b0d"
       ],
       "clip_windows": [
         {
@@ -824,15 +830,25 @@
           "start": 512.746,
           "end": 533.456,
           "video_id": "6a8f1bf8b348150ec51abcdb"
+        },
+        {
+          "start": 665.601,
+          "end": 709.451,
+          "video_id": "6a972167b695ce9f84a0ee02"
+        },
+        {
+          "start": 939.577,
+          "end": 999.227,
+          "video_id": "6a9724670fc78398be6d94c6"
         }
       ],
       "source_title": "$1 vs $25,000 Build Challenge",
       "channel": "MrBeast Gaming",
-      "date": "2026-08-26",
-      "published_at": "2026-08-26T17:03:34.740673+00:00",
+      "date": "2026-09-01",
+      "published_at": "2026-09-01T19:17:18.520521+00:00",
       "source_duration": 1246,
       "target_clip_count": 5,
-      "remaining_clips": 2
+      "remaining_clips": 0
     },
     {
       "source_id": "5FlveALbzFk",

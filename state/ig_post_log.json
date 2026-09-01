@@ -731,6 +731,28 @@
           "effects": "full"
         }
       }
+    },
+    {
+      "post_id": "6a972474289255f2d6918b0d",
+      "posted_at": "2026-09-01T19:17:18.511361+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "02",
+        "hook": "Someone Is Officially Out!",
+        "hook_signal_score": 47,
+        "duration_sec": 59.65,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -17.7,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
     }
   ]
 }
