@@ -941,6 +941,54 @@
       "source_duration": 657,
       "target_clip_count": 3,
       "remaining_clips": 0
+    },
+    {
+      "source_id": "s72dhTVYKtM",
+      "clip_video_ids": [
+        "6a99c3f173337f3a6905f812",
+        "6a99c5f536dd0ad5bac078aa",
+        "6a99c81c7bd3f1d11872a817"
+      ],
+      "youtube_post_ids": [
+        "6a99c3f173337f3a6905f812",
+        "6a99c5f536dd0ad5bac078aa",
+        "6a99c81c7bd3f1d11872a817"
+      ],
+      "instagram_post_ids": [
+        "6a99c3fbe9f043ce9d608c12",
+        "6a99c5fd36dd0ad5bac079c8",
+        "6a99c826b732d14f9707501a"
+      ],
+      "tiktok_post_ids": [],
+      "platform_post_ids": [
+        "6a99c3fbe9f043ce9d608c12",
+        "6a99c5fd36dd0ad5bac079c8",
+        "6a99c826b732d14f9707501a"
+      ],
+      "clip_windows": [
+        {
+          "start": 499.422,
+          "end": 534.399,
+          "video_id": "6a99c3f173337f3a6905f812"
+        },
+        {
+          "start": 352.382,
+          "end": 374.672,
+          "video_id": "6a99c5f536dd0ad5bac078aa"
+        },
+        {
+          "start": 107.49,
+          "end": 142.22,
+          "video_id": "6a99c81c7bd3f1d11872a817"
+        }
+      ],
+      "source_title": "$45,600 Squid Game Challenge!",
+      "channel": "MrBeast Gaming",
+      "date": "2026-09-03",
+      "published_at": "2026-09-03T19:19:43.138620+00:00",
+      "source_duration": 680,
+      "target_clip_count": 3,
+      "remaining_clips": 0
     }
   ],
   "attempted": [
