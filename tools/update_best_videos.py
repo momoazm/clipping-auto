@@ -34,12 +34,14 @@ PLATFORMS = ("youtube", "instagram")
 HEX24 = re.compile(r"^[0-9a-f]{24}$")
 
 # Hook patterns that measurably drive short-form retention/click-through.
+# Matches the ranking-shorts set (incl. shock_reaction) so winners are labeled the same way.
 HOOK_PATTERNS = [
     ("specific_number", re.compile(r"\d")),
     ("curiosity_gap", re.compile(r"\b(what|why|how|who|which|secret|nobody|until)\b", re.I)),
     ("big_stakes", re.compile(r"\$?\d[\d,.]*\s*(k|000)|\$1,000,000|\$250", re.I)),
     ("transformation_tease", re.compile(r"\b(until this happened|then this|you won'?t believe|turns? into)\b", re.I)),
-    ("conflict_or_challenge", re.compile(r"\b(fight|vs\.?|versus|attack|survive|last to|battle|challenge)\b", re.I)),
+    ("conflict_or_challenge", re.compile(r"\b(fight|vs\.?|versus|attack|survive|last to|battle|challenge|crash(?:es|ed|ing)?)\b", re.I)),
+    ("shock_reaction", re.compile(r"\b(how did|wtf|insane|crazy|shocking|screams?|no way)\b", re.I)),
 ]
 
 
@@ -175,9 +177,9 @@ def main():
     args = parser.parse_args()
 
     load_env()
-    api_key = (os.environ.get("ZERNIO_API") or "").strip()
+    api_key = (os.environ.get("ZERNIO_API") or os.environ.get("ZERNIO_API_KEY_CLIPPING_AUTO") or os.environ.get("ZERNIO_API_KEY") or "").strip()
     if not api_key:
-        fail("ZERNIO_API not set in API.env.")
+        fail("ZERNIO_API (or ZERNIO_API_KEY_CLIPPING_AUTO / ZERNIO_API_KEY) not set in API.env.")
 
     ids = resolve_account_ids(api_key)
     missing = [p for p in PLATFORMS if not ids.get(p)]

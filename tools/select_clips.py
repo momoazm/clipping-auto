@@ -42,10 +42,14 @@ The hook is the most important factor for virality. For each clip:
 - The strongest hooks here are: a curiosity gap (a question the viewer needs answered), high
   stakes or a big number ("$1,000,000", "last person to leave"), a shocking/surprising turn,
   visible conflict or competition, or a raw emotional peak. Pick the moment with the most of these.
-- PROVEN winners from our own accounts' performance data (2026-08-24 review): hooks with a
-  SPECIFIC number or stat ("15 sea bombs", "80% of kids"), an open curiosity gap left hanging
-  ("- What?", "...until this happened"), and high-spectacle action that holds watch time.
-  Prefer moments matching those patterns when scores are close.
+- PROVEN winners from our own accounts' performance data (2026-09-04 review):
+  "15 Sea Bombs Surrounding His Yacht - What?" (500 views, 3.5x median, 57%
+  retention), "80% of Kids Had Parasitic Worms—Until This Happened" (YT winner),
+  "HOW DID MADA WIN THIS?!!!?" (545 views, 68x median, 57% retention). Hooks with
+  a SPECIFIC number or stat, an open curiosity gap left hanging ("- What?",
+  "...until this happened"), a shock/conflict verb (CRASHES/WIN/SCREAMS), and
+  high-spectacle action that holds watch time. Prefer moments matching those
+  patterns when scores are close.
 - It must be a self-contained thought that makes sense with NO prior context.
 - For comedy/MrBeast moments, include only enough setup to understand the joke (usually 0.75-1.5
   seconds), then keep the full reaction/punchline. Do not cut away at the first laugh or reveal.
