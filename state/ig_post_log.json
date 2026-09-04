@@ -819,6 +819,50 @@
           "effects": "full"
         }
       }
+    },
+    {
+      "post_id": "6a9b10a0031ac09d881b9ee5",
+      "posted_at": "2026-09-04T18:41:39.957524+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "01",
+        "hook": "They Said Lightsabers Were Fake—Then He Cut a Door In Half",
+        "hook_signal_score": 35,
+        "duration_sec": 23.649,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -10.0,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6a9b125f5eb1e50e7adbd5d6",
+      "posted_at": "2026-09-04T18:48:40.569654+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "02",
+        "hook": "Someone Is Officially Out!",
+        "hook_signal_score": 45,
+        "duration_sec": 24.009,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -10.0,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
     }
   ]
 }

@@ -989,6 +989,45 @@
       "source_duration": 680,
       "target_clip_count": 3,
       "remaining_clips": 0
+    },
+    {
+      "source_id": "5s6iBACk-E4",
+      "clip_video_ids": [
+        "6a9b109a73988108304e728a",
+        "6a9b125a00fcb0516fb56a94"
+      ],
+      "youtube_post_ids": [
+        "6a9b109a73988108304e728a",
+        "6a9b125a00fcb0516fb56a94"
+      ],
+      "instagram_post_ids": [
+        "6a9b10a0031ac09d881b9ee5",
+        "6a9b125f5eb1e50e7adbd5d6"
+      ],
+      "tiktok_post_ids": [],
+      "platform_post_ids": [
+        "6a9b10a0031ac09d881b9ee5",
+        "6a9b125f5eb1e50e7adbd5d6"
+      ],
+      "clip_windows": [
+        {
+          "start": 103.79,
+          "end": 127.439,
+          "video_id": "6a9b109a73988108304e728a"
+        },
+        {
+          "start": 164.31,
+          "end": 188.319,
+          "video_id": "6a9b125a00fcb0516fb56a94"
+        }
+      ],
+      "source_title": "What Can You Cut With Paper?",
+      "channel": "Beast Reacts",
+      "date": "2026-09-04",
+      "published_at": "2026-09-04T18:48:40.572466+00:00",
+      "source_duration": 489,
+      "target_clip_count": 2,
+      "remaining_clips": 0
     }
   ],
   "attempted": [
