@@ -863,6 +863,50 @@
           "effects": "full"
         }
       }
+    },
+    {
+      "post_id": "6aa1aca32227074fb702870a",
+      "posted_at": "2026-09-09T19:00:59.082527+00:00",
+      "style": "brand",
+      "experiment": true,
+      "resolved": false,
+      "context": {
+        "clip": "01",
+        "hook": "Bull DESTROYS Car — Leaks Fluids in Seconds 🐂💥",
+        "hook_signal_score": 45,
+        "duration_sec": 22.49,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -12.9,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6aa1ae980c9529de3a0e0bc9",
+      "posted_at": "2026-09-09T19:08:59.358373+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "02",
+        "hook": "Someone Is Officially Out!",
+        "hook_signal_score": 61,
+        "duration_sec": 23.81,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -13.9,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
     }
   ]
 }

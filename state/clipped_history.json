@@ -1028,6 +1028,45 @@
       "source_duration": 489,
       "target_clip_count": 2,
       "remaining_clips": 0
+    },
+    {
+      "source_id": "mEKGarAbyxk",
+      "clip_video_ids": [
+        "6aa1ac9d2227074fb7028513",
+        "6aa1ae92b3ecc3a5f2011c4e"
+      ],
+      "youtube_post_ids": [
+        "6aa1ac9d2227074fb7028513",
+        "6aa1ae92b3ecc3a5f2011c4e"
+      ],
+      "instagram_post_ids": [
+        "6aa1aca32227074fb702870a",
+        "6aa1ae980c9529de3a0e0bc9"
+      ],
+      "tiktok_post_ids": [],
+      "platform_post_ids": [
+        "6aa1aca32227074fb702870a",
+        "6aa1ae980c9529de3a0e0bc9"
+      ],
+      "clip_windows": [
+        {
+          "start": 298.423,
+          "end": 320.913,
+          "video_id": "6aa1ac9d2227074fb7028513"
+        },
+        {
+          "start": 511.91,
+          "end": 535.72,
+          "video_id": "6aa1ae92b3ecc3a5f2011c4e"
+        }
+      ],
+      "source_title": "Most Expensive Fails!",
+      "channel": "Beast Reacts",
+      "date": "2026-09-09",
+      "published_at": "2026-09-09T19:08:59.362378+00:00",
+      "source_duration": 540,
+      "target_clip_count": 2,
+      "remaining_clips": 0
     }
   ],
   "attempted": [
