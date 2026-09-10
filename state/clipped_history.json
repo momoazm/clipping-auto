@@ -1067,6 +1067,39 @@
       "source_duration": 540,
       "target_clip_count": 2,
       "remaining_clips": 0
+    },
+    {
+      "source_id": "Iu8ZmhRphSU",
+      "clip_video_ids": [
+        "6aa2fb3d1263f898f709e55e",
+        "6aa2fd64daa6d810137d5aae"
+      ],
+      "youtube_post_ids": [
+        "6aa2fb3d1263f898f709e55e",
+        "6aa2fd64daa6d810137d5aae"
+      ],
+      "instagram_post_ids": [],
+      "tiktok_post_ids": [],
+      "platform_post_ids": [],
+      "clip_windows": [
+        {
+          "start": 278.783,
+          "end": 316.933,
+          "video_id": "6aa2fb3d1263f898f709e55e"
+        },
+        {
+          "start": 81.47,
+          "end": 117.32,
+          "video_id": "6aa2fd64daa6d810137d5aae"
+        }
+      ],
+      "source_title": "World's Fastest Workers!",
+      "channel": "Beast Reacts",
+      "date": "2026-09-10",
+      "published_at": "2026-09-10T18:59:03.091818+00:00",
+      "source_duration": 498,
+      "target_clip_count": 2,
+      "remaining_clips": 0
     }
   ],
   "attempted": [
