@@ -1100,6 +1100,43 @@
       "source_duration": 498,
       "target_clip_count": 2,
       "remaining_clips": 0
+    },
+    {
+      "source_id": "pHz9tefho28",
+      "clip_video_ids": [
+        "6aa44d9a73b1f00253cd65b1",
+        "6aa44fe79992cd678d4deb2e"
+      ],
+      "youtube_post_ids": [
+        "6aa44d9a73b1f00253cd65b1",
+        "6aa44fe79992cd678d4deb2e"
+      ],
+      "instagram_post_ids": [
+        "6aa44da0c1719377b5fb91d5"
+      ],
+      "tiktok_post_ids": [],
+      "platform_post_ids": [
+        "6aa44da0c1719377b5fb91d5"
+      ],
+      "clip_windows": [
+        {
+          "start": 271.816,
+          "end": 307.346,
+          "video_id": "6aa44d9a73b1f00253cd65b1"
+        },
+        {
+          "start": 78.45,
+          "end": 114.18,
+          "video_id": "6aa44fe79992cd678d4deb2e"
+        }
+      ],
+      "source_title": "Insane Waterpark BMX!",
+      "channel": "Beast Reacts",
+      "date": "2026-09-11",
+      "published_at": "2026-09-11T19:03:25.386221+00:00",
+      "source_duration": 484,
+      "target_clip_count": 2,
+      "remaining_clips": 0
     }
   ],
   "attempted": [

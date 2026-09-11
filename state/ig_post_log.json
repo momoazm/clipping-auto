@@ -907,6 +907,28 @@
           "effects": "full"
         }
       }
+    },
+    {
+      "post_id": "6aa44da0c1719377b5fb91d5",
+      "posted_at": "2026-09-11T18:52:40.126453+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "01",
+        "hook": "a jet powered bus i was a kid at an air show eeha must is calling",
+        "hook_signal_score": 42,
+        "duration_sec": 35.53,
+        "focus_mode": "speaker",
+        "hook_variant": "specific_claim",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -14.1,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
     }
   ]
 }
