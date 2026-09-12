@@ -1137,6 +1137,53 @@
       "source_duration": 484,
       "target_clip_count": 2,
       "remaining_clips": 0
+    },
+    {
+      "source_id": "kJu5VMN3yow",
+      "clip_video_ids": [
+        "6aa592b191373778a8fa0cea",
+        "6aa595289b5cac49ad541fdd",
+        "6aa5977a52c730a319971d7a",
+        "6aa59a0d41e678c792d470a7"
+      ],
+      "youtube_post_ids": [
+        "6aa592b191373778a8fa0cea",
+        "6aa595289b5cac49ad541fdd",
+        "6aa5977a52c730a319971d7a",
+        "6aa59a0d41e678c792d470a7"
+      ],
+      "instagram_post_ids": [],
+      "tiktok_post_ids": [],
+      "platform_post_ids": [],
+      "clip_windows": [
+        {
+          "start": 185.15,
+          "end": 220.86,
+          "video_id": "6aa592b191373778a8fa0cea"
+        },
+        {
+          "start": 388.33,
+          "end": 424.34,
+          "video_id": "6aa595289b5cac49ad541fdd"
+        },
+        {
+          "start": 591.785,
+          "end": 627.575,
+          "video_id": "6aa5977a52c730a319971d7a"
+        },
+        {
+          "start": 795.325,
+          "end": 831.075,
+          "video_id": "6aa59a0d41e678c792d470a7"
+        }
+      ],
+      "source_title": "I Survived 100 Days on One Block",
+      "channel": "MrBeast Gaming",
+      "date": "2026-09-12",
+      "published_at": "2026-09-12T18:31:45.839115+00:00",
+      "source_duration": 1835,
+      "target_clip_count": 7,
+      "remaining_clips": 3
     }
   ],
   "attempted": [
