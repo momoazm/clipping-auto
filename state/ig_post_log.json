@@ -759,7 +759,7 @@
       "posted_at": "2026-09-03T19:02:49.205092+00:00",
       "style": "hormozi",
       "experiment": true,
-      "resolved": false,
+      "resolved": true,
       "context": {
         "clip": "01",
         "hook": "Someone Is Officially Out!",
@@ -774,6 +774,16 @@
           "music_volume": 0.0,
           "effects": "full"
         }
+      },
+      "result": {
+        "views": null,
+        "engagement_rate": null,
+        "baseline_views_avg": 0.0,
+        "baseline_engagement_avg": 0.0,
+        "views_delta": null,
+        "engagement_delta": null,
+        "baseline_n": 6,
+        "win": false
       }
     },
     {
@@ -869,7 +879,7 @@
       "posted_at": "2026-09-09T19:00:59.082527+00:00",
       "style": "brand",
       "experiment": true,
-      "resolved": false,
+      "resolved": true,
       "context": {
         "clip": "01",
         "hook": "Bull DESTROYS Car — Leaks Fluids in Seconds 🐂💥",
@@ -884,6 +894,16 @@
           "music_volume": 0.0,
           "effects": "full"
         }
+      },
+      "result": {
+        "views": null,
+        "engagement_rate": null,
+        "baseline_views_avg": 0.0,
+        "baseline_engagement_avg": 0.0,
+        "views_delta": null,
+        "engagement_delta": null,
+        "baseline_n": 6,
+        "win": false
       }
     },
     {
