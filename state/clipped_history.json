@@ -1198,6 +1198,45 @@
       "source_duration": 1835,
       "target_clip_count": 7,
       "remaining_clips": 1
+    },
+    {
+      "source_id": "7I0Qo9qlVlk",
+      "clip_video_ids": [
+        "6aa8531f365eeb19c305970d",
+        "6aa8552673968a167dee0a97"
+      ],
+      "youtube_post_ids": [
+        "6aa8531f365eeb19c305970d",
+        "6aa8552673968a167dee0a97"
+      ],
+      "instagram_post_ids": [
+        "6aa853258881b9812cc5eb40",
+        "6aa8552dba58e949e8ead892"
+      ],
+      "tiktok_post_ids": [],
+      "platform_post_ids": [
+        "6aa853258881b9812cc5eb40",
+        "6aa8552dba58e949e8ead892"
+      ],
+      "clip_windows": [
+        {
+          "start": 384.274,
+          "end": 420.184,
+          "video_id": "6aa8531f365eeb19c305970d"
+        },
+        {
+          "start": 81.83,
+          "end": 118.06,
+          "video_id": "6aa8552673968a167dee0a97"
+        }
+      ],
+      "source_title": "Impossible Magic Tricks!",
+      "channel": "Beast Reacts",
+      "date": "2026-09-14",
+      "published_at": "2026-09-14T20:13:10.137281+00:00",
+      "source_duration": 503,
+      "target_clip_count": 2,
+      "remaining_clips": 0
     }
   ],
   "attempted": [
