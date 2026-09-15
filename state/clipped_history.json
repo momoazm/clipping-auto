@@ -1237,6 +1237,43 @@
       "source_duration": 503,
       "target_clip_count": 2,
       "remaining_clips": 0
+    },
+    {
+      "source_id": "O5xlSWOQsDA",
+      "clip_video_ids": [
+        "6aa99b474d010fdb5a1fb6ba",
+        "6aa99dc7652b26689bf222b9"
+      ],
+      "youtube_post_ids": [
+        "6aa99b474d010fdb5a1fb6ba",
+        "6aa99dc7652b26689bf222b9"
+      ],
+      "instagram_post_ids": [
+        "6aa99dcde7262f707eb269ba"
+      ],
+      "tiktok_post_ids": [],
+      "platform_post_ids": [
+        "6aa99dcde7262f707eb269ba"
+      ],
+      "clip_windows": [
+        {
+          "start": 77.73,
+          "end": 113.26,
+          "video_id": "6aa99b474d010fdb5a1fb6ba"
+        },
+        {
+          "start": 173.974,
+          "end": 209.744,
+          "video_id": "6aa99dc7652b26689bf222b9"
+        }
+      ],
+      "source_title": "Lamborghini Made From Cardboard!",
+      "channel": "Beast Reacts",
+      "date": "2026-09-15",
+      "published_at": "2026-09-15T19:35:13.336935+00:00",
+      "source_duration": 481,
+      "target_clip_count": 2,
+      "remaining_clips": 0
     }
   ],
   "attempted": [
