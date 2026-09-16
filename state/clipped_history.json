@@ -1274,6 +1274,39 @@
       "source_duration": 481,
       "target_clip_count": 2,
       "remaining_clips": 0
+    },
+    {
+      "source_id": "Q-Kc5EfIRlk",
+      "clip_video_ids": [
+        "6aaaea89e24b52b1543bad4b",
+        "6aaaed03a6add08d85158340"
+      ],
+      "youtube_post_ids": [
+        "6aaaea89e24b52b1543bad4b",
+        "6aaaed03a6add08d85158340"
+      ],
+      "instagram_post_ids": [],
+      "tiktok_post_ids": [],
+      "platform_post_ids": [],
+      "clip_windows": [
+        {
+          "start": 174.158,
+          "end": 210.188,
+          "video_id": "6aaaea89e24b52b1543bad4b"
+        },
+        {
+          "start": 77.93,
+          "end": 113.8,
+          "video_id": "6aaaed03a6add08d85158340"
+        }
+      ],
+      "source_title": "Extreme Try Not To Laugh Challenge!",
+      "channel": "Beast Reacts",
+      "date": "2026-09-16",
+      "published_at": "2026-09-16T19:27:36.750795+00:00",
+      "source_duration": 482,
+      "target_clip_count": 2,
+      "remaining_clips": 0
     }
   ],
   "attempted": [
