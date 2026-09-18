@@ -1307,6 +1307,45 @@
       "source_duration": 482,
       "target_clip_count": 2,
       "remaining_clips": 0
+    },
+    {
+      "source_id": "57tOReFC968",
+      "clip_video_ids": [
+        "6aad88c357fc86ed1e445330",
+        "6aad8adc0de678c82525b61d"
+      ],
+      "youtube_post_ids": [
+        "6aad88c357fc86ed1e445330",
+        "6aad8adc0de678c82525b61d"
+      ],
+      "instagram_post_ids": [
+        "6aad88ca761c3f3c2caef3bb",
+        "6aad8ae2735d067f3c66fe8e"
+      ],
+      "tiktok_post_ids": [],
+      "platform_post_ids": [
+        "6aad88ca761c3f3c2caef3bb",
+        "6aad8ae2735d067f3c66fe8e"
+      ],
+      "clip_windows": [
+        {
+          "start": 59.59,
+          "end": 94.9,
+          "video_id": "6aad88c357fc86ed1e445330"
+        },
+        {
+          "start": 386.193,
+          "end": 421.223,
+          "video_id": "6aad8adc0de678c82525b61d"
+        }
+      ],
+      "source_title": "Rarest Pets Ever!",
+      "channel": "Beast Reacts",
+      "date": "2026-09-18",
+      "published_at": "2026-09-18T19:03:48.967263+00:00",
+      "source_duration": 483,
+      "target_clip_count": 2,
+      "remaining_clips": 0
     }
   ],
   "attempted": [

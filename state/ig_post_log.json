@@ -1015,6 +1015,50 @@
           "effects": "full"
         }
       }
+    },
+    {
+      "post_id": "6aad88ca761c3f3c2caef3bb",
+      "posted_at": "2026-09-18T18:54:48.978221+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "01",
+        "hook": "1,400-lb Bear: One Nip And Your Arm Is Gone",
+        "hook_signal_score": 50,
+        "duration_sec": 35.31,
+        "focus_mode": "speaker",
+        "hook_variant": "specific_claim",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -13.2,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6aad8ae2735d067f3c66fe8e",
+      "posted_at": "2026-09-18T19:03:48.961959+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "02",
+        "hook": "Giraffe's Entire Tongue Went In His Mouth",
+        "hook_signal_score": 42,
+        "duration_sec": 35.03,
+        "focus_mode": "speaker",
+        "hook_variant": "specific_claim",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -14.0,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
     }
   ]
 }
