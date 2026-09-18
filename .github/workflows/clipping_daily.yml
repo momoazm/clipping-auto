@@ -355,6 +355,12 @@ jobs:
             .tmp/short_*.mp4
             .tmp/run_summary.json
             .tmp/delivery_manifest.json
+            # Dry runs never commit state (see Commit updated history below), so the
+            # artifact is the only record of these -- mirrors autopost.yml including
+            # state/format_experiment.json in its diagnostics.
+            state/ig_post_log.json
+            state/best_videos.json
+            state/style_experiment.json
           if-no-files-found: ignore
           include-hidden-files: true
           retention-days: 3
