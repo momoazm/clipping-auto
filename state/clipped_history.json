@@ -1385,6 +1385,39 @@
       "source_duration": 482,
       "target_clip_count": 2,
       "remaining_clips": 0
+    },
+    {
+      "source_id": "v9QtM6qnG50",
+      "clip_video_ids": [
+        "6aaed38de3b5f5d51b85576a",
+        "6aaed5f241b22f9673f5530e"
+      ],
+      "youtube_post_ids": [
+        "6aaed38de3b5f5d51b85576a",
+        "6aaed5f241b22f9673f5530e"
+      ],
+      "instagram_post_ids": [],
+      "tiktok_post_ids": [],
+      "platform_post_ids": [],
+      "clip_windows": [
+        {
+          "start": 910.806,
+          "end": 944.136,
+          "video_id": "6aaed38de3b5f5d51b85576a"
+        },
+        {
+          "start": 384.035,
+          "end": 417.145,
+          "video_id": "6aaed5f241b22f9673f5530e"
+        }
+      ],
+      "source_title": "I Built A City To Save Kids From Illegal Labor",
+      "channel": "MrBeast",
+      "date": "2026-09-19",
+      "published_at": "2026-09-19T18:38:25.171494+00:00",
+      "source_duration": 1142,
+      "target_clip_count": 4,
+      "remaining_clips": 2
     }
   ],
   "attempted": [
