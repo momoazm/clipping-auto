@@ -1059,6 +1059,50 @@
           "effects": "full"
         }
       }
+    },
+    {
+      "post_id": "6aae63f44e0a00dbe615cd52",
+      "posted_at": "2026-09-19T10:29:44.180807+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "01",
+        "hook": "Nerf Dart Breaks ALL Speed Records — Watch It Pierce Metal",
+        "hook_signal_score": 66,
+        "duration_sec": 34.774,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -11.9,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6aae65d94d8849f996d3f3f0",
+      "posted_at": "2026-09-19T10:37:54.450554+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "02",
+        "hook": "Auto-Bullseye Dartboard: Drunks Think They're Pros 🎯",
+        "hook_signal_score": 60,
+        "duration_sec": 35.07,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -11.9,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
     }
   ]
 }

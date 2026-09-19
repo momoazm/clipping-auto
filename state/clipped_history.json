@@ -1346,6 +1346,45 @@
       "source_duration": 483,
       "target_clip_count": 2,
       "remaining_clips": 0
+    },
+    {
+      "source_id": "ySXPnjStay4",
+      "clip_video_ids": [
+        "6aae63edc5a77ccce230b6c4",
+        "6aae65d0cd2a6dc310468d55"
+      ],
+      "youtube_post_ids": [
+        "6aae63edc5a77ccce230b6c4",
+        "6aae65d0cd2a6dc310468d55"
+      ],
+      "instagram_post_ids": [
+        "6aae63f44e0a00dbe615cd52",
+        "6aae65d94d8849f996d3f3f0"
+      ],
+      "tiktok_post_ids": [],
+      "platform_post_ids": [
+        "6aae63f44e0a00dbe615cd52",
+        "6aae65d94d8849f996d3f3f0"
+      ],
+      "clip_windows": [
+        {
+          "start": 88.97,
+          "end": 123.744,
+          "video_id": "6aae63edc5a77ccce230b6c4"
+        },
+        {
+          "start": 427.942,
+          "end": 463.012,
+          "video_id": "6aae65d0cd2a6dc310468d55"
+        }
+      ],
+      "source_title": "World’s Sharpest Knife!",
+      "channel": "Beast Reacts",
+      "date": "2026-09-19",
+      "published_at": "2026-09-19T10:37:54.455297+00:00",
+      "source_duration": 482,
+      "target_clip_count": 2,
+      "remaining_clips": 0
     }
   ],
   "attempted": [
