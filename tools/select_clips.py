@@ -65,7 +65,8 @@ The hook is the most important factor for virality. For each clip:
 For each clip also write:
 - "hook": the verbatim opening line(s) the clip starts on.
 - "suggested_title": a curiosity-driven title (<=80 chars) that makes the click feel mandatory —
-  tease the payoff, don't spoil it.
+  tease the payoff, don't spoil it. Put the main keyword (person, challenge, or prize) within
+  the FIRST 40 characters so the title classifies with the spoken hook.
 - "emphasis_words": the 2-4 highest-impact words/numbers in the clip (drive caption pop + zoom).
 - Titles must be factually grounded in the words actually spoken. Never reverse who acts or
   who benefits; if someone drops and the remaining players' odds improve, do not say quitting

@@ -24,18 +24,24 @@ import select_clips as sc
 # Broad, evergreen discovery tags that apply to every MrBeast Short. Kept ahead of the
 # LLM's content-specific tags in the merge so a Short is always well-tagged even if the
 # LLM chain fails; the LLM tags below add the niche-correct relevance on top.
+# Deliberately NO generic filler (#viral/#fyp/#foryou/#trending): 2026 Shorts/Reels
+# research + our own reviews show 3-5 hyper-relevant tags beat generic stuffing for
+# initial classification, and filler dilutes the topic signal.
 BASE = [
-    "shorts", "youtubeshorts", "shortsfeed", "shortsvideo", "viral", "viralshorts",
-    "trending", "trendingshorts", "fyp", "foryou", "foryoupage", "mrbeast",
+    "shorts", "youtubeshorts", "shortsfeed", "shortsvideo", "mrbeast",
     "mrbeastshorts", "beast", "challenge", "money", "funny", "entertainment",
 ]
 
-PROMPT = """Generate 18-26 YouTube HASHTAGS for a short vertical clip.
+# Generic filler never ships, even if the LLM returns it.
+BANNED = {"viral", "viralshorts", "trending", "trendingshorts", "fyp", "foryou",
+          "foryoupage"}
+
+PROMPT = """Generate 10-14 YouTube HASHTAGS for a short vertical clip.
 Rules: lowercase; letters/numbers only (no '#', no spaces, no punctuation); each a single
-word or compound word; no duplicates. Mix BROAD discovery tags (shorts, viral, fyp, trending,
-youtubeshorts) with MANY SPECIFIC tags about the actual content/people/topic/challenge below
-(names of people, the challenge type, prizes, locations, emotions, reactions). Prefer specific,
-relevant tags over generic filler.
+word or compound word; no duplicates. Lead with the MOST SPECIFIC tags first (names of
+people, the challenge type, prizes, locations, emotions, reactions). NEVER use generic
+filler tags (viral, fyp, foryou, trending, funny-videos-style generics): a few exact tags
+beat a pile of broad ones for Shorts classification.
 
 Source video title: {title}
 Clip hook line: {hook}
@@ -80,7 +86,7 @@ def main():
 
     seen, merged = set(), []
     for t in BASE + llm_tags:
-        if t and t not in seen:
+        if t and t not in seen and t not in BANNED:
             seen.add(t)
             merged.append(t)
     merged = merged[: args.max]

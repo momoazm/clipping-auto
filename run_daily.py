@@ -1004,7 +1004,9 @@ def main():
         # YouTube description, and an "IB: <creator>" line on the Instagram/TikTok captions.
         tag_list = tags.get("hashtags", [])
         yt_title = hook if len(hook) > 92 else f"{hook} #Shorts"
-        hashtag_line = " ".join(f"#{t}" for t in tag_list[:10])
+        # Tight, relevant tag set (2026 Shorts/Reels research: 3-5 hyper-relevant tags beat
+        # generic stuffing for classification; filler is already banned in generate_hashtags).
+        hashtag_line = " ".join(f"#{t}" for t in tag_list[:5])
         src_channel = (src.get("channel") or "MrBeast").strip() or "MrBeast"
         src_url = (src.get("url") or "").strip()
         credit_block = f"Credit: {src_channel}"
