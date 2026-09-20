@@ -1418,6 +1418,39 @@
       "source_duration": 1142,
       "target_clip_count": 4,
       "remaining_clips": 2
+    },
+    {
+      "source_id": "v9WSjE3tIkg",
+      "clip_video_ids": [
+        "6aafe5215a496ddf5ab61cc6",
+        "6aafe736f8375c310cf33d36"
+      ],
+      "youtube_post_ids": [
+        "6aafe5215a496ddf5ab61cc6",
+        "6aafe736f8375c310cf33d36"
+      ],
+      "instagram_post_ids": [],
+      "tiktok_post_ids": [],
+      "platform_post_ids": [],
+      "clip_windows": [
+        {
+          "start": 428.945,
+          "end": 457.935,
+          "video_id": "6aafe5215a496ddf5ab61cc6"
+        },
+        {
+          "start": 481.185,
+          "end": 502.635,
+          "video_id": "6aafe736f8375c310cf33d36"
+        }
+      ],
+      "source_title": "World's Most Viewed TikToks!",
+      "channel": "Beast Reacts",
+      "date": "2026-09-20",
+      "published_at": "2026-09-20T14:04:11.783432+00:00",
+      "source_duration": 502,
+      "target_clip_count": 2,
+      "remaining_clips": 0
     }
   ],
   "attempted": [
