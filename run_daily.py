@@ -36,9 +36,9 @@ KEEP_RENDERED_CLIPS = os.environ.get("KEEP_RENDERED_CLIPS") == "1"
 
 # Hashtags improve discovery but are not a delivery prerequisite. Keep a deterministic
 # fallback so a slow or unavailable LLM provider cannot discard an otherwise-rendered clip.
+# Same no-filler rule as generate_hashtags.BASE (2026 Shorts/Reels research).
 FALLBACK_HASHTAGS = [
-    "shorts", "youtubeshorts", "shortsfeed", "shortsvideo", "viral", "viralshorts",
-    "trending", "trendingshorts", "fyp", "foryou", "foryoupage", "mrbeast",
+    "shorts", "youtubeshorts", "shortsfeed", "shortsvideo", "mrbeast",
     "mrbeastshorts", "beast", "challenge", "money", "funny", "entertainment",
 ]
 
