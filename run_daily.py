@@ -4,6 +4,7 @@ import datetime
 import json
 import math
 import os
+import re
 import subprocess
 import sys
 import time
@@ -41,6 +42,19 @@ FALLBACK_HASHTAGS = [
     "shorts", "youtubeshorts", "shortsfeed", "shortsvideo", "mrbeast",
     "mrbeastshorts", "beast", "challenge", "money", "funny", "entertainment",
 ]
+
+# Titles that get the post itself removed: proven 2026-09-20 on the streamer channel
+# (YouTube pulled the upload within minutes and Instagram refused processing when the
+# title framed real-person violence). Screened per clip BEFORE render/upload spend; a
+# flagged clip is skipped, never published. Narrow by design: gaming hyperbole (kill
+# feed, "I'm dead", knife/gun props) is NOT here.
+UNSAFE_TITLE_RE = re.compile(
+    r"\b(?:assault(?:s|ed|ing)?|murder(?:s|ed|ing)?|rape[sd]?|kidnap(?:s|ped|ping)?|"
+    r"tortur(?:e|ed|ing)|suicid(?:e|al)|behead(?:s|ed|ing)?|strangl(?:e|es|ed|ing)?|"
+    r"molest(?:s|ed|ing)?|stab(?:b)?(?:s|ed|ing)?|lynch(?:es|ed|ing)?|massacre[sd]?|"
+    r"abduct(?:s|ed|ing)?|porn|hentai|nude|naked|erotic|bestiality|sex\s*tape)\b",
+    re.IGNORECASE,
+)
 
 # --- Zernio secret keys (passed as env vars by the workflow; in API.env for local runs) ---
 IG_ENABLED = bool(os.environ.get("ZERNIO_API")) and bool(os.environ.get("ZERNIO_INSTAGRAM_ID"))
@@ -917,6 +931,12 @@ def main():
     for idx, clip in enumerate(clips, start=1):
         n = f"{idx:02d}"
         hook = clip.get("suggested_title") or clip.get("hook") or "Clip"
+        flag = UNSAFE_TITLE_RE.search(hook)
+        if flag:
+            log(f"clip {n} SKIPPED by title safety screen ({flag.group(0).lower()})")
+            summary["warnings"].append({"clip": n, "stage": "safety",
+                                        "error": f"title flags safety screen ({flag.group(0).lower()})"})
+            continue
         short = str(TMP / f"short_{n}.mp4")
 
         # Weekly style experiment (2026-07-12): the FIRST clip of whichever daily run
