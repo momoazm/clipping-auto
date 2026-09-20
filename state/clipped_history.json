@@ -1451,6 +1451,43 @@
       "source_duration": 502,
       "target_clip_count": 2,
       "remaining_clips": 0
+    },
+    {
+      "source_id": "GvXEe4ucuXI",
+      "clip_video_ids": [
+        "6ab02660262e73f94f1c92e5",
+        "6ab028c246f4a2a431269e18"
+      ],
+      "youtube_post_ids": [
+        "6ab02660262e73f94f1c92e5",
+        "6ab028c246f4a2a431269e18"
+      ],
+      "instagram_post_ids": [
+        "6ab028c9c10d84f01d00c220"
+      ],
+      "tiktok_post_ids": [],
+      "platform_post_ids": [
+        "6ab028c9c10d84f01d00c220"
+      ],
+      "clip_windows": [
+        {
+          "start": 56.33,
+          "end": 92.14,
+          "video_id": "6ab02660262e73f94f1c92e5"
+        },
+        {
+          "start": 317.833,
+          "end": 354.583,
+          "video_id": "6ab028c246f4a2a431269e18"
+        }
+      ],
+      "source_title": "Squid Game Without CGI!",
+      "channel": "Beast Reacts",
+      "date": "2026-09-20",
+      "published_at": "2026-09-20T18:43:02.005090+00:00",
+      "source_duration": 501,
+      "target_clip_count": 2,
+      "remaining_clips": 0
     }
   ],
   "attempted": [

@@ -1103,6 +1103,28 @@
           "effects": "full"
         }
       }
+    },
+    {
+      "post_id": "6ab028c9c10d84f01d00c220",
+      "posted_at": "2026-09-20T18:43:01.999755+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "02",
+        "hook": "They CGI'd the PEOPLE, Not the Lion?!",
+        "hook_signal_score": 42,
+        "duration_sec": 36.75,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -12.7,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
     }
   ]
 }
