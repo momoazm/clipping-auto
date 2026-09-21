@@ -1135,6 +1135,50 @@
           "effects": "full"
         }
       }
+    },
+    {
+      "post_id": "6ab19253732937350617f24d",
+      "posted_at": "2026-09-21T20:26:06.987028+00:00",
+      "style": "hormozi",
+      "experiment": true,
+      "resolved": false,
+      "context": {
+        "clip": "01",
+        "hook": "$1.5M Pool Goes Through Entire House - He Keeps $3K?",
+        "hook_signal_score": 66,
+        "duration_sec": 32.13,
+        "focus_mode": "speaker",
+        "hook_variant": "question",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -13.0,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6ab194c4a5e365a5b3b6f165",
+      "posted_at": "2026-09-21T20:34:52.634613+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "02",
+        "hook": "Wait... Is That a GIANT TOILET Pool?! 😱",
+        "hook_signal_score": 60,
+        "duration_sec": 35.37,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -12.9,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
     }
   ]
 }

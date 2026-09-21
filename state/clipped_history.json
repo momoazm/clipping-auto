@@ -1488,6 +1488,45 @@
       "source_duration": 501,
       "target_clip_count": 2,
       "remaining_clips": 0
+    },
+    {
+      "source_id": "8F1J51GSPYY",
+      "clip_video_ids": [
+        "6ab1924d732937350617f16f",
+        "6ab194bdbe950526c8a8b9d1"
+      ],
+      "youtube_post_ids": [
+        "6ab1924d732937350617f16f",
+        "6ab194bdbe950526c8a8b9d1"
+      ],
+      "instagram_post_ids": [
+        "6ab19253732937350617f24d",
+        "6ab194c4a5e365a5b3b6f165"
+      ],
+      "tiktok_post_ids": [],
+      "platform_post_ids": [
+        "6ab19253732937350617f24d",
+        "6ab194c4a5e365a5b3b6f165"
+      ],
+      "clip_windows": [
+        {
+          "start": 424.56,
+          "end": 456.69,
+          "video_id": "6ab1924d732937350617f16f"
+        },
+        {
+          "start": 365.24,
+          "end": 400.61,
+          "video_id": "6ab194bdbe950526c8a8b9d1"
+        }
+      ],
+      "source_title": "World's Deepest Pool!",
+      "channel": "Beast Reacts",
+      "date": "2026-09-21",
+      "published_at": "2026-09-21T20:34:52.640990+00:00",
+      "source_duration": 481,
+      "target_clip_count": 2,
+      "remaining_clips": 0
     }
   ],
   "attempted": [
