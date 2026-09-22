@@ -1,9 +1,9 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working in the
+This file provides guidance to Codex when working in the
 `clipping/` project. It follows the **WAT framework** (Workflows, Agents, Tools)
 used across this repo: probabilistic AI reasons and orchestrates; deterministic
-Python tools execute. Read the root `CLAUDE.md` for the shared WAT philosophy.
+Python tools execute. Read the root `AGENTS.md` for the shared WAT philosophy.
 
 ## This project: the `clipping/` pipeline
 
@@ -87,7 +87,7 @@ experiment. Every successful IG post is logged to `state/ig_post_log.json`
 (`_common.log_ig_post`). A separate Monday cron (`.github/workflows/style_experiment.yml` →
 `tools/check_style_experiment.py`) resolves any experiment post ≥4 days old against a baseline of
 recent normal posts (via `tools/ig_fetch_analytics.py`, Zernio's analytics API) and WhatsApps
-Moemen (`tools/send_whatsapp.py`, CallMeBot — see `.claude/skills/send-whatsapp/SKILL.md`) if it
+Moemen (`tools/send_whatsapp.py`, CallMeBot — see `.agents/skills/send-whatsapp/SKILL.md`) if it
 clearly won. **This never changes the live default style automatically** — a win is a
 notification; Moemen decides whether to update `run_daily.py`'s default.
 
@@ -108,6 +108,6 @@ notification; Moemen decides whether to update `run_daily.py`'s default.
 - **Audio rights.** Only use royalty-free music/SFX beds; copyrighted audio can get the
   Short muted or struck.
 
-> Note: per the user's "edit only `clipping/`" constraint, the **root** `CLAUDE.md` is not
+> Note: per the user's "edit only `clipping/`" constraint, the **root** `AGENTS.md` is not
 > updated to list `clipping/` as a sibling project. Add that line later if the constraint
 > is lifted.

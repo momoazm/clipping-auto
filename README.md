@@ -21,5 +21,5 @@ short clips for upload.
   `check_style_experiment.py` (new Monday cron, `style_experiment.yml`) compares it against
   recent posts via Zernio analytics and WhatsApps Moemen (`send_whatsapp.py`, CallMeBot) if it
   clearly won. Never auto-applies a winning style — notification only.
-- **Rules / how-to:** [CLAUDE.md](CLAUDE.md)
+- **Rules / how-to:** [AGENTS.md](AGENTS.md)
 - **Key dates:** —
