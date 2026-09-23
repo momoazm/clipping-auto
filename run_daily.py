@@ -473,6 +473,16 @@ def attempt_instagram_upload(short_path, caption, clip_num, summary_dict, entry_
         summary_dict.setdefault("instagram_errors", []).append({"clip": clip_num, "error": detail})
         return False
 
+    def publish(url):
+        return run_tool("upload_instagram.py", "--video-url", url, "--caption", caption, "--confirm")
+
+    def is_media_format_reject(exc):
+        text = str(exc).lower()
+        metadata = _error_data(exc)
+        if metadata:
+            text += " " + json.dumps(metadata, ensure_ascii=True).lower()
+        return any(marker in text for marker in ("re-export", "h.264", "aac audio", "user_content"))
+
     try:
         # Zernio needs a PUBLIC url, not a local file path. Reuse the URL already accepted by
         # YouTube when available: hosting the same MP4 a second time can switch providers and
@@ -480,7 +490,25 @@ def attempt_instagram_upload(short_path, caption, clip_num, summary_dict, entry_
         if public_url is None:
             host = run_tool("host_public.py", "--video", short_path)
             public_url = host["url"]
-        ig = run_tool("upload_instagram.py", "--video-url", public_url, "--caption", caption, "--confirm")
+        reencoded = None
+        try:
+            ig = publish(public_url)
+        except Exception as first_err:
+            if not is_media_format_reject(first_err):
+                raise
+            # The local artifact already passed the strict H.264/AAC contract, so the
+            # refusal is about the hosted bytes: re-encode once and publish from a
+            # freshly hosted URL instead of Zernio retrying the copy it already has.
+            log(f"clip {clip_num}: IG rejected media format; re-encode + re-host for one "
+                f"retry: {first_err}")
+            reencoded = str(TMP / f"short_{clip_num}_ig_reupload.mp4")
+            run_tool("prepare_upload_media.py", "--input", short_path, "--output", reencoded)
+            fresh = run_tool("host_public.py", "--video", reencoded)
+            ig = publish(fresh["url"])
+            entry_dict["instagram_format_retry"] = True
+        finally:
+            if reencoded and not KEEP_RENDERED_CLIPS:
+                purge_files(reencoded)
         media_id = ig.get("post_id") or ig.get("media_id")
         entry_dict["instagram_media_id"] = media_id
         if ig.get("duplicate"):
