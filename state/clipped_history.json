@@ -1527,6 +1527,63 @@
       "source_duration": 481,
       "target_clip_count": 2,
       "remaining_clips": 0
+    },
+    {
+      "source_id": "PyLGTmWz37U",
+      "clip_video_ids": [
+        "6ab81612a3dccb27e79b6ff1",
+        "6ab818226cb5ce92b6c818f4",
+        "6ab81a5453858628daf29bcb",
+        "6ab81c41f292c2ae81017647"
+      ],
+      "youtube_post_ids": [
+        "6ab81612a3dccb27e79b6ff1",
+        "6ab818226cb5ce92b6c818f4",
+        "6ab81a5453858628daf29bcb",
+        "6ab81c41f292c2ae81017647"
+      ],
+      "instagram_post_ids": [
+        "6ab81618fd240fc4978ea90a",
+        "6ab8182bbd7e254faac0811a",
+        "6ab81a5a53858628daf29ced",
+        "6ab81c47f292c2ae81017702"
+      ],
+      "tiktok_post_ids": [],
+      "platform_post_ids": [
+        "6ab81618fd240fc4978ea90a",
+        "6ab8182bbd7e254faac0811a",
+        "6ab81a5a53858628daf29ced",
+        "6ab81c47f292c2ae81017702"
+      ],
+      "clip_windows": [
+        {
+          "start": 289.725,
+          "end": 324.955,
+          "video_id": "6ab81612a3dccb27e79b6ff1"
+        },
+        {
+          "start": 723.479,
+          "end": 757.944,
+          "video_id": "6ab818226cb5ce92b6c818f4"
+        },
+        {
+          "start": 909.294,
+          "end": 945.124,
+          "video_id": "6ab81a5453858628daf29bcb"
+        },
+        {
+          "start": 425.905,
+          "end": 460.115,
+          "video_id": "6ab81c41f292c2ae81017647"
+        }
+      ],
+      "source_title": "I Found My 13 Year Old Minecraft World",
+      "channel": "MrBeast Gaming",
+      "date": "2026-09-26",
+      "published_at": "2026-09-26T19:26:43.814343+00:00",
+      "source_duration": 979,
+      "target_clip_count": 4,
+      "remaining_clips": 0
     }
   ],
   "attempted": [

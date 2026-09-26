@@ -1,6 +1,6 @@
 {
   "_note": "Most successful video per platform workflow (YouTube / Instagram), auto-refreshed by tools/update_best_videos.py after each real run_daily pass. 'why_most_successful' is computed from the winner's metrics vs account medians -- see the tool docstring for the ranking rule.",
-  "updated_at": "2026-09-21T20:34:56.338078+00:00",
+  "updated_at": "2026-09-26T19:26:55.288855+00:00",
   "ranking_rule": "views desc, then engagement_rate desc, then recency",
   "platforms": {
     "youtube": {
@@ -8,11 +8,11 @@
       "posts_analyzed": 100,
       "median_views": 0.0,
       "most_successful_video": {
-        "id": "6a713021eb10586dadcb2f16",
-        "url": "https://www.youtube.com/watch?v=SzDooYaDfK8",
-        "title": "80% of Kids Had Parasitic Worms—Until This Happened #Shorts",
-        "published_at": "2026-08-03T15:44:02.000Z",
-        "views": 30,
+        "id": "6a89ddaa77555aae016c6397",
+        "url": "https://www.youtube.com/watch?v=Nt1ZDqWtmos",
+        "title": "1 Million Fireworks + Flaming Arrows Attack Now! #Shorts",
+        "published_at": "2026-08-22T16:40:55.000Z",
+        "views": 27,
         "likes": 0,
         "comments": 0,
         "shares": 0,
@@ -22,16 +22,16 @@
         "avg_watch_time_ms": 0,
         "retention_ratio": null,
         "why_most_successful": [
-          "top views of all account posts (30; median is 0)",
-          "hook uses proven pattern(s): specific_number, curiosity_gap, transformation_tease"
+          "top views of all account posts (27; median is 0)",
+          "hook uses proven pattern(s): specific_number, conflict_or_challenge"
         ]
       },
-      "runner_up_url": "https://www.youtube.com/watch?v=Nt1ZDqWtmos"
+      "runner_up_url": "https://www.youtube.com/watch?v=N6ebbUebkas"
     },
     "instagram": {
       "account_id": "6a3d7b8d9d9472faaee69b3b",
       "posts_analyzed": 100,
-      "median_views": 146.0,
+      "median_views": 147.5,
       "most_successful_video": {
         "id": "6a89e59f77555aae016e0b83",
         "url": "https://www.instagram.com/reel/DcWX8SrFH5s/",
@@ -47,9 +47,9 @@
         "avg_watch_time_ms": 20521,
         "retention_ratio": 0.57,
         "why_most_successful": [
-          "views 500 = 3.4x the account median (146.0)",
+          "views 500 = 3.4x the account median (147.5)",
           "average watch time covers ~57% of the clip -- strong retention, the main distribution signal for Reels/Shorts",
-          "engagement rate 2.6% at/above the account median (0.66%)",
+          "engagement rate 2.6% at/above the account median (0.62%)",
           "hook uses proven pattern(s): specific_number, curiosity_gap",
           "13 interactions (12 likes, 1 saves, 0 shares) signal quality to the algorithm"
         ]
