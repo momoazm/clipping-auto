@@ -1,5 +1,21 @@
 {
   "_note": "Every source in clipped OR attempted is permanently reserved so the daily job never repeats a long-form video. run_daily.py records the reservation before processing and the GitHub Action commits it before the upload job starts.",
+  "source_attempts": {
+    "v9QtM6qnG50": {
+      "count": 8,
+      "windows": 2,
+      "exhausted": true,
+      "reason": "pre-seeded 2026-10-12: re-picked on every scheduled run 2026-10-04..2026-10-11 and never finished (yt-dlp route timed out)",
+      "updated": "2026-10-12"
+    },
+    "kJu5VMN3yow": {
+      "count": 8,
+      "windows": 6,
+      "exhausted": true,
+      "reason": "pre-seeded 2026-10-12: re-picked on every scheduled run 2026-10-04..2026-10-11 and never finished (selector returned 1 clip; need at least 2)",
+      "updated": "2026-10-12"
+    }
+  },
   "clipped": [
     {
       "source_id": "__fmDj0ZJ1Q",

@@ -16,6 +16,12 @@ Selection logic (mirrors the user's spec):
 source it picks), plus anything passed via --exclude this run. A source reservation is permanent,
 so a transient failure cannot make the same long-form video re-enter the feed later.
 
+Unfinished duration plans are the exception (they stay eligible until the plan completes), so
+they get an ATTEMPT CAP instead: every re-offer that made no progress counts as one attempt
+(`max_source_attempts` in config/channels.json, default 5) and a source that reaches the cap is
+quarantined in the `source_attempts` ledger of the history state file and never offered again.
+The two poisoned sources from the 2026-10-04..10-11 runs are pre-seeded there as exhausted.
+
 Usage:
     python tools/find_source_video.py [--config config/channels.json] \
         [--history state/clipped_history.json] [--exclude id1,id2]
@@ -23,10 +29,15 @@ Usage:
 Prints JSON: {"video_id","url","title","channel","reason"}  (or {"error": ...}).
 """
 import argparse
+import datetime
 import json
 import os
 
 from _common import emit, fail, REPO_ROOT
+
+# Per-source attempt budget for an unfinished plan (config: max_source_attempts).
+DEFAULT_MAX_SOURCE_ATTEMPTS = 5
+
 
 def load_json(path, default):
     try:
@@ -34,6 +45,95 @@ def load_json(path, default):
             return json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         return default
+
+
+def load_state(path, default):
+    """Load the history state plus a flag saying a write-back is safe.
+
+    An unreadable file (missing or corrupt) is NEVER rewritten: the default stub must not
+    be able to replace the real no-repeat memory, which would let old sources repeat.
+    """
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f), True
+    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        return default, False
+
+
+def save_state(path, state):
+    """Atomic state write (fsync + os.replace), mirroring run_daily's ledger write."""
+    path = str(path)
+    parent = os.path.dirname(path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(state, f, ensure_ascii=False, indent=2)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp, path)
+
+
+def _as_int(value, default):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def max_source_attempts(cfg):
+    """Configured per-source attempt cap (default 5)."""
+    try:
+        return max(1, int((cfg or {}).get("max_source_attempts", DEFAULT_MAX_SOURCE_ATTEMPTS)))
+    except (TypeError, ValueError):
+        return DEFAULT_MAX_SOURCE_ATTEMPTS
+
+
+def attempt_ledger(state):
+    """Per-source attempt bookkeeping stored beside the history it protects.
+
+    Shape: {source_id: {"count": int, "windows": int, "exhausted": bool, ...}} where
+    `count` is the number of no-progress attempts seen and `windows` is how many
+    clip_windows the source had when it was last offered.
+    """
+    ledger = state.get("source_attempts") if isinstance(state, dict) else None
+    return ledger if isinstance(ledger, dict) else {}
+
+
+def exhausted_ids(ledger, cap):
+    """Sources that must never be offered again: pre-seeded poisoned ids plus anything
+    that already reached the attempt cap or was flagged exhausted by an operator."""
+    out = set()
+    for sid, entry in (ledger or {}).items():
+        if not sid or not isinstance(entry, dict):
+            continue
+        if entry.get("exhausted") or _as_int(entry.get("count"), 0) >= cap:
+            out.add(sid)
+    return out
+
+
+def track_source_offer(state, sid, windows_now, cap):
+    """Record one attempt at finishing `sid`; return True when it must be quarantined.
+
+    An unfinished source is only re-offered while its plan is incomplete, so re-offering it
+    with the SAME clip_windows count means the previous run produced nothing. New windows
+    (real progress) reset the counter so a legitimately continuing source is never
+    quarantined mid-plan, and a source that completes keeps working as before.
+    """
+    if not isinstance(state, dict) or not sid:
+        return False
+    ledger = dict(attempt_ledger(state))
+    entry = dict(ledger.get(sid) or {})
+    if "windows" in entry and _as_int(entry.get("windows"), -1) == _as_int(windows_now, -2):
+        count = _as_int(entry.get("count"), 0) + 1
+    else:
+        count = 1
+    entry.update({"count": count, "windows": _as_int(windows_now, 0),
+                  "exhausted": bool(entry.get("exhausted")) or count >= cap,
+                  "updated": datetime.date.today().isoformat()})
+    ledger[sid] = entry
+    state["source_attempts"] = ledger
+    return bool(entry["exhausted"])
 
 
 def history_ids(state):
@@ -127,12 +227,18 @@ def main():
         fail(f"channels config not found/invalid: {cfg_path}")
         return
 
-    state = load_json(hist_path, {"clipped": []})
+    state, writable = load_state(hist_path, {"clipped": []})
+    # Only a dict loaded from an existing, parseable file may be written back.
+    writable = writable and isinstance(state, dict)
     incomplete = incomplete_sources(state)
     incomplete_ids = {record["source_id"] for record in incomplete}
+    attempts = max_source_attempts(cfg)
+    ledger = attempt_ledger(state)
     # A source with a remaining duration-based plan is intentionally eligible again. All
-    # completed/attempted sources remain permanently skipped, as before.
+    # completed/attempted sources remain permanently skipped, as before, and so is every
+    # source that has burned its attempt budget (quarantined / exhausted in the ledger).
     skip = history_ids(state) - incomplete_ids
+    skip |= exhausted_ids(ledger, attempts)
     skip |= {x.strip() for x in (args.exclude or "").split(",") if x.strip()}
     channels = cfg.get("channels", [])
     depth = int(cfg.get("scan_depth", 25))
@@ -147,6 +253,16 @@ def main():
         sid = record.get("source_id")
         if sid in skip:
             continue
+        # Count this offer as an attempt BEFORE handing the source out: an offer that makes
+        # no progress quarantines the source once `max_source_attempts` is reached, so a
+        # broken source stops cycling back into the feed every day.
+        if track_source_offer(state, sid, len(record.get("clip_windows") or []), attempts):
+            skip.add(sid)
+            if writable:
+                save_state(hist_path, state)
+            continue
+        if writable:
+            save_state(hist_path, state)
         emit({"video_id": sid, "url": f"https://www.youtube.com/watch?v={sid}",
               "title": record.get("source_title") or "", "channel": record.get("channel", ""),
               "reason": "continue duration-based clip plan",
@@ -189,7 +305,8 @@ def main():
                 return
 
     fail("No unclipped source video found (channels + popular + backlog all exhausted).",
-         channel_errors=errors, skip_count=len(skip))
+         channel_errors=errors, skip_count=len(skip),
+         quarantined_count=len(exhausted_ids(attempt_ledger(state), attempts)))
 
 
 if __name__ == "__main__":

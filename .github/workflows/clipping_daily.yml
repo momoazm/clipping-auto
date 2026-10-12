@@ -253,6 +253,12 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add state/clipped_history.json
+          # C6: the no-source streak counter. Every commit step stages its own whitelist,
+          # and a run can be cancelled between this step and "Commit updated history" --
+          # listing the file here means a drought counted during reservation still lands.
+          if [ -f state/no_source_streak.json ]; then
+            git add state/no_source_streak.json
+          fi
           if ! git diff --staged --quiet; then
             git commit -m "chore: reserve clipping source [skip ci]"
             # --autostash: a stray unstaged file must never block the reservation push.
@@ -396,6 +402,11 @@ jobs:
           fi
           if [ -f state/style_experiment.json ]; then
             git add state/style_experiment.json
+          fi
+          # C6: persist the no-source streak so the next scheduled run can alert on a
+          # multi-day drought (a no_source exit returns before any other commit path).
+          if [ -f state/no_source_streak.json ]; then
+            git add state/no_source_streak.json
           fi
           if ! git diff --staged --quiet; then
             git commit -m "chore: update clipped history [skip ci]"

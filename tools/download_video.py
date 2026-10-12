@@ -22,12 +22,21 @@ import time
 
 from _common import load_env, emit, fail, ffmpeg_bin, tmp_path, FFmpegMissing, REPO_ROOT
 
+# The whole route chain must finish inside this budget: run_daily gives this tool 300s and
+# the source-attempt loop wants the verdict well before the 60-minute Actions job timeout.
 DOWNLOAD_DEADLINE_SEC = 240.0
-DOWNLOAD_ATTEMPT_TIMEOUT_SEC = 25.0
+# Per-route budget. 25s killed a HEALTHY download mid-transfer (every scheduled run
+# 2026-10-04..10-11 logged "yt-dlp route timed out after 25s" and never got a source),
+# so each route now gets ~100s. The route list below was cut from 8 to 3 to match, and
+# every attempt is clamped to whatever is left of DOWNLOAD_DEADLINE_SEC, so the whole
+# chain still ends by 240s even if every route stalls for its full budget.
+DOWNLOAD_ATTEMPT_TIMEOUT_SEC = 100.0
 
 
-def _download_attempt(url, out_base, clients, use_proxy, fmt, ffmpeg_dir, cookie_file):
+def _download_attempt(url, out_base, clients, use_proxy, fmt, ffmpeg_dir, cookie_file,
+                      timeout=None):
     """Run one route in a killable yt-dlp child and return its metadata plus output path."""
+    timeout = DOWNLOAD_ATTEMPT_TIMEOUT_SEC if timeout is None else timeout
     cmd = [sys.executable, "-m", "yt_dlp", "--format", fmt,
            "--format-sort", "res,vcodec:h264,acodec:m4a", "--merge-output-format", "mp4",
            "--output", out_base + ".%(ext)s", "--no-playlist", "--quiet", "--no-warnings",
@@ -46,9 +55,9 @@ def _download_attempt(url, out_base, clients, use_proxy, fmt, ffmpeg_dir, cookie
     try:
         proc = subprocess.run(cmd, cwd=str(REPO_ROOT), capture_output=True, text=True,
                               encoding="utf-8", errors="replace",
-                              timeout=DOWNLOAD_ATTEMPT_TIMEOUT_SEC)
+                              timeout=timeout)
     except subprocess.TimeoutExpired as e:
-        raise RuntimeError(f"yt-dlp route timed out after {DOWNLOAD_ATTEMPT_TIMEOUT_SEC:.0f}s") from e
+        raise RuntimeError(f"yt-dlp route timed out after {timeout:.0f}s") from e
     if proc.returncode != 0:
         tail = (proc.stderr or proc.stdout or "").strip()[-600:]
         raise RuntimeError(tail or f"yt-dlp exited {proc.returncode}")
@@ -140,9 +149,16 @@ def main():
     proxy = os.environ.get("YTDLP_PROXY")
 
     # Client/route chain, tried in order until one serves a >= lo ladder (2026-08-10).
-    # YouTube can flag either the runner egress or a particular player-client handshake, so
-    # a single WARP route is not enough. Keep both direct and WARP legs for the POT-capable
-    # web/tv clients; the direct legs matter when the current WARP range is challenged.
+    # Reduced 8 -> 3 routes when the per-route budget went 25s -> 100s (2026-10-12): with
+    # ~100s per attempt the whole chain shares one 240s DOWNLOAD_DEADLINE_SEC (each attempt
+    # is clamped to the time left), so a longer list would only mean fewer routes ever get
+    # a full attempt instead of more fallback diversity.
+    # The legs kept are the two that historically decide the run: yt-dlp's own client mix
+    # direct (residential IP -> full 1080p ladder) and the same mix through WARP
+    # (datacenter IP -> cleaner egress), plus one forced POT-capable client through WARP
+    # for when YouTube still walls the default handshake. On a residential IP the default
+    # mix wins first and the forced legs cost nothing; on a bot-walled datacenter IP the
+    # default fails and the POT-covered legs still get their shot.
     # Android-only legs are intentionally omitted: they cannot use BgUtils POTs and the
     # recent failed runs ended on their repeated "sign in to confirm" responses.
     attempts = [
@@ -153,12 +169,7 @@ def main():
         # still gets its shot, so this costs the cloud path nothing.
         (None, False),
         (None, True),
-        (["web_safari"], False),
         (["web_safari"], True),
-        (["tv"], False),
-        (["tv"], True),
-        (["web"], False),
-        (["web"], True),
     ]
 
     deadline = time.monotonic() + DOWNLOAD_DEADLINE_SEC
@@ -166,10 +177,12 @@ def main():
     def try_chain(floor):
         """Run the whole client/route chain demanding >= floor. Returns
         (info, path, degraded, last_err) -- degraded means at least one route
-        answered but only with a ladder below the floor."""
+        answered but only with a ladder below the floor. Each attempt is clamped
+        to the time left of DOWNLOAD_DEADLINE_SEC so the chain ends by it."""
         info, final_path, degraded, last_err = None, None, False, None
         for clients, use_proxy in attempts:
-            if time.monotonic() >= deadline:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
                 break
             opts = dict(base_opts)
             opts["format"] = (f"bv*[height<={h}][height>={floor}]+ba/b[height<={h}][height>={floor}]/"
@@ -183,7 +196,8 @@ def main():
             route = f"{'+'.join(clients) if clients else 'default'}{' via proxy' if (proxy and use_proxy) else ' direct'}"
             try:
                 inf, path = _download_attempt(args.url, out_base, clients, use_proxy,
-                                              opts["format"], ffmpeg_dir, cookie_file)
+                                              opts["format"], ffmpeg_dir, cookie_file,
+                                              timeout=min(DOWNLOAD_ATTEMPT_TIMEOUT_SEC, remaining))
             except Exception as e:
                 msg = str(e)
                 if "Requested format is not available" in msg:

@@ -145,6 +145,8 @@ def run_tool(script, *args):
         "upload_youtube.py": 300,
         "upload_instagram.py": 300,
         "upload_tiktok.py": 300,
+        # C6 no-source alert: one small CallMeBot GET, well under a minute.
+        "send_whatsapp.py": 60,
     }
     timeout = tool_timeouts.get(script, 900)
     try:
@@ -232,6 +234,18 @@ def duration_target_count(duration, cfg):
         return int(cfg.get("clips_per_day", 6))
     minimum = max(1, int(cfg.get("min_clips_per_run", 2)))
     return max(minimum, int(math.ceil(seconds / interval)))
+
+
+def min_clips_required(min_clips_per_run, continuing):
+    """Min-2 is a FRESH-source quality bar; a continuation run may finish with one clip.
+
+    `continuing` means the source already has at least one published window (or the run
+    explicitly asked for extra clips), so `desired_count` legitimately came out as 1 and
+    refusing it would strand the last clip of a duration plan forever.
+    """
+    if continuing:
+        return 1
+    return max(1, int(min_clips_per_run))
 
 
 def delivery_capacity(required_platforms, cfg, now=None):
@@ -443,6 +457,80 @@ def record_attempts(attempted_ids, dry_run):
         _atomic_write_json(HISTORY, hist)
         log(f"recorded {len(attempted_ids)} attempted source(s) to no-repeat memory")
 
+
+# C6: persistent no-source streak. The workflow's commit steps only `git add` an explicit
+# whitelist of state files, so state/no_source_streak.json is listed there too -- without
+# it this counter would be reset on every checkout and a multi-day drought could never
+# be detected.
+NO_SOURCE_STREAK = HERE / "state" / "no_source_streak.json"
+# Alert once the streak reaches this many consecutive no-source DAYS (one count per day,
+# see counted_on below), then stay quiet for the cooldown so a drought cannot spam WhatsApp.
+NO_SOURCE_ALERT_AFTER = 3
+NO_SOURCE_ALERT_COOLDOWN_HOURS = 24
+
+
+def note_no_source(detail, dry_run):
+    """Count one more run that ended with no source; WhatsApp Moemen at the threshold.
+
+    Never raises: an alert failure (missing CallMeBot keys, network) is only logged, so the
+    pipeline keeps its own exit behaviour. Dry runs count nothing (they are tests, not
+    droughts). The streak is counted at most once per calendar day even though one run can
+    hit several no_source sites (reservation preflight, finder, per-attempt loop, final
+    empty-selection exit), so `counted_on` is the de-duplication key.
+    """
+    today = datetime.date.today().isoformat()
+    excerpt = " ".join(str(detail or "").split())[:200]
+    if dry_run:
+        log(f"no_source streak: dry run, not counted (detail: {excerpt})")
+        return
+    try:
+        state = load_json(NO_SOURCE_STREAK, {})
+        if not isinstance(state, dict):
+            state = {}
+        count = state.get("count", 0)
+        if state.get("counted_on") != today:
+            count = int(count) + 1
+        state.update({
+            "count": count,
+            "counted_on": today,
+            "last_detail": excerpt,
+            "updated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        })
+        _atomic_write_json(NO_SOURCE_STREAK, state)
+        log(f"no_source streak: {count} day(s) without a source (threshold {NO_SOURCE_ALERT_AFTER})")
+        if count < NO_SOURCE_ALERT_AFTER:
+            return
+        last_alert = _parse_utc(state.get("last_alert_at"))
+        now = datetime.datetime.now(datetime.timezone.utc)
+        if last_alert and (now - last_alert).total_seconds() < NO_SOURCE_ALERT_COOLDOWN_HOURS * 3600:
+            log("no_source streak: alert suppressed inside the cooldown")
+            return
+        msg = (f"Clipping pipeline: {count} consecutive day(s) with no source video. "
+               f"Last: {excerpt or 'no detail'}")
+        run_tool("send_whatsapp.py", "--text", msg)
+        state["last_alert_at"] = now.isoformat()
+        _atomic_write_json(NO_SOURCE_STREAK, state)
+    except Exception as e:
+        log("no_source streak tracking failed (ignored):", e)
+
+
+def reset_no_source_streak():
+    """Clear the counter once a run actually selected clips (keep the alert cooldown)."""
+    try:
+        state = load_json(NO_SOURCE_STREAK, None)
+        if not isinstance(state, dict) or not state.get("count"):
+            return
+        state.update({
+            "count": 0,
+            "counted_on": None,
+            "updated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        })
+        _atomic_write_json(NO_SOURCE_STREAK, state)
+        log("no_source streak: reset after a successful selection")
+    except Exception as e:
+        log("no_source streak reset failed (ignored):", e)
+
+
 def ensure_sfx():
     sfx_dir = HERE / "config" / "sfx"
     if not list(sfx_dir.glob("*.wav")):
@@ -462,6 +550,49 @@ def hook_variant(clip, hook):
     if "?" in hook:
         return "question"
     return "specific_claim"
+
+
+def clip_transcript_snippet(clip, limit=200):
+    """Spoken text inside the clip window, as the hashtag prompt's `--snippet`.
+
+    generate_hashtags' PROMPT has two separate fields -- "Clip hook line: {hook}" and
+    "Transcript snippet: {snippet}". The old caller passed the hook as BOTH, so the model
+    saw the hook twice and never any real speech, which is why the tag list came out
+    generic. This returns the words actually spoken inside the clip window instead (from
+    .tmp/transcript.json, the same file every other tool reads); it never raises, so a
+    missing/odd transcript degrades to the hook rather than failing the upload loop.
+    """
+    transcript = load_json(TMP / "transcript.json", {})
+    if not isinstance(transcript, dict):
+        return ""
+    try:
+        start = float(clip.get("start"))
+        end = float(clip.get("end"))
+    except (TypeError, ValueError):
+        return ""
+    parts = []
+    words = transcript.get("words") or []
+    for w in words:
+        try:
+            if float(w.get("start")) >= start and float(w.get("end")) <= end and str(w.get("w", "")).strip():
+                parts.append(str(w["w"]).strip())
+        except (TypeError, ValueError, AttributeError):
+            continue
+    text = " ".join(parts)
+    if not text:
+        # No word fell fully inside the window (snapping can produce a tight span, or the
+        # transcript only carries segments): fall back to the nearest segments so the field
+        # is never empty for no reason.
+        segs = transcript.get("segments") or []
+        for s in segs:
+            try:
+                if float(s.get("end")) > start and float(s.get("start")) < end:
+                    text += (" " + str(s.get("text", "")).strip())
+            except (TypeError, ValueError, AttributeError):
+                continue
+        text = " ".join(text.split())
+    return text[:limit].strip()
+
 
 def attempt_instagram_upload(short_path, caption, clip_num, summary_dict, entry_dict,
                               public_url=None, style=None, experiment=False):
@@ -614,6 +745,9 @@ def main():
     min_clips_per_run = int(cfg.get("min_clips_per_run", 2))
     if min_clips_per_run < 2:
         raise RuntimeError("config min_clips_per_run must be at least 2")
+    # Fresh sources must clear the configured minimum; a continuation run (source already
+    # has published windows) drops to 1 so the last clip of a plan is not stranded.
+    min_required = min_clips_per_run
     if args.limit is not None:
         if args.limit < min_clips_per_run:
             raise RuntimeError(
@@ -691,6 +825,7 @@ def main():
                 payload = {"status": "no_source",
                            "detail": f"No source reservation was created; no video was published.",
                            "quality_floor": "1080p", "attempted_sources": reserved_attempts}
+                note_no_source(payload["detail"], args.dry_run)
                 print(json.dumps(payload, indent=2))
                 return
             raise RuntimeError(f"invalid or missing source reservation: {args.source_reservation}")
@@ -715,6 +850,7 @@ def main():
             log("no source video to reserve:", e)
             payload = {"status": "no_source", "detail": str(e),
                        "quality_floor": "1080p", "attempted_sources": reserved_attempts}
+            note_no_source(payload["detail"], args.dry_run)
             print(json.dumps(payload, indent=2))
             if no_source_ok:
                 return
@@ -773,6 +909,8 @@ def main():
         if active_existing_windows:
             existing_windows_path = TMP / "existing_clip_windows.json"
             _atomic_write_json(existing_windows_path, {"windows": active_existing_windows})
+        min_required = min_clips_required(
+            min_clips_per_run, bool(active_existing_windows) or bool(args.extra_clips))
         try:
             ensure_sfx()
             run_tool("transcribe_video.py", "--in", src_path)
@@ -813,9 +951,9 @@ def main():
                 "fallback": bool(visual_result.get("visual_fallback")),
                 "candidate_count": visual_result.get("candidate_count", len(clips)),
             }
-            if len(clips) < min_clips_per_run:
+            if len(clips) < min_required:
                 raise RuntimeError(
-                    f"clip selector returned {len(clips)} clip(s); need at least {min_clips_per_run}"
+                    f"clip selector returned {len(clips)} clip(s); need at least {min_required}"
                 )
         except Exception as e:
             log(f"pre-downloaded source {src.get('video_id')} failed:", e)
@@ -836,6 +974,7 @@ def main():
         except Exception as e:
             log("no source video to clip today:", e)
             record_attempts(attempted_videos, args.dry_run)
+            note_no_source(str(e), args.dry_run)
             print(json.dumps({"status": "no_source", "detail": str(e),
                               "quality_floor": "1080p",
                               "attempted_sources": attempted_videos}, indent=2))
@@ -862,6 +1001,8 @@ def main():
             source_duration = dl.get("duration")
             active_source_record = source_history_record(history, src.get("video_id"))
             active_existing_windows = source_clip_windows(active_source_record)
+            min_required = min_clips_required(
+                min_clips_per_run, bool(active_existing_windows) or bool(args.extra_clips))
             existing_windows_path = None
             if active_existing_windows:
                 existing_windows_path = TMP / "existing_clip_windows.json"
@@ -928,9 +1069,9 @@ def main():
                 "fallback": bool(visual_result.get("visual_fallback")),
                 "candidate_count": visual_result.get("candidate_count", len(clips)),
             }
-            if len(clips) < min_clips_per_run:
+            if len(clips) < min_required:
                 raise RuntimeError(
-                    f"clip selector returned {len(clips)} clip(s); need at least {min_clips_per_run}"
+                    f"clip selector returned {len(clips)} clip(s); need at least {min_required}"
                 )
             break
         except Exception as e:
@@ -944,6 +1085,7 @@ def main():
                   if attempted_videos else "No source was available; no video was published.")
         log(detail)
         record_attempts(attempted_videos, args.dry_run)
+        note_no_source(detail, args.dry_run)
         summary.update({"status": "no_source", "detail": detail,
                         "quality_floor": "1080p", "attempted_sources": attempted_videos})
         print(json.dumps(summary, indent=2))
@@ -951,9 +1093,10 @@ def main():
             return
         sys.exit(1)
     summary["clips_selected"] = len(clips)
+    reset_no_source_streak()
     if len(clips) < clips_per_day:
         log(f"clip selector returned {len(clips)} of target {clips_per_day}; "
-            f"continuing only because the minimum is {min_clips_per_run}")
+            f"continuing only because the minimum is {min_required}")
 
     uploaded_ids = []
     for idx, clip in enumerate(clips, start=1):
@@ -1022,7 +1165,11 @@ def main():
             continue
             
         try:
-            tags = run_tool("generate_hashtags.py", "--title", src_title, "--hook", hook, "--snippet", hook)
+            # --snippet is the TRANSCRIPT, not a second copy of the hook: the prompt feeds
+            # both fields to the model, so passing the hook twice (2026-10-12) starved it
+            # of real speech and produced generic tags. Hook is still --hook below.
+            snippet = clip_transcript_snippet(clip) or hook
+            tags = run_tool("generate_hashtags.py", "--title", src_title, "--hook", hook, "--snippet", snippet)
         except Exception as e:
             # Hashtag generation is deliberately best-effort. The provider chain can spend
             # its full timeout budget when free LLM routes are degraded; the rendered MP4 is

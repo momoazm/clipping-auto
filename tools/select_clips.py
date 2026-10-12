@@ -238,18 +238,51 @@ def _find_action_anchor(words, start, end):
     return round(anchor, 3) if anchor is not None else None
 
 
-def _safe_title(raw_title, hook, clip_text):
-    """Keep model titles punchy without allowing unsupported cause/agent claims.
+# Titles that get the post itself removed: proven 2026-09-20 on the streamer channel
+# (YouTube pulled the upload within minutes and Instagram refused processing when the
+# title framed real-person violence). This is a mirror of run_daily.UNSAFE_TITLE_RE --
+# keep the two patterns identical: run_daily hard-blocks a flagged clip from ever being
+# published, and _safe_title below rewrites a flagged title BEFORE it can reach the
+# metadata/hook card, so a rejected title never becomes the reason a good clip is dropped.
+# Narrow by design: gaming hyperbole (kill feed, "I'm dead", knife/gun props) is NOT here.
+UNSAFE_TITLE_RE = re.compile(
+    r"\b(?:assault(?:s|ed|ing)?|murder(?:s|ed|ing)?|rape[sd]?|kidnap(?:s|ped|ping)?|"
+    r"tortur(?:e|ed|ing)|suicid(?:e|al)|behead(?:s|ed|ing)?|strangl(?:e|es|ed|ing)?|"
+    r"molest(?:s|ed|ing)?|stab(?:b)?(?:s|ed|ing)?|lynch(?:es|ed|ing)?|massacre[sd]?|"
+    r"abduct(?:s|ed|ing)?|porn|hentai|nude|naked|erotic|bestiality|sex\s*tape)\b",
+    re.IGNORECASE,
+)
 
-    The selector sees transcript text, not video pixels. This small deterministic guard is
-    intentionally conservative for the common elimination wording where a model can turn
-    "someone drops and the remaining odds improve" into "quitting wins". The spoken captions
-    remain transcript-derived; this only controls the hook card and post metadata.
+
+def _safe_title(raw_title, hook, clip_text):
+    """FILTER the model title; only rewrite it when a screen actually rejects it.
+
+    The selector sees transcript text, not video pixels. Two screens run here:
+      1. the unsafe-title screen (UNSAFE_TITLE_RE, the 2026-09-20 removal incident) plus the
+         reversed-agent claim the old sanitizer was built for ("who drops" evidence sold as
+         "quitting wins");
+      2. nothing else -- a title that clears both keeps the model's curiosity gap intact.
+
+    The pre-2026-10-12 version rewrote EVERY title whose transcript mentioned an
+    elimination, which is how a specific LLM title became the generic hook
+    "Someone Is Officially Out!". The rewrite below is now the fallback path only.
+    The spoken captions remain transcript-derived; this only controls the hook card and
+    post metadata, and every path returns a non-empty string.
     """
     title = " ".join(str(raw_title or "").split()).strip()
     evidence = " ".join(str(v or "") for v in (hook, clip_text))
     low = evidence.lower()
     drop_odds = bool(re.search(r"\b(?:everyone\s+)?who\s+drops\b", low) and "odds" in low)
+    reversed_agent = bool(
+        drop_odds and re.search(r"\bquit(?:s|ting)?\b.*\bwin(?:s|ning)?\b", title.lower())
+    )
+
+    # Passes both screens -> keep the model's title (only truncate to the hook-card limit).
+    if title and not UNSAFE_TITLE_RE.search(title) and not reversed_agent:
+        return title[:80].rstrip(" -,:;") or "MrBeast Challenge Moment"
+
+    # Rejected (or the model returned nothing): build the deterministic replacement from
+    # the transcript evidence, the way the old always-on rewrite did.
     if drop_odds:
         title = "Someone Dropped - Now the Mansion Odds Improve!"
     elif re.search(r"\b(?:officially\s+)?(?:out|off|eliminated)\b", low):
@@ -266,7 +299,12 @@ def _safe_title(raw_title, hook, clip_text):
     # for everyone still competing.
     if drop_odds and re.search(r"\bquit(?:s|ting)?\b.*\bwin(?:s|ning)?\b", title.lower()):
         title = "Someone Dropped - Now the Mansion Odds Improve!"
-    return title[:80].rstrip(" -,:;") or "MrBeast Challenge Moment"
+    title = title[:80].rstrip(" -,:;") or "MrBeast Challenge Moment"
+    # Last line of defence: if the fallback itself still trips the unsafe screen, fall all
+    # the way back to the neutral string rather than shipping an unsafe title.
+    if UNSAFE_TITLE_RE.search(title):
+        title = "MrBeast Challenge Moment"
+    return title
 
 
 # --- provider chain (OpenAI-compatible + Gemini + Groq SDK) ----------------
