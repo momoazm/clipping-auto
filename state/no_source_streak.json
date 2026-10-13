@@ -1,6 +1,6 @@
 {
   "count": 2,
   "counted_on": "2026-10-13",
-  "last_detail": "find_source_video.py: No unclipped source video found (channels + popular + backlog all exhausted).",
-  "updated_at": "2026-10-13T20:51:07.539164+00:00"
+  "last_detail": "No source reservation was created; no video was published.",
+  "updated_at": "2026-10-13T20:51:09.376598+00:00"
 }
