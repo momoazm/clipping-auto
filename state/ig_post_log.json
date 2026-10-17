@@ -1277,6 +1277,72 @@
           "effects": "full"
         }
       }
+    },
+    {
+      "post_id": "6ad3be43b6f8dd8964d1ae95",
+      "posted_at": "2026-10-17T18:30:04.566697+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "03",
+        "hook": "I love And this. you guys have lost the weight and you've improved your over",
+        "hook_signal_score": 82,
+        "duration_sec": 36.23,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -12.4,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6ad3c0d7c0c9fe85a4fb0525",
+      "posted_at": "2026-10-17T18:40:52.681464+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "04",
+        "hook": "Sam! You got this! Woo! It's so wild! What is going on? I know Sarah is",
+        "hook_signal_score": 42,
+        "duration_sec": 37.51,
+        "focus_mode": "speaker",
+        "hook_variant": "question",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -9.5,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6ad3c30978d6f97a2a61dd1c",
+      "posted_at": "2026-10-17T18:49:32.360486+00:00",
+      "style": "hormozi",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "05",
+        "hook": "burning No, cuz mine are too. I've been doing this for two and a half weeks.",
+        "hook_signal_score": 50,
+        "duration_sec": 35.91,
+        "focus_mode": "speaker",
+        "hook_variant": "specific_claim",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -13.2,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
     }
   ]
 }
