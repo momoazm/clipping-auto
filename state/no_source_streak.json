@@ -1,7 +1,7 @@
 {
-  "count": 0,
-  "counted_on": null,
-  "last_detail": "No source reservation was created; no video was published.",
-  "updated_at": "2026-10-19T20:50:08.703023+00:00",
+  "count": 1,
+  "counted_on": "2026-10-20",
+  "last_detail": "find_source_video.py: No unclipped source video found (channels + popular + backlog all exhausted).",
+  "updated_at": "2026-10-20T19:39:43.095044+00:00",
   "last_alert_at": "2026-10-16T19:03:37.800899+00:00"
 }
