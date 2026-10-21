@@ -111,3 +111,9 @@ Goal: prove the competitor format actually reaches the accounts, not just the re
       Zernio, then set `REQUIRED_PLATFORMS: youtube,instagram` back in
       `.github/workflows/clipping_daily.yml`. Nothing else is required -- the upload path is
       already proven and will start working again.
+- [x] E5. Budget/visibility follow-ups found while testing: `--reserve-source` used to reserve
+      (permanently) BEFORE the delivery-budget check, so a run on a full 24h window burned a
+      source and posted nothing -- it is now a clean `quota_guarded` no-op with no reservation
+      (verified locally against the real 6/6 state). A `no_source` run still exits green on
+      purpose but now raises a `::warning::` annotation, so a drought cannot look healthy again.
+      Tests: `TestReservationBudgetGuard`, `TestNoSourceVisibility` (74 total, pyflakes clean).
