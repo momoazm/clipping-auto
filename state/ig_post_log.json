@@ -1343,6 +1343,50 @@
           "effects": "full"
         }
       }
+    },
+    {
+      "post_id": "6ad88652b8d1af7a097f3d54",
+      "posted_at": "2026-10-21T09:31:43.992718+00:00",
+      "style": "brand",
+      "experiment": true,
+      "resolved": false,
+      "context": {
+        "clip": "01",
+        "hook": "5 Tanks Fire 20 Rounds at His Money - First Shot!",
+        "hook_signal_score": 50,
+        "duration_sec": 30.35,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -8.6,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6ad88839246980b519be02dc",
+      "posted_at": "2026-10-21T09:39:44.747334+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "02",
+        "hook": "Money Fried at 1000 Degrees - All Destroyed!",
+        "hook_signal_score": 50,
+        "duration_sec": 28.71,
+        "focus_mode": "speaker",
+        "hook_variant": "specific_claim",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -11.6,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
     }
   ]
 }
