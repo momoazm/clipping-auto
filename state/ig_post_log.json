@@ -1387,6 +1387,50 @@
           "effects": "full"
         }
       }
+    },
+    {
+      "post_id": "6ad88ba594d737c98cb5ede5",
+      "posted_at": "2026-10-21T09:54:41.136322+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "01",
+        "hook": "90 Seconds Left: Water Truck Late, Cars Dropping",
+        "hook_signal_score": 84,
+        "duration_sec": 31.95,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -8.9,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6ad88d6e6d820ce1f63034df",
+      "posted_at": "2026-10-21T10:02:04.019997+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "02",
+        "hook": "Catapult Twist: Flaming Death Balls vs $500K Fortress",
+        "hook_signal_score": 69,
+        "duration_sec": 20.87,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -11.5,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
     }
   ]
 }

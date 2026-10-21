@@ -1613,32 +1613,44 @@
       "youtube_post_ids": [],
       "instagram_post_ids": [
         "6ad88652b8d1af7a097f3d54",
-        "6ad88839246980b519be02dc"
+        "6ad88839246980b519be02dc",
+        "6ad88ba594d737c98cb5ede5",
+        "6ad88d6e6d820ce1f63034df"
       ],
       "tiktok_post_ids": [],
       "platform_post_ids": [
         "6ad88652b8d1af7a097f3d54",
-        "6ad88839246980b519be02dc"
+        "6ad88839246980b519be02dc",
+        "6ad88ba594d737c98cb5ede5",
+        "6ad88d6e6d820ce1f63034df"
       ],
       "clip_windows": [
         {
           "start": 195.17,
-          "end": 225.52,
-          "video_id": null
+          "end": 225.52
         },
         {
           "start": 862.475,
-          "end": 891.185,
+          "end": 891.185
+        },
+        {
+          "start": 668.146,
+          "end": 700.096,
+          "video_id": null
+        },
+        {
+          "start": 644.266,
+          "end": 665.136,
           "video_id": null
         }
       ],
       "source_title": "Protect $500,000 Keep It!",
       "channel": "MrBeast",
       "date": "2026-10-21",
-      "published_at": "2026-10-21T09:39:44.753398+00:00",
+      "published_at": "2026-10-21T10:02:04.024736+00:00",
       "source_duration": 934,
       "target_clip_count": 4,
-      "remaining_clips": 2
+      "remaining_clips": 0
     }
   ],
   "attempted": [
