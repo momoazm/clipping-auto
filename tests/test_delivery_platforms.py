@@ -45,12 +45,20 @@ class TestSuspendedPlatformDetection(unittest.TestCase):
         self.assertTrue(run_daily.platform_account_suspended(
             Exception("reason: authenticatedUserAccountSuspended")))
 
+    def test_recognises_zernios_normalised_suspension_wording(self):
+        """This is the wording Zernio returns in `errorMessage` (run 39579711846)."""
+        self.assertTrue(run_daily.platform_account_suspended(Exception(
+            '{"errorMessage":"YouTube upload failed: Your YouTube account or channel is '
+            'suspended. Please check your YouTube account status.",'
+            '"errorCategory":"platform_rejected"}')))
+
     def test_ignores_ordinary_upload_failures(self):
         for message in (
             "Zernio publish did not complete (status=failed)",
             "timed out after 300s",
             "Video Transcoding Error: progressive_video_not_ready",
             "HTTP 429 rate limited",
+            "YouTube upload session initialization failed: 403 quotaExceeded",
             "",
             None,
         ):

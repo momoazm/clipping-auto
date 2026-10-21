@@ -76,12 +76,19 @@ def _gh_warning(message):
 def platform_account_suspended(exc):
     """True when a platform says the connected ACCOUNT is suspended (not the upload).
 
-    YouTube answers `403 ... reason: authenticatedUserAccountSuspended` from the upload
-    session call; Zernio passes the body through verbatim. A suspended channel can never be
+    Two shapes arrive in practice: YouTube's raw upload-session 403
+    (`reason: authenticatedUserAccountSuspended`) and Zernio's normalised wording
+    ("Your YouTube account or channel is suspended"). A suspended channel can never be
     retried into success, so the run must stop trying instead of failing every clip.
     """
-    text = str(exc or "")
-    return "authenticatedUserAccountSuspended" in text or "account of the authenticated user is suspended" in text
+    text = str(exc or "").lower()
+    markers = (
+        "authenticateduseraccountsuspended",
+        "account of the authenticated user is suspended",
+        "account or channel is suspended",
+        "channel is suspended",
+    )
+    return any(marker in text for marker in markers)
 
 def purge_files(*paths):
     """Delete temp files once they're finally used (best-effort; never fails the run)."""
@@ -839,7 +846,7 @@ def main():
         if not isinstance(reserved_src, dict) or not reserved_src.get("video_id") or not reserved_src.get("url"):
             if no_source_ok:
                 payload = {"status": "no_source",
-                           "detail": f"No source reservation was created; no video was published.",
+                           "detail": "No source reservation was created; no video was published.",
                            "quality_floor": "1080p", "attempted_sources": reserved_attempts}
                 note_no_source(payload["detail"], args.dry_run)
                 print(json.dumps(payload, indent=2))
