@@ -521,6 +521,10 @@ def note_no_source(detail, dry_run):
         })
         _atomic_write_json(NO_SOURCE_STREAK, state)
         log(f"no_source streak: {count} day(s) without a source (threshold {NO_SOURCE_ALERT_AFTER})")
+        # Green-but-empty runs hid a three-day drought in October 2026. NO_SOURCE_OK keeps the
+        # job green on purpose, so the annotation is what makes it visible in the Actions UI.
+        _gh_warning(f"no_source streak: {count} day(s) without a source "
+                    f"(alert at {NO_SOURCE_ALERT_AFTER}) -- {excerpt}")
         if count < NO_SOURCE_ALERT_AFTER:
             return
         last_alert = _parse_utc(state.get("last_alert_at"))

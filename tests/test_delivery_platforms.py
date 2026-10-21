@@ -275,6 +275,29 @@ class TestReservationBudgetGuard(unittest.TestCase):
         self.assertIn("no source was reserved", payload["detail"])
 
 
+class TestNoSourceVisibility(unittest.TestCase):
+    def test_a_drought_is_annotated_even_though_the_run_stays_green(self):
+        import run_daily
+        tmpdir = Path(tempfile.mkdtemp())
+        self.addCleanup(lambda: __import__("shutil").rmtree(tmpdir, ignore_errors=True))
+        streak = tmpdir / "no_source_streak.json"
+        with mock.patch.object(run_daily, "NO_SOURCE_STREAK", streak), \
+                mock.patch.object(run_daily, "run_tool") as run_tool:
+            with contextlib.redirect_stdout(io.StringIO()) as out:
+                run_daily.note_no_source("pool exhausted (depth 200)", dry_run=False)
+        run_tool.assert_not_called()          # below the alert threshold -> no WhatsApp
+        self.assertIn("::warning::no_source streak", out.getvalue())
+        self.assertEqual(json.loads(streak.read_text("utf-8"))["count"], 1)
+
+    def test_dry_runs_are_never_counted_or_annotated(self):
+        import run_daily
+        with mock.patch.object(run_daily, "run_tool") as run_tool:
+            with contextlib.redirect_stdout(io.StringIO()) as out:
+                run_daily.note_no_source("test", dry_run=True)
+        run_tool.assert_not_called()
+        self.assertNotIn("::warning::", out.getvalue())
+
+
 class TestWorkflowPlatformContract(unittest.TestCase):
     def test_job_only_requires_instagram_while_youtube_is_suspended(self):
         text = (REPO / ".github" / "workflows" / "clipping_daily.yml").read_text("utf-8")
