@@ -235,7 +235,9 @@ jobs:
           YTDLP_PROXY: socks5://127.0.0.1:40000
           no_proxy: "127.0.0.1,localhost"
           IN_LIMIT: ${{ inputs.limit }}
-          REQUIRED_PLATFORMS: youtube,instagram
+          REQUIRED_PLATFORMS: instagram
+          # Matches the delivery step below (YouTube channel suspended since 2026-10-21);
+          # the reservation's budget math must use the same platform set as delivery.
           # Scheduled/manual source starvation is a clean no-post outcome; the JSON summary
           # remains strict about the 1080p quality floor and records the attempted sources.
           # Source access can be temporarily bot-blocked even after all route fallbacks. Treat
@@ -294,7 +296,13 @@ jobs:
           TIKTOK_CLIENT_SECRET: ${{ secrets.TIKTOK_CLIENT_SECRET }}
           TIKTOK_EXPECTED_USERNAME: ${{ secrets.TIKTOK_EXPECTED_USERNAME || 'mrbeasteg' }}
           TIKTOK_PRIVACY: PUBLIC_TO_EVERYONE
-          REQUIRED_PLATFORMS: youtube,instagram
+          REQUIRED_PLATFORMS: instagram
+          # YouTube dropped from the REQUIRED set on 2026-10-21: the connected channel
+          # (@itsmomoclips) is suspended -- every upload returns
+          # `403 authenticatedUserAccountSuspended` and the channel URL 404s. run_daily still
+          # ATTEMPTS YouTube and raises a ::warning::, but a dead platform must not mark a
+          # good Instagram post as a failed run. Restore `youtube,instagram` here once the
+          # channel is appealed/restored or a new one is connected in Zernio.
           # Keep provider calls short; deterministic selection fallback handles transient model
           # outages instead of letting one route consume the whole clipping job timeout.
           CLIP_PROVIDER_TIMEOUT_SEC: "15"

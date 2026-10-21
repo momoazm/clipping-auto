@@ -32,6 +32,39 @@ def _client():
                         headers={"User-Agent": UA, "Accept": "*/*"})
 
 
+def verify_public_url(url, expected_size=0, timeout=45):
+    """Raise unless `url` really serves this MP4 (not an HTML error page / login wall).
+
+    Instagram reported "Video Transcoding Error ... MediaInfoExtractionException" on the
+    2026-10-21 live run when tmpfiles.org handed back a page instead of the file; the
+    post then failed minutes later with no hint why. Checking the first bytes (ISO-BMFF
+    `ftyp` box, or at least a video content-type) catches that before anything is posted.
+    Range is requested so the check costs a few KB, never the whole file.
+    """
+    import httpx
+    headers = {"User-Agent": UA, "Accept": "*/*", "Range": "bytes=0-4095"}
+    with httpx.stream("GET", url, headers=headers, follow_redirects=True,
+                      timeout=timeout) as response:
+        status = response.status_code
+        if status not in (200, 206):
+            raise RuntimeError(f"HTTP {status}")
+        content_type = (response.headers.get("content-type") or "").split(";")[0].strip().lower()
+        length = response.headers.get("content-length")
+        head = b""
+        for chunk in response.iter_bytes():
+            head += chunk
+            if len(head) >= 512:
+                break
+    if len(head) < 32:
+        raise RuntimeError("empty response body")
+    looks_mp4 = b"ftyp" in head[:64]
+    if not looks_mp4 and not content_type.startswith("video/"):
+        raise RuntimeError(f"not video bytes (content-type={content_type or 'none'})")
+    if (expected_size and status == 200 and length and length.isdigit()
+            and abs(int(length) - int(expected_size)) > 1024):
+        raise RuntimeError(f"size mismatch ({length} vs {expected_size})")
+
+
 def upload_catbox(path):
     with open(path, "rb") as f, _client() as c:
         r = c.post("https://catbox.moe/user/api.php",
@@ -56,6 +89,23 @@ def upload_litterbox(path):
     if not url.startswith("http"):
         raise RuntimeError(f"litterbox returned no URL: {url[:200]}")
     return url
+
+
+def upload_pixeldrain(path):
+    """Anonymous Pixeldrain upload -> a direct-download API URL (reliable, range-capable).
+
+    First choice since 2026-10-21: it serves the exact bytes back (verified), which is what
+    Instagram's transcoder needs to extract media info.
+    """
+    with open(path, "rb") as f, _client() as c:
+        r = c.post("https://pixeldrain.com/api/file/",
+                   files={"file": (os.path.basename(path), f, "video/mp4")})
+    r.raise_for_status()
+    data = r.json() if r.headers.get("content-type", "").startswith("application/json") else {}
+    file_id = data.get("id") if isinstance(data, dict) else None
+    if not file_id:
+        raise RuntimeError(f"pixeldrain returned no file id: {str(r.text)[:200]}")
+    return f"https://pixeldrain.com/api/file/{file_id}?download"
 
 
 def upload_tmpfiles(path):
@@ -95,20 +145,38 @@ def upload_0x0(path):
 # Order = most-reliable-first observed from CI. Temporary hosts are fine: the consumer fetches
 # the file within seconds of us returning the URL.
 PROVIDERS = [
+    # uguu first since 2026-10-21: on the live run the chain handed Instagram a tmpfiles.org
+    # URL that served text/html, and the post died minutes later with an opaque
+    # "Video Transcoding Error". uguu was the only host that returned the exact video bytes
+    # in a same-machine probe (pixeldrain 401, catbox 0-byte, litterbox 500, tmpfiles HTML).
+    # Files expire in ~3h, which is irrelevant: the platform fetches within seconds.
+    ("uguu", upload_uguu),
+    ("pixeldrain", upload_pixeldrain),
     ("catbox", upload_catbox),
     ("litterbox", upload_litterbox),
     ("tmpfiles", upload_tmpfiles),
-    ("uguu", upload_uguu),
     ("0x0", upload_0x0),
 ]
 
 
-def host(path):
-    """Return (url, provider). Raises RuntimeError if the whole chain fails."""
+def host(path, exclude=None, verify=True):
+    """Return (url, provider). Raises RuntimeError if the whole chain fails.
+
+    Every provider's URL must pass `verify_public_url` before it is returned: a host that
+    answers with a login wall / HTML error page would otherwise be handed to Instagram and
+    fail the post's transcode minutes later.
+    """
+    excluded = {str(name).strip().lower() for name in (exclude or []) if str(name).strip()}
+    size = os.path.getsize(path)
     errors = {}
     for name, fn in PROVIDERS:
+        if name.lower() in excluded:
+            continue
         try:
-            return fn(path), name
+            url = fn(path)
+            if verify:
+                verify_public_url(url, expected_size=size)
+            return url, name
         except Exception as e:
             errors[name] = str(e)[:160]
     raise RuntimeError(f"All public file hosts failed: {errors}")
@@ -117,17 +185,24 @@ def host(path):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--video", required=True)
+    parser.add_argument("--exclude", default="",
+                        help="Comma-separated providers to skip (used to force a different "
+                             "host when a platform rejects the first URL).")
+    parser.add_argument("--no-verify", action="store_true",
+                        help="Skip the MP4-bytes check (diagnostics only; never in CI).")
     args = parser.parse_args()
     load_env()
     if not os.path.isfile(args.video):
         fail(f"Video not found: {args.video}")
         return
+    exclude = [part for part in args.exclude.split(",") if part.strip()]
     try:
-        url, provider = host(args.video)
+        url, provider = host(args.video, exclude=exclude, verify=not args.no_verify)
     except RuntimeError as e:
         fail(str(e))
         return
-    emit({"url": url, "provider": provider})
+    emit({"url": url, "provider": provider, "verified": not args.no_verify,
+          "byte_size": os.path.getsize(args.video)})
 
 
 if __name__ == "__main__":

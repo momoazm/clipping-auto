@@ -69,6 +69,20 @@ TIKTOK_ENABLED = (
 def log(*a):
     print("[run_daily]", *a, file=sys.stderr, flush=True)
 
+def _gh_warning(message):
+    """Surface a condition as a yellow Actions annotation (also visible in plain logs)."""
+    print(f"::warning::{message}", flush=True)
+
+def platform_account_suspended(exc):
+    """True when a platform says the connected ACCOUNT is suspended (not the upload).
+
+    YouTube answers `403 ... reason: authenticatedUserAccountSuspended` from the upload
+    session call; Zernio passes the body through verbatim. A suspended channel can never be
+    retried into success, so the run must stop trying instead of failing every clip.
+    """
+    text = str(exc or "")
+    return "authenticatedUserAccountSuspended" in text or "account of the authenticated user is suspended" in text
+
 def purge_files(*paths):
     """Delete temp files once they're finally used (best-effort; never fails the run)."""
     for p in paths:
@@ -1242,6 +1256,8 @@ def main():
         public_url = None
         if "youtube" in summary.get("rate_limited_platforms", {}):
             entry["youtube_error"] = "skipped after Zernio account rate limit"
+        elif summary.get("youtube_unavailable"):
+            entry["youtube_error"] = "skipped: YouTube account suspended"
         else:
             try:
                 host = run_tool("host_public.py", "--video", short)
@@ -1264,6 +1280,19 @@ def main():
                 log(f"clip {n} YOUTUBE FAILED:", e)
                 note_rate_limit(summary, "youtube", e)
                 entry["youtube_error"] = str(e)
+                if platform_account_suspended(e):
+                    # YouTube answered 403 authenticatedUserAccountSuspended for the whole
+                    # channel (checked 2026-10-21: https://www.youtube.com/@itsmomoclips 404s).
+                    # No retry can fix a suspended account, so stop burning host uploads and
+                    # YouTube calls for the rest of this run and make the reason loud -- while
+                    # still letting the Instagram side of the same clip publish.
+                    summary["youtube_unavailable"] = {
+                        "reason": "authenticatedUserAccountSuspended",
+                        "detail": "YouTube reports the connected channel as suspended; "
+                                  "Instagram delivery continues.",
+                    }
+                    _gh_warning("YouTube account suspended -- skipping YouTube for the "
+                                "remaining clips this run (Instagram still publishes).")
         entry["youtube_uploaded"] = yt_ok
             
         if args.dry_run:
