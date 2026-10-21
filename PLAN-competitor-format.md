@@ -83,3 +83,31 @@ Vault summary: `PLAN-sharktank-batch-and-formats.md`
       artifact). `fit_hook_layout()` now shrinks the banner size (138 → 111 on the real hook)
       until every token fits in ≤3 lines, mirroring ranking-shorts' `_hook_layout`. Tests:
       `test_long_hook_shrinks_instead_of_truncating`, `test_fitted_hook_reaches_the_ass_style_and_event`.
+
+### E. Live delivery (manual runs with real uploads, 2026-10-21)
+
+Goal: prove the competitor format actually reaches the accounts, not just the renderer.
+
+- [x] E1. First live run (39571031055) built two valid clips (`media_contract.valid: true`) and
+      delivered NOTHING: Instagram "timed out after 300s" then `Video Transcoding Error ...
+      MediaInfoExtractionException`, YouTube "provider returned no YouTube error detail".
+- [x] E2. Hosting was the Instagram cause: `host_public.py` accepted any URL a host returned,
+      and tmpfiles.org answered with `text/html`. Now every candidate URL is verified for real
+      MP4 bytes (`ftyp` / `video/*`) and uguu is tried first (the only host that returned the
+      exact bytes in a same-machine probe: pixeldrain 401, catbox 0 bytes, litterbox 500).
+      Tests: `tests/test_delivery_platforms.py::TestPublicHostChain`.
+- [x] E3. YouTube was not a code bug: `GET /v1/posts/{id}` shows
+      `403 ... reason: authenticatedUserAccountSuspended`, and
+      `https://www.youtube.com/@itsmomoclips` returns 404 -- the channel is suspended.
+      `upload_youtube.py` now surfaces the provider's own message (it used to print
+      "no YouTube error detail"), `run_daily.py` skips YouTube for the rest of a run once it
+      sees the suspension, and `REQUIRED_PLATFORMS` is `instagram` so a dead platform cannot
+      fail a good Instagram post. `verify_accounts.py` probes the channel page and warns.
+- [x] E4. Live runs after the fixes: 39576795308, 39579711846, 39582167269 -- all green,
+      `status: uploaded`, 2 reels each, YouTube skipped from clip 2 onward. Reels verified
+      public via the Zernio API: DewF1lQkvr2, DewGw-dj-6N, DewKto_ihA2, DewLml2FGNV
+      (plus the two from the first green run).
+- BLOCKED (needs Moemen): appeal the YouTube suspension or connect a different channel in
+      Zernio, then set `REQUIRED_PLATFORMS: youtube,instagram` back in
+      `.github/workflows/clipping_daily.yml`. Nothing else is required -- the upload path is
+      already proven and will start working again.

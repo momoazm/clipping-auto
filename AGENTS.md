@@ -111,3 +111,25 @@ notification; Moemen decides whether to update `run_daily.py`'s default.
 > Note: per the user's "edit only `clipping/`" constraint, the **root** `AGENTS.md` is not
 > updated to list `clipping/` as a sibling project. Add that line later if the constraint
 > is lifted.
+
+## Delivery facts (updated 2026-10-21)
+
+- **Public hosting must prove it serves video bytes.** `host_public.py` verifies each
+  candidate URL (`ftyp` box / `video/*` content type) before returning it, and tries
+  `uguu` first. On 2026-10-21 the old order handed Instagram a tmpfiles.org URL that
+  answered `text/html`; the reel then died with an opaque
+  `Video Transcoding Error ... MediaInfoExtractionException`. Never drop the verification
+  or reorder a host to the front without re-probing (`pixeldrain` 401, `catbox` 0 bytes,
+  `litterbox` 500, `tmpfiles` HTML on that probe).
+- **The connected YouTube channel is suspended.** `@itsmomoclips` 404s and every upload
+  returns `403 authenticatedUserAccountSuspended`. `run_daily.py` detects that message,
+  skips YouTube for the rest of the run, and keeps going for Instagram;
+  `REQUIRED_PLATFORMS` in `clipping_daily.yml` is `instagram` until the channel is
+  appealed/restored or a different account is connected in Zernio. Restore
+  `youtube,instagram` there once it works again — nothing else needs to change.
+- **`verify_accounts.py` probes the public channel page**, because Zernio still reports a
+  suspended channel as `enabled=true`. A 404 raises a `::warning::` at the start of a run.
+- **`state/` ledgers are the memory.** `clipped_history.json` reservations are permanent
+  on purpose; widening `scan_depth` (config/channels.json, now 200) is the lever when the
+  feed looks "exhausted" — before 2026-10-21 a depth of 60 stopped one upload short of the
+  first untouched video and the channel posted nothing for three days.
