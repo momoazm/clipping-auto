@@ -5,7 +5,7 @@
   "clip_every_secs": 300,
   "min_clips_per_run": 2,
   "max_platform_posts_per_24h": 6,
-  "scan_depth": 60,
+  "scan_depth": 200,
   "max_video_attempts": 5,
   "max_source_attempts": 5,
   "target_secs": 35,

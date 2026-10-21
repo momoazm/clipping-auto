@@ -253,5 +253,34 @@ class TestTranscriptSnippet(unittest.TestCase):
         self.assertNotIn("  ", out)
 
 
+class TestSourcePoolDepth(unittest.TestCase):
+    """C7: a "pool exhausted" result must be able to show it scanned deep enough.
+
+    2026-10-16..10-20: every channel's first 60 uploads were already reserved while the
+    61st-65th were untouched, so scan_depth=60 made a healthy pool look like a drought
+    and the channel silently stopped posting for three scheduled days.
+    """
+
+    def test_configured_scan_depth_is_wide_enough(self):
+        cfg = json.loads((REPO / "config" / "channels.json").read_text(encoding="utf-8"))
+        self.assertGreaterEqual(
+            int(cfg["scan_depth"]), 120,
+            "scan_depth must leave headroom past the reserved window; 60 starved the feed")
+
+    def test_scan_report_counts_listed_vs_free_per_channel(self):
+        cache = {"MrBeast": [{"id": "a"}, {"id": "b"}, {"id": "c"}],
+                 "Beast Reacts": [{"id": "x"}]}
+        report = find_source_video.scan_report(cache, {"a", "x"}, 200)
+        self.assertEqual(report["depth"], 200)
+        self.assertEqual(report["listed"], {"MrBeast": 3, "Beast Reacts": 1})
+        self.assertEqual(report["free"], {"MrBeast": 2, "Beast Reacts": 0})
+
+    def test_scan_report_tolerates_channels_that_failed_to_fetch(self):
+        cache = {"MrBeast": [{"id": "a"}], "More MrBeast": []}
+        report = find_source_video.scan_report(cache, set(), 200)
+        self.assertEqual(report["listed"]["More MrBeast"], 0)
+        self.assertEqual(report["free"]["More MrBeast"], 0)
+
+
 if __name__ == "__main__":
     unittest.main()

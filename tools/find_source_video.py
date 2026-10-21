@@ -180,6 +180,21 @@ def incomplete_sources(state):
     return out
 
 
+def scan_report(cache, skip, depth):
+    """How deep the search actually went (channels listed vs still unclipped).
+
+    Emitted with the "all exhausted" failure: on 2026-10-16..10-20 the pool looked
+    exhausted only because scan_depth (60) stopped one upload short of the first
+    untouched video, and the payload gave no way to see that.
+    """
+    return {
+        "depth": depth,
+        "listed": {name: len(entries) for name, entries in cache.items()},
+        "free": {name: sum(1 for e in entries if e.get("id") not in skip)
+                 for name, entries in cache.items()},
+    }
+
+
 def channel_latest(url, depth):
     """Flat-extract a channel's newest uploads (newest first). No download, no API key."""
     from yt_dlp import YoutubeDL
@@ -304,8 +319,12 @@ def main():
                       "reason": "recent backlog (no brand-new uploads)"})
                 return
 
+    # Report HOW DEEP the scan went, not just that it came up empty: the per-channel
+    # listed/free counts make a too-shallow scan obvious instead of reading like a drought.
     fail("No unclipped source video found (channels + popular + backlog all exhausted).",
-         channel_errors=errors, skip_count=len(skip),
+         channel_errors=errors,
+         scan=scan_report(cache, skip, depth),
+         skip_count=len(skip),
          quarantined_count=len(exhausted_ids(attempt_ledger(state), attempts)))
 
 
