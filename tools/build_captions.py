@@ -77,6 +77,35 @@ def hook_line_count(hook, hook_size=138):
     return len(wrap_hook(hook, hook_char_budget(hook_size)))
 
 
+def hook_size_ladder(hook_size):
+    """Font sizes to try, largest first, before the banner is allowed to truncate."""
+    base = max(60, int(hook_size))
+    ladder = [max(60, int(round(base * factor)))
+              for factor in (1.0, 0.94, 0.88, 0.82, 0.76, 0.70, 0.64, 0.58)]
+    out = []
+    for size in ladder:
+        if size not in out:
+            out.append(size)
+    return out
+
+
+def fit_hook_layout(hook, hook_size=138, max_lines=3):
+    """(font_size, lines) for the banner: shrink the type until the hook fits whole.
+
+    A fixed 138px banner ellipsised a real source hook ("...OCEAN AT $16M..." on the
+    2026-10-21 dry run), which reads like a broken template. The 3-line ceiling stays;
+    the font gives way instead of the sentence.
+    """
+    tokens = _hook_tokens(hook)
+    ladder = hook_size_ladder(hook_size)
+    for size in ladder:
+        lines = wrap_hook(hook, hook_char_budget(size), max_lines)
+        if [token for line in lines for token in line] == tokens:
+            return size, lines
+    smallest = ladder[-1]
+    return smallest, wrap_hook(hook, hook_char_budget(smallest), max_lines)
+
+
 def hook_colors(style):
     """Resolve the banner palette from the preset, falling back to brand/theme.json."""
     palette = style.get("hook_colors")
@@ -106,9 +135,10 @@ def hook_color_for(token, is_last, palette):
     return palette["white"]
 
 
-def render_hook(hook, palette, uppercase=True, hook_size=138):
+def render_hook(hook, palette, uppercase=True, hook_size=138, lines=None):
     """Multi-color banner text: per-word colour tags + explicit \\N line breaks."""
-    lines = wrap_hook(hook, hook_char_budget(hook_size))
+    if lines is None:
+        lines = wrap_hook(hook, hook_char_budget(hook_size))
     flat = [(token, index == len(lines) - 1 and pos == len(line) - 1)
             for index, line in enumerate(lines) for pos, token in enumerate(line)]
     rendered, position = [], 0
@@ -211,6 +241,10 @@ def build_ass(words, style, animate, hook=None, hook_secs=1.6,
     # per-word multi-colour palette (the competitor format); the default stays the 1.6s flash.
     hook_size = int(style.get("hook_font_size") or min(150, int(size * 1.15)))
     hook_size = max(60, hook_size)
+    hook_lines = None
+    if hook:
+        # Shrink the banner type until the whole hook fits (see fit_hook_layout).
+        hook_size, hook_lines = fit_hook_layout(hook, hook_size)
     hook_margin = int(style.get("hook_margin_v_px", 380))
     palette = hook_colors(style)
 
@@ -247,7 +281,8 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     if hook:
         htext = esc(hook.upper() if upper else hook)
         if palette:
-            htext = render_hook(hook, palette, uppercase=upper, hook_size=hook_size)
+            htext = render_hook(hook, palette, uppercase=upper, hook_size=hook_size,
+                                lines=hook_lines)
         persistent = str(style.get("hook_mode", "")).lower() == "persistent"
         until = min(float(total), float(hook_secs)) if total else float(hook_secs)
         if persistent and total:

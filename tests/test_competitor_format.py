@@ -162,6 +162,34 @@ class CompetitorCaptionTest(unittest.TestCase):
         for line in lines:
             self.assertLessEqual(len(" ".join(line)), budget + 4, line)
 
+    def test_long_hook_shrinks_instead_of_truncating(self):
+        _, style = build_captions.load_style("competitor")
+        hook = "HELICOPTER JUMP INTO OCEAN AT $16M ISLAND"
+        size, lines = build_captions.fit_hook_layout(hook, style["hook_font_size"])
+        flat = " ".join(" ".join(line) for line in lines)
+        self.assertLess(size, style["hook_font_size"], "the banner should give up type, not words")
+        self.assertLessEqual(len(lines), 3)
+        self.assertNotIn("...", flat)
+        self.assertEqual(flat, hook, "every hook token must survive the wrap")
+
+    def test_fitted_hook_reaches_the_ass_style_and_event(self):
+        _, style = build_captions.load_style("competitor")
+        hook = "HELICOPTER JUMP INTO OCEAN AT $16M ISLAND"
+        ass, _ = build_captions.build_ass(self.WORDS, style, True, hook=hook, total=42.0)
+        fitted, _ = build_captions.fit_hook_layout(hook, style["hook_font_size"])
+        hook_style = [line for line in ass.splitlines() if line.startswith("Style: Hook")][0]
+        self.assertIn(f",{fitted},", hook_style)
+        event = self._hook_events(ass)[0]
+        self.assertNotIn("...", event)
+        for token in hook.split():
+            self.assertIn(token, event)
+
+    def test_hook_that_fits_keeps_the_configured_size(self):
+        _, style = build_captions.load_style("competitor")
+        size, lines = build_captions.fit_hook_layout("HE LOST $1,000,000", style["hook_font_size"])
+        self.assertEqual(size, style["hook_font_size"])
+        self.assertEqual(" ".join(" ".join(line) for line in lines), "HE LOST $1,000,000")
+
     def test_old_presets_keep_the_flash_and_stay_single_color(self):
         for preset in ("hormozi", "brand", "clean"):
             _, style = build_captions.load_style(preset)
