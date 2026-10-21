@@ -145,6 +145,36 @@ class TestPublicHostChain(unittest.TestCase):
             self.assertIn(name, names)
 
 
+class TestYouTubeErrorDetail(unittest.TestCase):
+    """A suspended channel used to surface as "provider returned no error detail"."""
+
+    ENTRY = {
+        "status": "failed",
+        "errorMessage": ("YouTube upload failed: YouTube upload session initialization failed: "
+                         '403 {"error": {"reason": "authenticatedUserAccountSuspended"}}'),
+        "errorCategory": "platform_rejected",
+        "errorSource": "platform",
+    }
+
+    def test_detail_carries_the_platforms_message(self):
+        import upload_youtube
+        detail = upload_youtube._platform_detail(self.ENTRY)
+        self.assertIn("authenticatedUserAccountSuspended", detail)
+        self.assertIn("platform_rejected", detail)
+        self.assertNotIn("no YouTube error detail", detail)
+
+    def test_detail_falls_back_only_when_the_provider_said_nothing(self):
+        import upload_youtube
+        self.assertIn("no YouTube error detail", upload_youtube._platform_detail({}))
+
+    def test_run_daily_treats_that_detail_as_a_suspended_account(self):
+        import upload_youtube
+        raised = RuntimeError(
+            f"Zernio publish did not complete (status=failed; "
+            f"{upload_youtube._platform_detail(self.ENTRY)}).")
+        self.assertTrue(run_daily.platform_account_suspended(raised))
+
+
 class TestWorkflowPlatformContract(unittest.TestCase):
     def test_job_only_requires_instagram_while_youtube_is_suspended(self):
         text = (REPO / ".github" / "workflows" / "clipping_daily.yml").read_text("utf-8")

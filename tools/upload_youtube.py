@@ -44,11 +44,20 @@ def _platform_entry(post):
 
 
 def _platform_detail(entry):
-    details = {key: entry.get(key) for key in ("error", "code", "message", "platformError")
-               if entry.get(key) not in (None, "", {})}
+    """The provider's own words, not "no detail".
+
+    Zernio puts the platform's error in `errorMessage` / `platformError` (YouTube, for
+    example: `403 ... reason: authenticatedUserAccountSuspended`). Omitting those fields
+    turned every YouTube failure into "provider returned no YouTube error detail", which hid
+    a suspended channel for days.
+    """
+    details = {key: entry.get(key) for key in (
+        "errorMessage", "errorCategory", "errorSource", "error",
+        "code", "message", "platformError")
+        if entry.get(key) not in (None, "", {})}
     if not details:
         return "provider returned no YouTube error detail"
-    return json.dumps(details, ensure_ascii=True, separators=(",", ":"))[:600]
+    return json.dumps(details, ensure_ascii=True, separators=(",", ":"))[:900]
 
 
 def create_post(payload, api_key, max_tries=5):
