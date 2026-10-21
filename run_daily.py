@@ -1144,6 +1144,13 @@ def main():
                     log(f"clip {n}: trying weekly style experiment -> {clip_style}")
             except Exception as e:
                 log(f"pick_weekly_style failed (keeping the default {clip_style}):", e)
+        # Record the resolved style per clip so run_summary.json (and the Actions log)
+        # prove which caption format a run actually rendered -- the ship check for the
+        # competitor-format rollout reads this field.
+        summary.setdefault("caption_styles", []).append(
+            {"clip": n, "style": clip_style, "experiment": is_experiment})
+        log(f"clip {n}: caption style -> {clip_style}"
+            + (" (weekly experiment)" if is_experiment else ""))
 
         # 1. Process the video (if this fails, skip to next clip)
         render_meta = {}
