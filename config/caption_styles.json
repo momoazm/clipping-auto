@@ -1,7 +1,34 @@
 {
-  "_note": "Caption style presets for build_captions.py. Mechanics modeled on top clipping accounts: bold display font, 2-4 words on screen at once, the currently-spoken word highlighted, thick outline for legibility over any footage, lower-third placement. Colors are #RRGGBB; build_captions.py converts them to ASS &HBBGGRR&. 'highlight' may be the literal string 'theme_gold' to pull brand/theme.json colors.gold.",
-  "default_style": "hormozi",
+  "_note": "Caption style presets for build_captions.py. Mechanics modeled on top clipping accounts: bold display font, 2-4 words on screen at once, the currently-spoken word highlighted, thick outline for legibility over any footage, lower-third placement. Colors are #RRGGBB; build_captions.py converts them to ASS &HBBGGRR&. 'highlight' may be the literal string 'theme_gold' to pull brand/theme.json colors.gold. 'hook_mode': 'persistent' pins the hook banner at the top for the WHOLE clip (competitor format) instead of the default 1.6s flash; 'hook_colors' turns on the per-word multi-color banner (money/numbers gold, conflict words alert, outcome words accent, last word gold_light).",
+  "default_style": "competitor",
   "styles": {
+    "competitor": {
+      "description": "2026-10-21 competitor format: full-frame crop, big ALL-CAPS hook banner pinned at the top for the whole clip (multi-color key words), centered 3-word captions with the spoken word in gold, thick black stroke. No title card, no badge.",
+      "font": "Anton",
+      "font_size": 120,
+      "uppercase": true,
+      "primary_color": "#FFFFFF",
+      "highlight_color": "theme_gold",
+      "outline_color": "#000000",
+      "outline_px": 8,
+      "shadow_px": 3,
+      "bold": true,
+      "words_per_screen": 3,
+      "position": "lower-third",
+      "margin_v_px": 360,
+      "pop_scale": 1.12,
+      "animation": "word-highlight",
+      "hook_mode": "persistent",
+      "hook_font_size": 118,
+      "hook_margin_v_px": 300,
+      "hook_colors": {
+        "gold": "theme_gold",
+        "gold_light": "#F4D277",
+        "accent": "#2E7C8C",
+        "alert": "#E2564A",
+        "white": "#FFFFFF"
+      }
+    },
     "hormozi": {
       "description": "Classic viral look: UPPERCASE, white words, active word in yellow, fat black stroke.",
       "font": "Anton",

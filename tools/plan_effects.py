@@ -15,7 +15,7 @@ rather than overwhelm.
 
 Usage:
     python tools/plan_effects.py --start 12.5 --end 58.0 \
-        [--emphasis "recreated,Squid Game,real life"] [--style hormozi] \
+        [--emphasis "recreated,Squid Game,real life"] [--style competitor] \
         [--transcript .tmp/transcript.json] [--out .tmp/cues_01.json]
 
 Prints JSON: {"sfx":[{"name","t"}], "punch_ins":[t,...], "duration", "screens"}
@@ -39,7 +39,7 @@ def main():
     parser.add_argument("--start", type=float, required=True)
     parser.add_argument("--end", type=float, required=True)
     parser.add_argument("--emphasis", default="", help="comma-separated emphasis words/phrases")
-    parser.add_argument("--style", default="hormozi")
+    parser.add_argument("--style", default=None)
     parser.add_argument("--out", default=None)
     parser.add_argument("--max-whooshes", type=int, default=6)
     parser.add_argument("--max-pops", type=int, default=6)
@@ -74,7 +74,7 @@ def main():
              start=args.start, end=args.end)
         return
 
-    style_name, style = bc.load_style(args.style)
+    style_name, style = bc.load_style(args.style or bc.default_style_name())
     per_screen = style.get("words_per_screen", 3)
     screens = bc.group_screens(words, per_screen)
 

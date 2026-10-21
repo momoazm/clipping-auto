@@ -5,7 +5,7 @@ Rotation is keyed by ISO week number, so calling it more than once in the same
 week always returns the same style (idempotent across retried GH Actions runs).
 `--consume` marks it used: the FIRST caller in a given week gets the
 experimental style; every later call that week gets style=null (fall back to
-the normal default, "hormozi").
+the normal default, which since 2026-10-21 is the competitor format).
 
 Called by run_daily.py (clip 01 of whichever daily run happens first that
 week) and by check_style_experiment.py (to queue next week's style after
@@ -26,7 +26,9 @@ import json
 from _common import REPO_ROOT, emit
 
 STATE_PATH = REPO_ROOT / "state" / "style_experiment.json"
-# config/caption_styles.json presets; "hormozi" is the everyday default.
+# config/caption_styles.json presets. These are the ALTERNATIVE looks tested against the
+# everyday default (which since 2026-10-21 is the `competitor` format), so the experiment
+# always compares a different look to the shipped one.
 STYLES = ["hormozi", "brand", "clean"]
 
 

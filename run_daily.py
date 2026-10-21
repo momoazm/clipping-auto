@@ -19,6 +19,8 @@ DELIVERY_COOLDOWNS = HERE / "state" / "delivery_cooldowns.json"
 
 sys.path.insert(0, str(TOOLS))
 from _common import log_ig_post  # noqa: E402
+import build_captions  # noqa: E402  (default caption preset resolution)
+import select_clips  # noqa: E402  (title QA helpers, shared with the selector)
 # Crash-safe local ledger: written the instant a source is picked, BEFORE any heavy
 # download/transcribe/render/upload. Untracked + gitignored for local runs, while the
 # GitHub workflow makes a tracked reservation commit before processing starts. Both ledgers
@@ -1108,15 +1110,32 @@ def main():
             summary["warnings"].append({"clip": n, "stage": "safety",
                                         "error": f"title flags safety screen ({flag.group(0).lower()})"})
             continue
+        # Title QA, again, at the last gate before the render: the selector's screen and this
+        # one are independent so a stale .tmp/clips.json (or a future selector path) can never
+        # ship a fragment. `suggested_title` is the post title AND the burned hook card.
+        title_problem = select_clips.title_quality_problem(hook)
+        if title_problem:
+            rebuilt = select_clips.title_from_transcript(clip_transcript_snippet(clip, 1200))
+            if not select_clips.title_quality_problem(rebuilt):
+                log(f"clip {n} title rewritten ({title_problem}) -> {rebuilt!r}")
+                summary["warnings"].append({"clip": n, "stage": "title_qa",
+                                            "error": title_problem, "title": rebuilt})
+                hook = rebuilt
+            else:
+                log(f"clip {n} SKIPPED: unusable title ({title_problem})")
+                summary["warnings"].append({"clip": n, "stage": "title_qa",
+                                            "error": f"unusable title: {title_problem}"})
+                continue
         short = str(TMP / f"short_{n}.mp4")
 
         # Weekly style experiment (2026-07-12): the FIRST clip of whichever daily run
         # happens first in a new ISO week TRIES that week's rotated caption style; the
         # slot is only actually claimed (see attempt_instagram_upload below) once that
         # clip's Instagram post succeeds, so a failed upload doesn't burn the week's
-        # only experiment. Every other clip stays on the normal "hormozi" default. See
-        # tools/pick_weekly_style.py.
-        clip_style, is_experiment = "hormozi", False
+        # only experiment. Every other clip stays on the normal default, which since
+        # 2026-10-21 is the competitor format (config/caption_styles.json default_style,
+        # overridable with CLIP_CAPTION_STYLE). See tools/pick_weekly_style.py.
+        clip_style, is_experiment = build_captions.default_style_name(), False
         if idx == 1 and not args.dry_run:
             try:
                 weekly = run_tool("pick_weekly_style.py")  # peek only, don't claim yet
@@ -1124,7 +1143,7 @@ def main():
                     clip_style, is_experiment = weekly["style"], True
                     log(f"clip {n}: trying weekly style experiment -> {clip_style}")
             except Exception as e:
-                log("pick_weekly_style failed (falling back to hormozi):", e)
+                log(f"pick_weekly_style failed (keeping the default {clip_style}):", e)
 
         # 1. Process the video (if this fails, skip to next clip)
         render_meta = {}

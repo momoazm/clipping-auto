@@ -277,9 +277,16 @@ def _safe_title(raw_title, hook, clip_text):
         drop_odds and re.search(r"\bquit(?:s|ting)?\b.*\bwin(?:s|ning)?\b", title.lower())
     )
 
-    # Passes both screens -> keep the model's title (only truncate to the hook-card limit).
+    # Passes both screens -> keep the model's title (truncated at a WORD boundary, never a
+    # blind character slice).
     if title and not UNSAFE_TITLE_RE.search(title) and not reversed_agent:
-        return title[:80].rstrip(" -,:;") or "MrBeast Challenge Moment"
+        if not title_quality_problem(title):
+            return word_cut(title, 80)
+        # The model returned a fragment ("the two. And even though the workouts..."): rebuild
+        # from the words actually spoken inside the clip instead of shipping it.
+        rebuilt = title_from_transcript(clip_text)
+        if not title_quality_problem(rebuilt):
+            return rebuilt
 
     # Rejected (or the model returned nothing): build the deterministic replacement from
     # the transcript evidence, the way the old always-on rewrite did.
@@ -299,12 +306,248 @@ def _safe_title(raw_title, hook, clip_text):
     # for everyone still competing.
     if drop_odds and re.search(r"\bquit(?:s|ting)?\b.*\bwin(?:s|ning)?\b", title.lower()):
         title = "Someone Dropped - Now the Mansion Odds Improve!"
-    title = title[:80].rstrip(" -,:;") or "MrBeast Challenge Moment"
+    title = word_cut(title, 80)
     # Last line of defence: if the fallback itself still trips the unsafe screen, fall all
     # the way back to the neutral string rather than shipping an unsafe title.
-    if UNSAFE_TITLE_RE.search(title):
-        title = "MrBeast Challenge Moment"
+    if UNSAFE_TITLE_RE.search(title) or title_quality_problem(title):
+        rebuilt = title_from_transcript(clip_text)
+        title = rebuilt if not title_quality_problem(rebuilt) else NEUTRAL_TITLE
     return title
+
+
+# --- Title quality -------------------------------------------------------------
+# The 2026-10-20 uploads shipped raw ASR fragments as the post title:
+#   "the two. And even though the workouts were still grueling, they were startin"
+#   "watching him be so consistent and work so I hard, have like a whole new vers"
+# Both came from `deterministic_fallback`: hook = first 16 words, title = hook[:76]. A blind
+# character slice cut the last word in half, and nothing between the selector and the upload
+# ever checked that a title was a sentence. Everything below is deterministic and offline.
+
+TERMINAL = (".", "!", "?", "…")
+# Lowercase discourse markers that only make sense mid-story. `_LEADING_FILLER` is
+# case-SENSITIVE on purpose: "But He Never Expected This." is a fine curiosity title, while
+# "but he never expected this" is the middle of somebody's sentence. Cleaning the transcript
+# (`_LEADING_FILLER_ANY`) strips them whatever the case.
+_LEADING_FILLER = re.compile(
+    r"^(?:and|but|so|then|also|plus|well|okay|ok|yeah|like|you know|i mean|basically|"
+    r"actually|literally|right|now)\b[\s,:-]*")
+_LEADING_FILLER_ANY = re.compile(_LEADING_FILLER.pattern, re.IGNORECASE)
+_TRAILING_JUNK = re.compile(r"[\s,;:–—-]+$")
+# A clause that opens on a subordinate conjunction reads as a continuation, not a title.
+_SUBORDINATE_OPENER = re.compile(r"^(?:even\s+though|even\s+if|although|though|whereas)\b", re.I)
+_HANGING_TAIL = re.compile(
+    r"\s+(?:and|but|or|so|that|which|with|from|for|of|to|in|on|at|by|as|if|the|a|an|is|"
+    r"was|were|have|has|had|will|would|can|could|you|your|we|they)\s*$", re.I)
+_PART_LABEL = re.compile(r"\(\s*part\s*\d+\s*/\s*\d+\s*\)|\bpart\s*\d+\s*/\s*\d+\b", re.I)
+_NUMBER_WORDS = {
+    "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8,
+    "nine": 9, "ten": 10, "eleven": 11, "twelve": 12, "fifteen": 15, "twenty": 20,
+    "thirty": 30, "forty": 40, "fifty": 50, "sixty": 60, "seventy": 70, "eighty": 80,
+    "ninety": 90,
+}
+_EMOJI = re.compile("[\U0001F300-\U0001FAFF\U00002600-\U000027BF]")
+NEUTRAL_TITLE = "MrBeast Challenge Moment"
+
+
+def _clean_text(text):
+    return re.sub(r"\s+", " ", str(text or "")).strip()
+
+
+def _punch_numbers(text):
+    """'ten percent' -> '10%', 'one hundred and fifty thousand dollars' -> '$150,000'.
+
+    Competitor clip titles lead with a concrete number; ASR writes it out in words."""
+    def percent(match):
+        word = match.group(1).lower()
+        return f"{_NUMBER_WORDS.get(word, word)}%"
+
+    text = re.sub(
+        r"\b(" + "|".join(_NUMBER_WORDS) + r"|\d+)\s+percent\b", percent, text,
+        flags=re.IGNORECASE)
+
+    def words_to_number(phrase):
+        total, current = 0, 0
+        for token in phrase.lower().replace("-", " ").split():
+            if token in _NUMBER_WORDS:
+                current += _NUMBER_WORDS[token]
+            elif token == "hundred":
+                current = (current or 1) * 100
+            elif token in {"thousand", "million", "billion"}:
+                total += (current or 1) * {"thousand": 1_000, "million": 1_000_000,
+                                           "billion": 1_000_000_000}[token]
+                current = 0
+            elif token == "and":
+                continue
+            else:
+                return None
+        return total + current
+
+    def money(match):
+        value = words_to_number(match.group(1))
+        return f"${value:,}" if value else match.group(0)
+
+    number_words = "|".join(_NUMBER_WORDS)
+    return re.sub(
+        r"\b((?:(?:" + number_words + r"|hundred|and|thousand|million|billion)\s+){1,7})"
+        r"dollars?\b", money, text, flags=re.IGNORECASE)
+
+
+def word_cut(text, max_len=70, finish=False):
+    """Hard cap at a WORD boundary -- never `[:76]` mid-word.
+
+    `finish=True` closes the clause with terminal punctuation (used when building a title);
+    the default leaves an already-complete title exactly as the model wrote it.
+    """
+    text = _clean_text(text)
+    if len(text) <= max_len:
+        if finish and text and text[-1] not in TERMINAL:
+            return text + "."
+        return text
+    cut = text[:max_len].rsplit(" ", 1)[0].rstrip(" ,;:-–—")
+    if not cut:
+        return NEUTRAL_TITLE
+    if finish and cut[-1] not in TERMINAL:
+        return cut + "."
+    return cut
+
+
+def sentence_candidates(text):
+    """Split a transcript blob into standalone, capitalised, punctuated sentences."""
+    blob = _clean_text(text).replace("’", "'").replace("“", '"').replace("”", '"')
+    out = []
+    for part in re.split(r"(?<=[.!?])\s+", blob):
+        sentence = _clean_text(part)
+        for _ in range(3):
+            stripped = _LEADING_FILLER_ANY.sub("", sentence)
+            if stripped == sentence:
+                break
+            sentence = stripped
+        sentence = _HANGING_TAIL.sub("", _TRAILING_JUNK.sub("", sentence)).strip(" \"'")
+        if len(sentence) < 16 or _SUBORDINATE_OPENER.match(sentence):
+            continue
+        sentence = _punch_numbers(sentence)
+        match = re.search(r"[A-Za-z]", sentence)
+        if match:                       # capitalise without touching names/acronyms
+            index = match.start()
+            sentence = sentence[:index] + sentence[index].upper() + sentence[index + 1:]
+        if sentence[-1] not in TERMINAL:
+            sentence += "."
+        if len(sentence) > 84:
+            # Long ASR sentences are usually several clauses; keep the strongest clause that
+            # actually fits instead of dropping real evidence (the money is often mid-sentence).
+            clauses = [_clean_text(c) for c in
+                       re.split(r"\s+(?:and|but|because|so|which|that|then)\s+", sentence,
+                                flags=re.IGNORECASE)]
+            clauses = [c for c in clauses if len(c) >= 16]
+            if not clauses:
+                continue
+            best = max(clauses, key=lambda c: (bool(re.search(r"[$%]|\d", c)),
+                                               _title_score(c)))
+            sentence = best if best[-1] in TERMINAL else best + "."
+        out.append(sentence)
+    return out
+
+
+def _title_score(title):
+    score = 0
+    score += min(30, len(HOOK_CONCRETE_TERMS.findall(title)) * 8)
+    if re.search(r"\$\s?\d|\b\d{1,3}%", title):
+        score += 8
+    if 28 <= len(title) <= 70:
+        score += 10
+    elif len(title) <= 80:
+        score += 4
+    if title.endswith("?"):
+        score += 3
+    if re.match(r"^(?:he|she|they|this|that|the|why|how|what)\b", title, re.I):
+        score += 2
+    # A clause that opens on a subordinate/prepositional phrase reads as a continuation.
+    if re.match(r"^(?:and|but|so|because|although|though|when|if|while|with|for|from|"
+                r"after|before|as|that|which)\b", title, re.I):
+        score -= 6
+    return score
+
+
+def _finish_clause(text, max_len=70):
+    """One raw clause -> a capitalised, punctuated, word-boundary-safe title (or '')."""
+    clause = _clean_text(text).strip(" ,;:-")
+    if not clause:
+        return ""
+    if re.search(r"[.!?]\s+\S", clause):
+        # Still two sentences: keep the last one, which is the clause that lands the point.
+        clause = _clean_text(re.split(r"(?<=[.!?])\s+", clause)[-1])
+    clause = word_cut(clause, max_len)
+    # Trim AFTER the cut too: a cut can leave a hanging connector ("...it was easy but").
+    clause = _HANGING_TAIL.sub("", clause).strip(" ,;:-")
+    if not clause:
+        return ""
+    match = re.search(r"[A-Za-z]", clause)
+    if match:                       # capitalise without touching names/acronyms
+        index = match.start()
+        clause = clause[:index] + clause[index].upper() + clause[index + 1:]
+    if clause[-1] not in TERMINAL:
+        clause += "."
+    if len(clause) < 16 or _SUBORDINATE_OPENER.match(clause):
+        return ""
+    return clause
+
+
+def title_from_transcript(text, max_len=70):
+    """A complete, standalone post title built from the clip's own words.
+
+    Never cuts mid-word, never returns a lowercase ASR fragment, never invents a claim."""
+    prepared = [_finish_clause(c, max_len) for c in sentence_candidates(text)]
+    prepared = [c for c in prepared if c]
+    if prepared:
+        return max(prepared, key=_title_score)
+    # No sentence boundary at all (a reaction clip): keep the strongest clause that fits and
+    # finish it, which still reads as a sentence.
+    blob = _clean_text(text)
+    if not blob:
+        return NEUTRAL_TITLE
+    for _ in range(3):
+        stripped = _LEADING_FILLER_ANY.sub("", blob)
+        if stripped == blob:
+            break
+        blob = stripped
+    blob = _punch_numbers(blob)
+    clauses = [c for c in re.split(
+        r"\s+(?:and|but|because|so|which|that|then)\s+", blob, flags=re.IGNORECASE) if c]
+    for clause in sorted(clauses or [blob], key=len, reverse=True):
+        finished = _finish_clause(clause, max_len)
+        if finished:
+            return finished
+    return NEUTRAL_TITLE
+
+
+def title_quality_problem(title):
+    """Return a reason string if `title` would ship as an ASR fragment, else None."""
+    text = _clean_text(title)
+    if not text:
+        return "empty"
+    if len(text) < 16:
+        return "too short"
+    if len(text) > 84:
+        return "too long"
+    if "#" in text or _EMOJI.search(text):
+        return "hashtag or emoji"
+    if _PART_LABEL.search(text):
+        return "part label"
+    if len(text.split()) > 16:
+        return "too many words for one title"
+    if _LEADING_FILLER.match(text):
+        return "starts with a filler word"
+    if text[0].islower():
+        # The exact shipped bug: the title starts mid-sentence because the slice began there.
+        return "starts lowercase (mid-sentence fragment)"
+    if _SUBORDINATE_OPENER.match(text):
+        return "starts with a subordinate clause (fragment)"
+    if text[-1] not in TERMINAL and _HANGING_TAIL.search(text):
+        # The other shipped bug: a blind character slice left "...wanted fifty thousand for".
+        return "ends on a hanging connector (truncated)"
+    if re.search(r"[.!?]\s+\S", text):
+        return "multiple sentences"
+    return None
 
 
 # --- provider chain (OpenAI-compatible + Gemini + Groq SDK) ----------------
@@ -540,6 +783,12 @@ def deterministic_fallback(words, count, target_secs, max_secs, excluded_windows
             if word.get("start", 0) >= item["start"] and word.get("end", 0) <= item["end"]
         ).strip()
         hook = " ".join(text.split()[:16])
+        # The title is NOT the hook: the hook is the first words spoken (a fragment by
+        # definition), the title must read as a complete sentence. `_safe_title` runs the
+        # quality screen on both, so a fragment can never reach the uploader.
+        candidate_title = title_from_transcript(text)
+        if title_quality_problem(candidate_title):
+            candidate_title = hook
         result.append({
             "start": item["start"],
             "end": item["end"],
@@ -547,7 +796,7 @@ def deterministic_fallback(words, count, target_secs, max_secs, excluded_windows
             "hook": hook,
             "reason": "Evenly distributed transcript fallback after LLM provider timeouts.",
             "virality_score": 0,
-            "suggested_title": _safe_title(hook[:76], hook, text),
+            "suggested_title": _safe_title(candidate_title, hook, text),
             "focus_mode": _infer_focus_mode(text),
             "action_anchor": _find_action_anchor(words, item["start"], item["end"]),
             "hook_signal_score": hook_signal_score(hook, hook, "", text,
