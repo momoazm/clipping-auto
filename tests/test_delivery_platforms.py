@@ -14,6 +14,7 @@ Run from the repo root with the system python:
 """
 import contextlib
 import io
+import json
 import os
 import sys
 import tempfile
@@ -214,6 +215,64 @@ class TestChannelLivenessProbe(unittest.TestCase):
     def test_missing_username_is_not_a_probe(self):
         import verify_accounts
         self.assertIsNone(verify_accounts.channel_liveness("")["reachable"])
+
+
+class TestReservationBudgetGuard(unittest.TestCase):
+    """A full rolling budget must not permanently burn a source.
+
+    `clipped_history.json` reservations are forever, so reserving before the budget check
+    meant every run after the account hit its cap consumed a source and posted nothing.
+    """
+
+    BLOCKED = {"max_posts_per_24h": 6, "requested": 6,
+               "recent_posts": {"instagram": 6},
+               "blocked": {"instagram": {"reason": "rolling_24h_post_budget"}}}
+
+    def _tmpdir(self):
+        path = Path(tempfile.mkdtemp())
+        self.addCleanup(lambda: __import__("shutil").rmtree(path, ignore_errors=True))
+        return path
+
+    def test_full_budget_reserves_nothing(self):
+        import run_daily
+        tmpdir = self._tmpdir()
+        with mock.patch.object(run_daily, "delivery_budget_guard",
+                              return_value=self.BLOCKED), \
+                mock.patch.object(run_daily, "run_tool") as run_tool, \
+                mock.patch.object(run_daily, "mark_ledger") as mark_ledger, \
+                mock.patch.object(run_daily, "record_attempts") as record_attempts, \
+                mock.patch.object(run_daily, "TMP", tmpdir), \
+                mock.patch.object(sys, "argv", ["run_daily.py", "--reserve-source"]):
+            with contextlib.redirect_stdout(io.StringIO()) as out:
+                run_daily.main()
+
+        payload = json.loads(out.getvalue())
+        self.assertEqual(payload["status"], "quota_guarded")
+        run_tool.assert_not_called()
+        mark_ledger.assert_not_called()
+        record_attempts.assert_not_called()
+        marker = json.loads((tmpdir / "source_reservation.json").read_text("utf-8"))
+        self.assertEqual(marker["skipped"], "delivery_budget")
+        self.assertIsNone(marker["src"])
+
+    def test_skipped_reservation_is_a_clean_no_op(self):
+        import run_daily
+        tmpdir = self._tmpdir()
+        path = tmpdir / "source_reservation.json"
+        path.write_text(json.dumps({"src": None, "skipped": "delivery_budget",
+                                    "delivery_budget": self.BLOCKED, "attempted": []}),
+                        encoding="utf-8")
+        with mock.patch.object(run_daily, "delivery_budget_guard",
+                              return_value={"blocked": {}, "max_posts_per_24h": 6,
+                                            "requested": 6, "recent_posts": {}}), \
+                mock.patch.object(sys, "argv",
+                                  ["run_daily.py", "--source-reservation", str(path)]):
+            with contextlib.redirect_stdout(io.StringIO()) as out:
+                run_daily.main()
+
+        payload = json.loads(out.getvalue())
+        self.assertEqual(payload["status"], "quota_guarded")
+        self.assertIn("no source was reserved", payload["detail"])
 
 
 class TestWorkflowPlatformContract(unittest.TestCase):

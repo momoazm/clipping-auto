@@ -841,6 +841,21 @@ def main():
     reserved_attempts = []
     if args.source_reservation:
         reservation = load_json(args.source_reservation, {})
+        if isinstance(reservation, dict) and reservation.get("skipped"):
+            # The reserving step found the rolling delivery budget already full and
+            # deliberately left the source alone -- a clean no-op, exactly like the guard
+            # below stops a run that would have posted nothing.
+            print(json.dumps({
+                "date": datetime.date.today().isoformat(),
+                "dry_run": args.dry_run,
+                "status": "quota_guarded",
+                "detail": "Delivery budget was already full before processing; "
+                          "no source was reserved and nothing was published.",
+                "delivery_budget": reservation.get("delivery_budget") or {},
+                "attempted_sources": list(reservation.get("attempted") or []),
+                "errors": [], "warnings": [],
+            }, indent=2))
+            return
         reserved_src = reservation.get("src") if isinstance(reservation, dict) else None
         reserved_attempts = list(reservation.get("attempted") or []) if isinstance(reservation, dict) else []
         if not isinstance(reserved_src, dict) or not reserved_src.get("video_id") or not reserved_src.get("url"):
@@ -866,6 +881,22 @@ def main():
         reserved_attempts = [args.source_id]
 
     if args.reserve_source:
+        # Never burn a permanent reservation for a run that cannot publish: delivery_budget_guard
+        # counts the rolling 24h platform posts, and a blocked budget is a clean no-op. Before
+        # 2026-10-21 the reservation happened first, so every run after the account hit its cap
+        # silently consumed one source (clipped_history.json is never rewritten) and posted nothing.
+        early_budget = delivery_budget_guard(required_platforms, clips_per_day, cfg)
+        if early_budget.get("blocked"):
+            payload = {"status": "quota_guarded",
+                       "detail": "Delivery budget already full; no source was reserved.",
+                       "delivery_budget": early_budget, "attempted_sources": reserved_attempts}
+            _atomic_write_json(TMP / "source_reservation.json", {
+                "src": None, "skipped": "delivery_budget",
+                "delivery_budget": early_budget, "attempted": reserved_attempts,
+                "skipped_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            })
+            print(json.dumps(payload, indent=2))
+            return
         exclude = ",".join(sorted(ledger_ids))
         try:
             reserved_src = run_tool("find_source_video.py", "--exclude", exclude)
