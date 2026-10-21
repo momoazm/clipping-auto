@@ -1431,6 +1431,50 @@
           "effects": "full"
         }
       }
+    },
+    {
+      "post_id": "6ad8904e58670faf0da2206e",
+      "posted_at": "2026-10-21T10:14:13.600450+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "01",
+        "hook": "He Hallucinates Birds in Solitary Confinement",
+        "hook_signal_score": 50,
+        "duration_sec": 33.45,
+        "focus_mode": "speaker",
+        "hook_variant": "specific_claim",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -11.2,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6ad8920e83ff74f2fffcd2d7",
+      "posted_at": "2026-10-21T10:22:08.524258+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "02",
+        "hook": "He Counts Every Rice Grain Losing His Mind",
+        "hook_signal_score": 42,
+        "duration_sec": 35.09,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -12.2,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
     }
   ]
 }

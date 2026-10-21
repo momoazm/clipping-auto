@@ -1651,6 +1651,39 @@
       "source_duration": 934,
       "target_clip_count": 4,
       "remaining_clips": 0
+    },
+    {
+      "source_id": "K_CbgLpvH9E",
+      "clip_video_ids": [],
+      "youtube_post_ids": [],
+      "instagram_post_ids": [
+        "6ad8904e58670faf0da2206e",
+        "6ad8920e83ff74f2fffcd2d7"
+      ],
+      "tiktok_post_ids": [],
+      "platform_post_ids": [
+        "6ad8904e58670faf0da2206e",
+        "6ad8920e83ff74f2fffcd2d7"
+      ],
+      "clip_windows": [
+        {
+          "start": 408.988,
+          "end": 442.438,
+          "video_id": null
+        },
+        {
+          "start": 445.008,
+          "end": 480.098,
+          "video_id": null
+        }
+      ],
+      "source_title": "I Spent 7 Days In Solitary Confinement",
+      "channel": "MrBeast",
+      "date": "2026-10-21",
+      "published_at": "2026-10-21T10:22:08.529307+00:00",
+      "source_duration": 1216,
+      "target_clip_count": 5,
+      "remaining_clips": 3
     }
   ],
   "attempted": [
