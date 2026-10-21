@@ -1,6 +1,6 @@
 {
   "_note": "Most successful video per platform workflow (YouTube / Instagram), auto-refreshed by tools/update_best_videos.py after each real run_daily pass. 'why_most_successful' is computed from the winner's metrics vs account medians -- see the tool docstring for the ranking rule.",
-  "updated_at": "2026-09-26T19:26:55.288855+00:00",
+  "updated_at": "2026-10-21T09:01:54.018709+00:00",
   "ranking_rule": "views desc, then engagement_rate desc, then recency",
   "platforms": {
     "youtube": {
@@ -18,11 +18,12 @@
         "shares": 0,
         "saves": 0,
         "engagement_rate": 0,
-        "duration_seconds": 0,
+        "duration_seconds": 29,
         "avg_watch_time_ms": 0,
-        "retention_ratio": null,
+        "retention_ratio": 0.0,
         "why_most_successful": [
           "top views of all account posts (27; median is 0)",
+          "average watch time covers ~0% of the clip -- strong retention, the main distribution signal for Reels/Shorts",
           "hook uses proven pattern(s): specific_number, conflict_or_challenge"
         ]
       },
@@ -30,31 +31,31 @@
     },
     "instagram": {
       "account_id": "6a3d7b8d9d9472faaee69b3b",
-      "posts_analyzed": 100,
-      "median_views": 147.5,
+      "posts_analyzed": 85,
+      "median_views": 152,
       "most_successful_video": {
-        "id": "6a89e59f77555aae016e0b83",
-        "url": "https://www.instagram.com/reel/DcWX8SrFH5s/",
-        "title": "15 Sea Bombs Surrounding His Yacht - What?",
-        "published_at": "2026-08-22T16:46:43.000Z",
-        "views": 500,
-        "likes": 12,
+        "id": "6ab81c784c7887349677ca3c",
+        "url": "https://www.instagram.com/reel/DdwvCvMD6t_/",
+        "title": "He Found His FIRST Diamond From 13 Years Ago",
+        "published_at": "2026-09-26T19:00:09.000Z",
+        "views": 503,
+        "likes": 9,
         "comments": 0,
         "shares": 0,
-        "saves": 1,
-        "engagement_rate": 2.6,
-        "duration_seconds": 36,
-        "avg_watch_time_ms": 20521,
-        "retention_ratio": 0.57,
+        "saves": 0,
+        "engagement_rate": 1.79,
+        "duration_seconds": 35,
+        "avg_watch_time_ms": 20800,
+        "retention_ratio": 0.594,
         "why_most_successful": [
-          "views 500 = 3.4x the account median (147.5)",
-          "average watch time covers ~57% of the clip -- strong retention, the main distribution signal for Reels/Shorts",
-          "engagement rate 2.6% at/above the account median (0.62%)",
-          "hook uses proven pattern(s): specific_number, curiosity_gap",
-          "13 interactions (12 likes, 1 saves, 0 shares) signal quality to the algorithm"
+          "views 503 = 3.3x the account median (152)",
+          "average watch time covers ~59% of the clip -- strong retention, the main distribution signal for Reels/Shorts",
+          "engagement rate 1.79% at/above the account median (0.55%)",
+          "hook uses proven pattern(s): specific_number",
+          "9 interactions (9 likes, 0 saves, 0 shares) signal quality to the algorithm"
         ]
       },
-      "runner_up_url": "https://www.instagram.com/reel/DcWW_0EjvaA/"
+      "runner_up_url": "https://www.instagram.com/reel/DcWX8SrFH5s/"
     }
   }
 }
