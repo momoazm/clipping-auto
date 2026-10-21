@@ -209,6 +209,35 @@ def verify_tiktok(expected):
     return actual
 
 
+def channel_liveness(username):
+    """Best-effort PUBLIC probe of the channel page (no API key needed).
+
+    Zernio reports a suspended channel as connected, so the only cheap way to notice that
+    uploads are guaranteed to fail is the public URL: YouTube answers 404 for a suspended or
+    terminated channel (that is exactly what @itsmomoclips did on 2026-10-21). Anything
+    other than 200/404 is treated as unknown -- datacenter IPs get consent walls and 429s,
+    and a false alarm here would be worse than no alarm.
+    """
+    import httpx
+
+    handle = normalize(username)
+    if not handle:
+        return {"reachable": None, "detail": "no username configured"}
+    url = f"https://www.youtube.com/@{handle}"
+    try:
+        response = httpx.get(url, timeout=25, follow_redirects=True,
+                             headers={"User-Agent": "Mozilla/5.0 (compatible; account-check)"})
+    except Exception as exc:
+        return {"url": url, "reachable": None, "detail": type(exc).__name__}
+    if response.status_code == 200:
+        return {"url": url, "reachable": True, "status": 200}
+    if response.status_code == 404:
+        return {"url": url, "reachable": False, "status": 404,
+                "detail": "channel page not found -- suspended or terminated"}
+    return {"url": url, "reachable": None, "status": response.status_code,
+            "detail": "probe inconclusive"}
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--instagram", default=None, help="Expected Instagram username")
@@ -237,6 +266,15 @@ def main():
         actual, info = verify_zernio(accounts, "youtube", args.youtube,
                                      "ZERNIO_YOUTUBE_ID", args.require_ready)
         verified["youtube"] = "@" + actual
+        # A suspended channel still looks "connected" to Zernio, so probe the public page
+        # and shout about it now instead of discovering it clip-by-clip during delivery.
+        live = channel_liveness(actual)
+        info = dict(info, channel=live)
+        if live.get("reachable") is False:
+            print(f"::warning::YouTube channel @{actual} is not reachable "
+                  f"(HTTP {live.get('status')}) -- suspended or removed; uploads will fail "
+                  f"until the channel is restored or another account is connected.",
+                  flush=True)
         readiness["youtube"] = info
     if args.tiktok:
         actual = verify_tiktok(args.tiktok)

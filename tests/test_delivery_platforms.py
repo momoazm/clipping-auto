@@ -183,6 +183,39 @@ class TestYouTubeErrorDetail(unittest.TestCase):
         self.assertTrue(run_daily.platform_account_suspended(raised))
 
 
+class TestChannelLivenessProbe(unittest.TestCase):
+    """A suspended channel looks 'connected' to Zernio, so the public page is the tell."""
+
+    def _probe(self, status_code):
+        import verify_accounts
+        response = mock.Mock(status_code=status_code)
+        with mock.patch("httpx.get", return_value=response) as get:
+            result = verify_accounts.channel_liveness("@itsmomoclips")
+        self.assertTrue(get.call_args[0][0].endswith("/@itsmomoclips"))
+        return result
+
+    def test_live_channel_is_reachable(self):
+        self.assertTrue(self._probe(200)["reachable"])
+
+    def test_404_means_suspended_or_removed(self):
+        result = self._probe(404)
+        self.assertIs(result["reachable"], False)
+        self.assertIn("suspended", result["detail"])
+
+    def test_other_statuses_are_inconclusive_not_alarms(self):
+        for code in (403, 429, 500):
+            self.assertIsNone(self._probe(code)["reachable"], code)
+
+    def test_network_failure_is_inconclusive(self):
+        import verify_accounts
+        with mock.patch("httpx.get", side_effect=OSError("boom")):
+            self.assertIsNone(verify_accounts.channel_liveness("someone")["reachable"])
+
+    def test_missing_username_is_not_a_probe(self):
+        import verify_accounts
+        self.assertIsNone(verify_accounts.channel_liveness("")["reachable"])
+
+
 class TestWorkflowPlatformContract(unittest.TestCase):
     def test_job_only_requires_instagram_while_youtube_is_suspended(self):
         text = (REPO / ".github" / "workflows" / "clipping_daily.yml").read_text("utf-8")
