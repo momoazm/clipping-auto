@@ -60,5 +60,26 @@ Vault summary: `PLAN-sharktank-batch-and-formats.md`
 
 ## Ship
 
-- [ ] Commit (own files only) → push `main` → confirm the next clipping-auto run uses the new
+- [x] Commit (own files only) → push `main` → confirm the next clipping-auto run uses the new
       default (artifact/log `style` field) and titles are complete sentences.
+      Dry-run dispatch 39559867842 on `main` rendered four clips, each logging
+      `caption style -> competitor` (now recorded per clip in `run_summary.json.caption_styles`),
+      with complete-sentence titles — "Helicopter Jump Into Ocean at $16M Island", "Frozen Lake
+      & Hovercraft: $5M Winter Island", "135-Ft Tallest Water Slide in North America",
+      "Hundreds of Monkeys Swarm This $1M Island" — and `media_contract_ok` on all four.
+      Commits: `9c0cdc5` (format), `042c525` (style logging), `2125953` (source pool),
+      `3485901` (banner fit).
+
+### D. Found while verifying (added, not in the original plan)
+
+- [x] D1. **The channel had been silently posting nothing since 2026-10-16.** Every scheduled
+      run 10-16/10-18/10-20 exited `status=no_source`, which the workflow treats as green, so
+      nothing alerted. Cause: `config/channels.json` `scan_depth` was 60 and every channel's
+      first 60-65 uploads were already reserved — the first untouched video sat at index 61-65,
+      just past the cutoff. Raised to 200 (MrBeast alone now shows ~135 free candidates) and the
+      "all exhausted" payload now carries `scan: {depth, listed, free}` so a too-shallow scan
+      can never again read like a real drought. Tests: `TestSourcePoolDepth`.
+- [x] D2. **Hook banner ellipsised real hooks** ("...OCEAN AT $16M..." in the 39559867842
+      artifact). `fit_hook_layout()` now shrinks the banner size (138 → 111 on the real hook)
+      until every token fits in ≤3 lines, mirroring ranking-shorts' `_hook_layout`. Tests:
+      `test_long_hook_shrinks_instead_of_truncating`, `test_fitted_hook_reaches_the_ass_style_and_event`.
