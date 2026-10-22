@@ -1664,32 +1664,51 @@
       "youtube_post_ids": [],
       "instagram_post_ids": [
         "6ad8904e58670faf0da2206e",
-        "6ad8920e83ff74f2fffcd2d7"
+        "6ad8920e83ff74f2fffcd2d7",
+        "6ada662d6fe8f9b19d80ad9e",
+        "6ada68268a7ed353fd1922bc",
+        "6ada69e534fe04040e43d038"
       ],
       "tiktok_post_ids": [],
       "platform_post_ids": [
         "6ad8904e58670faf0da2206e",
-        "6ad8920e83ff74f2fffcd2d7"
+        "6ad8920e83ff74f2fffcd2d7",
+        "6ada662d6fe8f9b19d80ad9e",
+        "6ada68268a7ed353fd1922bc",
+        "6ada69e534fe04040e43d038"
       ],
       "clip_windows": [
         {
           "start": 408.988,
-          "end": 442.438,
-          "video_id": null
+          "end": 442.438
         },
         {
           "start": 445.008,
-          "end": 480.098,
+          "end": 480.098
+        },
+        {
+          "start": 226.51,
+          "end": 262.0,
+          "video_id": null
+        },
+        {
+          "start": 732.606,
+          "end": 768.557,
+          "video_id": null
+        },
+        {
+          "start": 280.35,
+          "end": 307.558,
           "video_id": null
         }
       ],
       "source_title": "I Spent 7 Days In Solitary Confinement",
       "channel": "MrBeast",
-      "date": "2026-10-21",
-      "published_at": "2026-10-21T10:22:08.529307+00:00",
+      "date": "2026-10-22",
+      "published_at": "2026-10-22T19:54:52.502136+00:00",
       "source_duration": 1216,
       "target_clip_count": 5,
-      "remaining_clips": 3
+      "remaining_clips": 0
     }
   ],
   "attempted": [
