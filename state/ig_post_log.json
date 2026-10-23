@@ -1541,6 +1541,72 @@
           "effects": "full"
         }
       }
+    },
+    {
+      "post_id": "6adbbcb6d885eaa10efcd844",
+      "posted_at": "2026-10-23T20:00:46.005802+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "01",
+        "hook": "$20,000 Cash for Adopting the 100th Rescue Dog",
+        "hook_signal_score": 68,
+        "duration_sec": 34.489,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -15.7,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6adbbe96fdae91e7b7fb9485",
+      "posted_at": "2026-10-23T20:08:30.478798+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "02",
+        "hook": "3-Legged Dog Gets Prosthetic Leg + $10,000",
+        "hook_signal_score": 50,
+        "duration_sec": 35.01,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -16.4,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6adbc06e22e495e41bc57260",
+      "posted_at": "2026-10-23T20:16:21.568520+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "03",
+        "hook": "$10,000 Surprise for Woman Adopting Her 7th Dog",
+        "hook_signal_score": 50,
+        "duration_sec": 38.15,
+        "focus_mode": "speaker",
+        "hook_variant": "specific_claim",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -16.1,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
     }
   ]
 }

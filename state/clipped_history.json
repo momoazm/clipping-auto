@@ -1709,6 +1709,46 @@
       "source_duration": 1216,
       "target_clip_count": 5,
       "remaining_clips": 0
+    },
+    {
+      "source_id": "lOKASgtr6kU",
+      "clip_video_ids": [],
+      "youtube_post_ids": [],
+      "instagram_post_ids": [
+        "6adbbcb6d885eaa10efcd844",
+        "6adbbe96fdae91e7b7fb9485",
+        "6adbc06e22e495e41bc57260"
+      ],
+      "tiktok_post_ids": [],
+      "platform_post_ids": [
+        "6adbbcb6d885eaa10efcd844",
+        "6adbbe96fdae91e7b7fb9485",
+        "6adbc06e22e495e41bc57260"
+      ],
+      "clip_windows": [
+        {
+          "start": 764.038,
+          "end": 798.527,
+          "video_id": null
+        },
+        {
+          "start": 537.442,
+          "end": 572.452,
+          "video_id": null
+        },
+        {
+          "start": 239.806,
+          "end": 277.956,
+          "video_id": null
+        }
+      ],
+      "source_title": "I Adopted 100 Dogs!",
+      "channel": "MrBeast",
+      "date": "2026-10-23",
+      "published_at": "2026-10-23T20:16:21.574960+00:00",
+      "source_duration": 804,
+      "target_clip_count": 3,
+      "remaining_clips": 0
     }
   ],
   "attempted": [
