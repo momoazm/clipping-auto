@@ -1607,6 +1607,94 @@
           "effects": "full"
         }
       }
+    },
+    {
+      "post_id": "6ade4e734e7849d2a153f758",
+      "posted_at": "2026-10-25T18:46:50.884156+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "01",
+        "hook": "Alex FAKE Quits at $450K - Grocery Store Challenge Ending",
+        "hook_signal_score": 61,
+        "duration_sec": 23.07,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -13.5,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6ade5079a3d0d8efed572897",
+      "posted_at": "2026-10-25T18:55:39.474750+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "02",
+        "hook": "Family Surprise Makes Alex QUIT $450K Grocery Challenge",
+        "hook_signal_score": 66,
+        "duration_sec": 40.69,
+        "focus_mode": "speaker",
+        "hook_variant": "specific_claim",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -17.2,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6ade527c8e3e1c2700dcdd60",
+      "posted_at": "2026-10-25T19:05:03.333679+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "03",
+        "hook": "Twist: Must SELL $10K to GET $10K - Grocery Store Challenge",
+        "hook_signal_score": 50,
+        "duration_sec": 35.91,
+        "focus_mode": "speaker",
+        "hook_variant": "specific_claim",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -15.0,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6ade549aa9b47e9929b98969",
+      "posted_at": "2026-10-25T19:13:06.045523+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "04",
+        "hook": "Bought ENTIRE Grocery Store - $10K/Day to Stay Inside",
+        "hook_signal_score": 60,
+        "duration_sec": 32.08,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -12.9,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
     }
   ]
 }

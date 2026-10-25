@@ -1749,6 +1749,53 @@
       "source_duration": 804,
       "target_clip_count": 3,
       "remaining_clips": 0
+    },
+    {
+      "source_id": "tnTPaLOaHz8",
+      "clip_video_ids": [],
+      "youtube_post_ids": [],
+      "instagram_post_ids": [
+        "6ade4e734e7849d2a153f758",
+        "6ade5079a3d0d8efed572897",
+        "6ade527c8e3e1c2700dcdd60",
+        "6ade549aa9b47e9929b98969"
+      ],
+      "tiktok_post_ids": [],
+      "platform_post_ids": [
+        "6ade4e734e7849d2a153f758",
+        "6ade5079a3d0d8efed572897",
+        "6ade527c8e3e1c2700dcdd60",
+        "6ade549aa9b47e9929b98969"
+      ],
+      "clip_windows": [
+        {
+          "start": 1157.362,
+          "end": 1180.432,
+          "video_id": null
+        },
+        {
+          "start": 1109.182,
+          "end": 1149.872,
+          "video_id": null
+        },
+        {
+          "start": 65.37,
+          "end": 101.28,
+          "video_id": null
+        },
+        {
+          "start": 0.0,
+          "end": 32.08,
+          "video_id": null
+        }
+      ],
+      "source_title": "$10,000 Every Day You Survive In A Grocery Store",
+      "channel": "MrBeast",
+      "date": "2026-10-25",
+      "published_at": "2026-10-25T19:13:06.052473+00:00",
+      "source_duration": 1182,
+      "target_clip_count": 4,
+      "remaining_clips": 0
     }
   ],
   "attempted": [
