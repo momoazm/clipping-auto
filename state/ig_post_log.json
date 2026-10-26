@@ -1705,6 +1705,28 @@
           "effects": "full"
         }
       }
+    },
+    {
+      "post_id": "6adfc8fd5b4e677ebec7cef0",
+      "posted_at": "2026-10-26T21:42:07.765882+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "03",
+        "hook": "NASA Let Me Touch Moon Rocks Worth Billions",
+        "hook_signal_score": 35,
+        "duration_sec": 26.79,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -12.2,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
     }
   ]
 }
