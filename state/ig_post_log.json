@@ -1349,7 +1349,7 @@
       "posted_at": "2026-10-21T09:31:43.992718+00:00",
       "style": "brand",
       "experiment": true,
-      "resolved": false,
+      "resolved": true,
       "context": {
         "clip": "01",
         "hook": "5 Tanks Fire 20 Rounds at His Money - First Shot!",
@@ -1364,6 +1364,16 @@
           "music_volume": 0.0,
           "effects": "full"
         }
+      },
+      "result": {
+        "views": null,
+        "engagement_rate": null,
+        "baseline_views_avg": 0.0,
+        "baseline_engagement_avg": 0.0,
+        "views_delta": null,
+        "engagement_delta": null,
+        "baseline_n": 6,
+        "win": false
       }
     },
     {
