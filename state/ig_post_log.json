@@ -1727,6 +1727,50 @@
           "effects": "full"
         }
       }
+    },
+    {
+      "post_id": "6ae25dde95c592fe1ac38783",
+      "posted_at": "2026-10-28T20:42:10.071687+00:00",
+      "style": "clean",
+      "experiment": true,
+      "resolved": false,
+      "context": {
+        "clip": "01",
+        "hook": "Lifting A 2,250-Pound Dinosaur Bone - First Humans Ever",
+        "hook_signal_score": 69,
+        "duration_sec": 22.85,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -10.9,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6ae25fb809fe21506a32a604",
+      "posted_at": "2026-10-28T20:49:31.988830+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "02",
+        "hook": "He Led An NFL Team Out The Tunnel - Best Day Ever",
+        "hook_signal_score": 52,
+        "duration_sec": 35.0,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -10.0,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
     }
   ]
 }

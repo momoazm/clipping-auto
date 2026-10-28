@@ -31,11 +31,15 @@
     {
       "week": "2026-W43",
       "style": "brand"
+    },
+    {
+      "week": "2026-W44",
+      "style": "clean"
     }
   ],
   "current": {
     "week": "2026-W44",
     "style": "clean",
-    "used": false
+    "used": true
   }
 }

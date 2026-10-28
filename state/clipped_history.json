@@ -1808,26 +1808,39 @@
       "clip_video_ids": [],
       "youtube_post_ids": [],
       "instagram_post_ids": [
-        "6adfc8fd5b4e677ebec7cef0"
+        "6adfc8fd5b4e677ebec7cef0",
+        "6ae25dde95c592fe1ac38783",
+        "6ae25fb809fe21506a32a604"
       ],
       "tiktok_post_ids": [],
       "platform_post_ids": [
-        "6adfc8fd5b4e677ebec7cef0"
+        "6adfc8fd5b4e677ebec7cef0",
+        "6ae25dde95c592fe1ac38783",
+        "6ae25fb809fe21506a32a604"
       ],
       "clip_windows": [
         {
           "start": 277.282,
-          "end": 304.072,
+          "end": 304.072
+        },
+        {
+          "start": 107.57,
+          "end": 130.42,
+          "video_id": null
+        },
+        {
+          "start": 773.065,
+          "end": 808.065,
           "video_id": null
         }
       ],
       "source_title": "$1 vs $10,000,000 Job!",
       "channel": "MrBeast",
-      "date": "2026-10-26",
-      "published_at": "2026-10-26T21:42:07.771820+00:00",
+      "date": "2026-10-28",
+      "published_at": "2026-10-28T20:49:31.996560+00:00",
       "source_duration": 816,
       "target_clip_count": 3,
-      "remaining_clips": 2
+      "remaining_clips": 0
     }
   ],
   "attempted": [
