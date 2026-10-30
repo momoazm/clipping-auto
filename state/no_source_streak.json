@@ -1,7 +1,7 @@
 {
-  "count": 0,
-  "counted_on": null,
-  "last_detail": "No source reservation was created; no video was published.",
-  "updated_at": "2026-10-21T08:44:07.080820+00:00",
+  "count": 1,
+  "counted_on": "2026-10-30",
+  "last_detail": "No source produced the required high-resolution clips; no video was published.",
+  "updated_at": "2026-10-30T20:11:37.501672+00:00",
   "last_alert_at": "2026-10-16T19:03:37.800899+00:00"
 }
