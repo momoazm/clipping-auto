@@ -1771,6 +1771,116 @@
           "effects": "full"
         }
       }
+    },
+    {
+      "post_id": "6ae6451a17d03ef17fe43162",
+      "posted_at": "2026-10-31T19:45:04.974064+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "01",
+        "hook": "Simone Biles 100ft Balance Beam For $250,000 Charity",
+        "hook_signal_score": 50,
+        "duration_sec": 36.97,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -9.5,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6ae6477c5df984ef134f320a",
+      "posted_at": "2026-10-31T19:56:02.154662+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "02",
+        "hook": "LeBron James 1v1: Who Hits More Threes For $100,000?",
+        "hook_signal_score": 37,
+        "duration_sec": 58.13,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -8.4,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6ae64997b9045130c2cdb60a",
+      "posted_at": "2026-10-31T20:04:34.874299+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "03",
+        "hook": "Cricket Star Smashes $100,000 Stadium Shot — Indian Player Dominates",
+        "hook_signal_score": 50,
+        "duration_sec": 36.07,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -9.7,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6ae64b94bb403319fa172bfb",
+      "posted_at": "2026-10-31T20:12:53.663823+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "04",
+        "hook": "Figure Skater Spins 100+ Times Mid-Race For $100,000",
+        "hook_signal_score": 66,
+        "duration_sec": 32.67,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -10.6,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6ae64dc3f12cf80429ff104f",
+      "posted_at": "2026-10-31T20:22:38.662139+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "05",
+        "hook": "Target Practice For $100,000: Fans vs Creators Winner Takes All",
+        "hook_signal_score": 50,
+        "duration_sec": 43.59,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -9.8,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
     }
   ]
 }

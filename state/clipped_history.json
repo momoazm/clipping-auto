@@ -1841,6 +1841,60 @@
       "source_duration": 816,
       "target_clip_count": 3,
       "remaining_clips": 0
+    },
+    {
+      "source_id": "_c2e1NcI3Sc",
+      "clip_video_ids": [],
+      "youtube_post_ids": [],
+      "instagram_post_ids": [
+        "6ae6451a17d03ef17fe43162",
+        "6ae6477c5df984ef134f320a",
+        "6ae64997b9045130c2cdb60a",
+        "6ae64b94bb403319fa172bfb",
+        "6ae64dc3f12cf80429ff104f"
+      ],
+      "tiktok_post_ids": [],
+      "platform_post_ids": [
+        "6ae6451a17d03ef17fe43162",
+        "6ae6477c5df984ef134f320a",
+        "6ae64997b9045130c2cdb60a",
+        "6ae64b94bb403319fa172bfb",
+        "6ae64dc3f12cf80429ff104f"
+      ],
+      "clip_windows": [
+        {
+          "start": 1191.894,
+          "end": 1228.864,
+          "video_id": null
+        },
+        {
+          "start": 1270.834,
+          "end": 1328.964,
+          "video_id": null
+        },
+        {
+          "start": 480.645,
+          "end": 516.715,
+          "video_id": null
+        },
+        {
+          "start": 284.81,
+          "end": 317.48,
+          "video_id": null
+        },
+        {
+          "start": 59.03,
+          "end": 102.62,
+          "video_id": null
+        }
+      ],
+      "source_title": "Beat LeBron, Win $100,000",
+      "channel": "MrBeast",
+      "date": "2026-10-31",
+      "published_at": "2026-10-31T20:22:38.670941+00:00",
+      "source_duration": 1347,
+      "target_clip_count": 5,
+      "remaining_clips": 0
     }
   ],
   "attempted": [
