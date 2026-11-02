@@ -1895,6 +1895,53 @@
       "source_duration": 1347,
       "target_clip_count": 5,
       "remaining_clips": 0
+    },
+    {
+      "source_id": "KrLj6nc516A",
+      "clip_video_ids": [],
+      "youtube_post_ids": [],
+      "instagram_post_ids": [
+        "6ae91b3d03110c512d9d0c09",
+        "6ae91d5404628fee30d18c2a",
+        "6ae91f7f8c35330ccf3addaa",
+        "6ae9216c652dd2e6b0644627"
+      ],
+      "tiktok_post_ids": [],
+      "platform_post_ids": [
+        "6ae91b3d03110c512d9d0c09",
+        "6ae91d5404628fee30d18c2a",
+        "6ae91f7f8c35330ccf3addaa",
+        "6ae9216c652dd2e6b0644627"
+      ],
+      "clip_windows": [
+        {
+          "start": 377.383,
+          "end": 418.073,
+          "video_id": null
+        },
+        {
+          "start": 259.103,
+          "end": 301.033,
+          "video_id": null
+        },
+        {
+          "start": 194.53,
+          "end": 251.433,
+          "video_id": null
+        },
+        {
+          "start": 67.31,
+          "end": 99.5,
+          "video_id": null
+        }
+      ],
+      "source_title": "$1 vs $100,000,000 Car!",
+      "channel": "MrBeast",
+      "date": "2026-11-02",
+      "published_at": "2026-11-02T23:49:55.926925+00:00",
+      "source_duration": 937,
+      "target_clip_count": 4,
+      "remaining_clips": 0
     }
   ],
   "attempted": [

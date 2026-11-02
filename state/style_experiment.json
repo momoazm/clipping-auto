@@ -35,11 +35,15 @@
     {
       "week": "2026-W44",
       "style": "clean"
+    },
+    {
+      "week": "2026-W45",
+      "style": "hormozi"
     }
   ],
   "current": {
-    "week": "2026-W44",
-    "style": "clean",
+    "week": "2026-W45",
+    "style": "hormozi",
     "used": true
   }
 }
