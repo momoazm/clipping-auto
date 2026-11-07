@@ -2045,6 +2045,138 @@
           "effects": "full"
         }
       }
+    },
+    {
+      "post_id": "6aef7fef24ca5a457720ab07",
+      "posted_at": "2026-11-07T19:46:30.662203+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "01",
+        "hook": "Final Jenga Move: 90 Gone, 10 Left",
+        "hook_signal_score": 76,
+        "duration_sec": 34.651,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -17.5,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6aef81de573f7020e41b8cf0",
+      "posted_at": "2026-11-07T19:55:48.859820+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "02",
+        "hook": "$500,000 Coin Flip Decides Winner",
+        "hook_signal_score": 80,
+        "duration_sec": 40.47,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -16.7,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6aef83ed6a8a66206535959c",
+      "posted_at": "2026-11-07T20:05:01.939599+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "03",
+        "hook": "She Picked Her Case — Honesty Won $500k",
+        "hook_signal_score": 58,
+        "duration_sec": 37.47,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -16.8,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6aef862eab107efbd706594c",
+      "posted_at": "2026-11-07T20:13:19.415401+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "04",
+        "hook": "Player 23 Eliminated in Top 5 — What?",
+        "hook_signal_score": 90,
+        "duration_sec": 34.77,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -16.4,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6aef88191853049871d5f7c5",
+      "posted_at": "2026-11-07T20:21:21.028136+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "05",
+        "hook": "All or Nothing: 14 vs 6 Marbles Gamble",
+        "hook_signal_score": 68,
+        "duration_sec": 34.57,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -17.4,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6aef89f5128ed132d7f4aea4",
+      "posted_at": "2026-11-07T20:29:27.572237+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "06",
+        "hook": "37 Votes Against Him — 50% Shot at $500k",
+        "hook_signal_score": 80,
+        "duration_sec": 31.33,
+        "focus_mode": "speaker",
+        "hook_variant": "specific_claim",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -16.2,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
     }
   ]
 }

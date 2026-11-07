@@ -1982,6 +1982,67 @@
       "source_duration": 887,
       "target_clip_count": 3,
       "remaining_clips": 0
+    },
+    {
+      "source_id": "FM7Z-Xq8Drc",
+      "clip_video_ids": [],
+      "youtube_post_ids": [],
+      "instagram_post_ids": [
+        "6aef7fef24ca5a457720ab07",
+        "6aef81de573f7020e41b8cf0",
+        "6aef83ed6a8a66206535959c",
+        "6aef862eab107efbd706594c",
+        "6aef88191853049871d5f7c5",
+        "6aef89f5128ed132d7f4aea4"
+      ],
+      "tiktok_post_ids": [],
+      "platform_post_ids": [
+        "6aef7fef24ca5a457720ab07",
+        "6aef81de573f7020e41b8cf0",
+        "6aef83ed6a8a66206535959c",
+        "6aef862eab107efbd706594c",
+        "6aef88191853049871d5f7c5",
+        "6aef89f5128ed132d7f4aea4"
+      ],
+      "clip_windows": [
+        {
+          "start": 810.439,
+          "end": 845.09,
+          "video_id": null
+        },
+        {
+          "start": 920.719,
+          "end": 961.189,
+          "video_id": null
+        },
+        {
+          "start": 1466.154,
+          "end": 1503.624,
+          "video_id": null
+        },
+        {
+          "start": 1188.214,
+          "end": 1222.984,
+          "video_id": null
+        },
+        {
+          "start": 1043.959,
+          "end": 1078.529,
+          "video_id": null
+        },
+        {
+          "start": 1225.234,
+          "end": 1256.564,
+          "video_id": null
+        }
+      ],
+      "source_title": "Ages 1 - 100 Fight For $500,000",
+      "channel": "MrBeast",
+      "date": "2026-11-07",
+      "published_at": "2026-11-07T20:29:27.579122+00:00",
+      "source_duration": 1535,
+      "target_clip_count": 6,
+      "remaining_clips": 0
     }
   ],
   "attempted": [
