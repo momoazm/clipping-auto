@@ -1897,7 +1897,7 @@
       "posted_at": "2026-11-02T23:23:27.220270+00:00",
       "style": "hormozi",
       "experiment": true,
-      "resolved": false,
+      "resolved": true,
       "context": {
         "clip": "01",
         "hook": "$600K Flying Car: Street Legal With Wings, Hits 8,000 Feet",
@@ -1912,6 +1912,16 @@
           "music_volume": 0.0,
           "effects": "full"
         }
+      },
+      "result": {
+        "views": null,
+        "engagement_rate": null,
+        "baseline_views_avg": 0.0,
+        "baseline_engagement_avg": 0.0,
+        "views_delta": null,
+        "engagement_delta": null,
+        "baseline_n": 6,
+        "win": false
       }
     },
     {
