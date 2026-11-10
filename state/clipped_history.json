@@ -2043,6 +2043,39 @@
       "source_duration": 1535,
       "target_clip_count": 6,
       "remaining_clips": 0
+    },
+    {
+      "source_id": "WTOm65IZneg",
+      "clip_video_ids": [],
+      "youtube_post_ids": [],
+      "instagram_post_ids": [
+        "6af25e1ab7240eb9ee31ed9b",
+        "6af2603020b37a6c3c10024d"
+      ],
+      "tiktok_post_ids": [],
+      "platform_post_ids": [
+        "6af25e1ab7240eb9ee31ed9b",
+        "6af2603020b37a6c3c10024d"
+      ],
+      "clip_windows": [
+        {
+          "start": 271.784,
+          "end": 301.9,
+          "video_id": null
+        },
+        {
+          "start": 76.89,
+          "end": 110.607,
+          "video_id": null
+        }
+      ],
+      "source_title": "1,000 Deaf People Hear For The First Time",
+      "channel": "MrBeast",
+      "date": "2026-11-09",
+      "published_at": "2026-11-10T00:08:03.498873+00:00",
+      "source_duration": 373,
+      "target_clip_count": 2,
+      "remaining_clips": 0
     }
   ],
   "attempted": [

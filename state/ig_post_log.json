@@ -2187,6 +2187,50 @@
           "effects": "full"
         }
       }
+    },
+    {
+      "post_id": "6af25e1ab7240eb9ee31ed9b",
+      "posted_at": "2026-11-09T23:59:46.675089+00:00",
+      "style": "brand",
+      "experiment": true,
+      "resolved": false,
+      "context": {
+        "clip": "01",
+        "hook": "Deaf Parents Hear Daughter Say 'Papa' for First Time in Mexico",
+        "hook_signal_score": 50,
+        "duration_sec": 30.116,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -12.3,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6af2603020b37a6c3c10024d",
+      "posted_at": "2026-11-10T00:08:03.491965+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "02",
+        "hook": "Can you tell them you guys just won $10,000?",
+        "hook_signal_score": 50,
+        "duration_sec": 33.717,
+        "focus_mode": "speaker",
+        "hook_variant": "question",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -13.7,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
     }
   ]
 }
