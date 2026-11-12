@@ -1,12 +1,12 @@
 {
   "_note": "Most successful video per platform workflow (YouTube / Instagram), auto-refreshed by tools/update_best_videos.py after each real run_daily pass. 'why_most_successful' is computed from the winner's metrics vs account medians -- see the tool docstring for the ranking rule.",
-  "updated_at": "2026-11-10T00:08:06.678329+00:00",
+  "updated_at": "2026-11-12T22:25:43.193764+00:00",
   "ranking_rule": "views desc, then engagement_rate desc, then recency",
   "platforms": {
     "youtube": {
       "account_id": "6a3e6cc19d9472faaef26347",
-      "posts_analyzed": 81,
-      "median_views": 0,
+      "posts_analyzed": 76,
+      "median_views": 0.0,
       "most_successful_video": {
         "id": "6a89ddaa77555aae016c6397",
         "url": "https://www.youtube.com/watch?v=Nt1ZDqWtmos",
@@ -50,7 +50,7 @@
         "why_most_successful": [
           "views 503 = 3.1x the account median (163)",
           "average watch time covers ~59% of the clip -- strong retention, the main distribution signal for Reels/Shorts",
-          "engagement rate 1.79% at/above the account median (0.44%)",
+          "engagement rate 1.79% at/above the account median (0.39%)",
           "hook uses proven pattern(s): specific_number",
           "9 interactions (9 likes, 0 saves, 0 shares) signal quality to the algorithm"
         ]

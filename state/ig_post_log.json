@@ -2231,6 +2231,94 @@
           "effects": "full"
         }
       }
+    },
+    {
+      "post_id": "6af637731a82f92ee0fb5c97",
+      "posted_at": "2026-11-12T22:03:29.874942+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "01",
+        "hook": "Pizza for SHRUNK Zone — 'Was It Worth It?' Yeah!",
+        "hook_signal_score": 43,
+        "duration_sec": 45.23,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -15.1,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6af63926006a47a12f81051e",
+      "posted_at": "2026-11-12T22:10:38.077739+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "02",
+        "hook": "Kid CAUGHT CHEATING — Both Teams TIED at 78",
+        "hook_signal_score": 51,
+        "duration_sec": 21.67,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -16.0,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6af63b0a93a51038de9f8053",
+      "posted_at": "2026-11-12T22:18:26.100221+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "03",
+        "hook": "They POPPED the Balloon — Cube SHRINKS Instantly",
+        "hook_signal_score": 50,
+        "duration_sec": 39.21,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -15.1,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6af63cac686c6f5fb5d3ff6d",
+      "posted_at": "2026-11-12T22:25:40.165137+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "04",
+        "hook": "Deadly Oatmeal ELIMINATES Players — 'Always Works'",
+        "hook_signal_score": 53,
+        "duration_sec": 22.03,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -15.6,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
     }
   ]
 }

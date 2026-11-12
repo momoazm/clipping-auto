@@ -2076,6 +2076,53 @@
       "source_duration": 373,
       "target_clip_count": 2,
       "remaining_clips": 0
+    },
+    {
+      "source_id": "0CTp1a-aCUM",
+      "clip_video_ids": [],
+      "youtube_post_ids": [],
+      "instagram_post_ids": [
+        "6af637731a82f92ee0fb5c97",
+        "6af63926006a47a12f81051e",
+        "6af63b0a93a51038de9f8053",
+        "6af63cac686c6f5fb5d3ff6d"
+      ],
+      "tiktok_post_ids": [],
+      "platform_post_ids": [
+        "6af637731a82f92ee0fb5c97",
+        "6af63926006a47a12f81051e",
+        "6af63b0a93a51038de9f8053",
+        "6af63cac686c6f5fb5d3ff6d"
+      ],
+      "clip_windows": [
+        {
+          "start": 333.632,
+          "end": 378.862,
+          "video_id": null
+        },
+        {
+          "start": 149.97,
+          "end": 171.64,
+          "video_id": null
+        },
+        {
+          "start": 586.134,
+          "end": 625.344,
+          "video_id": null
+        },
+        {
+          "start": 172.39,
+          "end": 194.42,
+          "video_id": null
+        }
+      ],
+      "source_title": "100 Kids Fight Parents For $500,000",
+      "channel": "MrBeast",
+      "date": "2026-11-12",
+      "published_at": "2026-11-12T22:25:40.170887+00:00",
+      "source_duration": 922,
+      "target_clip_count": 4,
+      "remaining_clips": 0
     }
   ],
   "attempted": [
