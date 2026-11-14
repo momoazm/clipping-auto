@@ -2319,6 +2319,138 @@
           "effects": "full"
         }
       }
+    },
+    {
+      "post_id": "6af8c179c6ee96bb65b3b3c3",
+      "posted_at": "2026-11-14T20:16:32.295777+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "01",
+        "hook": "I'm The Hunger Games Champion - $250K Winner",
+        "hook_signal_score": 43,
+        "duration_sec": 21.89,
+        "focus_mode": "speaker",
+        "hook_variant": "specific_claim",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -9.5,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6af8c3518766bdb2cb40a629",
+      "posted_at": "2026-11-14T20:24:41.035042+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "02",
+        "hook": "Tia Eliminated - Major Player Down In Finals",
+        "hook_signal_score": 90,
+        "duration_sec": 35.55,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -10.7,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6af8c53048ad54dea17fd74f",
+      "posted_at": "2026-11-14T20:32:45.660466+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "03",
+        "hook": "Double Elimination - Both Players Out At Once",
+        "hook_signal_score": 90,
+        "duration_sec": 33.03,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -10.6,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6af8c718988358fb2c09e12f",
+      "posted_at": "2026-11-14T20:41:31.457125+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "04",
+        "hook": "Golden dagger, I will give you $25,000.",
+        "hook_signal_score": 60,
+        "duration_sec": 32.906,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -11.6,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6af8c92076757d70136b611c",
+      "posted_at": "2026-11-14T20:49:33.155629+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "05",
+        "hook": "Duel For Cornucopia - Winner Takes Everything",
+        "hook_signal_score": 60,
+        "duration_sec": 31.367,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -11.5,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6af8cafbd0f875843dbff6b5",
+      "posted_at": "2026-11-14T20:57:39.102920+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "06",
+        "hook": "Juan Eliminated - Golden Dagger Hunt Goes Wrong",
+        "hook_signal_score": 77,
+        "duration_sec": 23.17,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -9.9,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
     }
   ]
 }

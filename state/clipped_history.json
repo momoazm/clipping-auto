@@ -2123,6 +2123,67 @@
       "source_duration": 922,
       "target_clip_count": 4,
       "remaining_clips": 0
+    },
+    {
+      "source_id": "q6fgVVmdpgY",
+      "clip_video_ids": [],
+      "youtube_post_ids": [],
+      "instagram_post_ids": [
+        "6af8c179c6ee96bb65b3b3c3",
+        "6af8c3518766bdb2cb40a629",
+        "6af8c53048ad54dea17fd74f",
+        "6af8c718988358fb2c09e12f",
+        "6af8c92076757d70136b611c",
+        "6af8cafbd0f875843dbff6b5"
+      ],
+      "tiktok_post_ids": [],
+      "platform_post_ids": [
+        "6af8c179c6ee96bb65b3b3c3",
+        "6af8c3518766bdb2cb40a629",
+        "6af8c53048ad54dea17fd74f",
+        "6af8c718988358fb2c09e12f",
+        "6af8c92076757d70136b611c",
+        "6af8cafbd0f875843dbff6b5"
+      ],
+      "clip_windows": [
+        {
+          "start": 2008.583,
+          "end": 2030.473,
+          "video_id": null
+        },
+        {
+          "start": 1919.563,
+          "end": 1955.113,
+          "video_id": null
+        },
+        {
+          "start": 1156.895,
+          "end": 1189.925,
+          "video_id": null
+        },
+        {
+          "start": 1518.911,
+          "end": 1551.817,
+          "video_id": null
+        },
+        {
+          "start": 758.002,
+          "end": 789.369,
+          "video_id": null
+        },
+        {
+          "start": 1609.387,
+          "end": 1632.557,
+          "video_id": null
+        }
+      ],
+      "source_title": "$250,000 Hunger Games In Real Life",
+      "channel": "MrBeast",
+      "date": "2026-11-14",
+      "published_at": "2026-11-14T20:57:39.110218+00:00",
+      "source_duration": 2037,
+      "target_clip_count": 7,
+      "remaining_clips": 1
     }
   ],
   "attempted": [
