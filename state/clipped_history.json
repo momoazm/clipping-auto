@@ -34,10 +34,10 @@
       "updated": "2026-10-28"
     },
     "q6fgVVmdpgY": {
-      "count": 4,
+      "count": 5,
       "windows": 6,
-      "exhausted": false,
-      "updated": "2026-11-19"
+      "exhausted": true,
+      "updated": "2026-11-20"
     }
   },
   "clipped": [
@@ -3060,6 +3060,10 @@
     {
       "source_id": "QbJJwaVdgIs",
       "date": "2026-11-19"
+    },
+    {
+      "source_id": "QQV-0OUGxGs",
+      "date": "2026-11-20"
     }
   ]
 }
