@@ -2461,6 +2461,116 @@
           "effects": "full"
         }
       }
+    },
+    {
+      "post_id": "6b00ca221f3760b79ede637f",
+      "posted_at": "2026-11-20T22:32:26.132284+00:00",
+      "style": "clean",
+      "experiment": true,
+      "resolved": false,
+      "context": {
+        "clip": "01",
+        "hook": "52 Seconds Left: Fly Up or Lose $42K - 'No Way!'",
+        "hook_signal_score": 37,
+        "duration_sec": 59.01,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -10.2,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6b00cc3e1f310499506fac45",
+      "posted_at": "2026-11-20T22:40:49.060327+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "02",
+        "hook": "Every Dollar He Steals in GTA 6 Goes to His Mom",
+        "hook_signal_score": 74,
+        "duration_sec": 29.98,
+        "focus_mode": "speaker",
+        "hook_variant": "specific_claim",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -11.3,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6b00ce44a98ebcda76845887",
+      "posted_at": "2026-11-20T22:49:16.336795+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "03",
+        "hook": "Hijacking a Plane at 3 Minutes - 'Get In Get In'",
+        "hook_signal_score": 50,
+        "duration_sec": 33.83,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -11.6,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6b00cffabdda6946e61d2f41",
+      "posted_at": "2026-11-20T22:56:43.975061+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "04",
+        "hook": "$5,000 Jewelry Heist for Mom - Cops Are Waiting",
+        "hook_signal_score": 43,
+        "duration_sec": 21.09,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -11.1,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6b00d1e8bdda6946e61d3335",
+      "posted_at": "2026-11-20T23:04:58.746050+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "05",
+        "hook": "Breaking In: 'I Grabbing I Grabbing' - $3K in Seconds",
+        "hook_signal_score": 68,
+        "duration_sec": 35.23,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -12.2,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
     }
   ]
 }

@@ -2190,6 +2190,60 @@
       "source_duration": 2037,
       "target_clip_count": 7,
       "remaining_clips": 1
+    },
+    {
+      "source_id": "QQV-0OUGxGs",
+      "clip_video_ids": [],
+      "youtube_post_ids": [],
+      "instagram_post_ids": [
+        "6b00ca221f3760b79ede637f",
+        "6b00cc3e1f310499506fac45",
+        "6b00ce44a98ebcda76845887",
+        "6b00cffabdda6946e61d2f41",
+        "6b00d1e8bdda6946e61d3335"
+      ],
+      "tiktok_post_ids": [],
+      "platform_post_ids": [
+        "6b00ca221f3760b79ede637f",
+        "6b00cc3e1f310499506fac45",
+        "6b00ce44a98ebcda76845887",
+        "6b00cffabdda6946e61d2f41",
+        "6b00d1e8bdda6946e61d3335"
+      ],
+      "clip_windows": [
+        {
+          "start": 1193.936,
+          "end": 1252.946,
+          "video_id": null
+        },
+        {
+          "start": 0.0,
+          "end": 29.98,
+          "video_id": null
+        },
+        {
+          "start": 1046.456,
+          "end": 1080.286,
+          "video_id": null
+        },
+        {
+          "start": 150.55,
+          "end": 171.64,
+          "video_id": null
+        },
+        {
+          "start": 968.476,
+          "end": 1003.706,
+          "video_id": null
+        }
+      ],
+      "source_title": "Whatever You Steal in GTA 6, You Keep!",
+      "channel": "MrBeast Gaming",
+      "date": "2026-11-20",
+      "published_at": "2026-11-20T23:04:58.753098+00:00",
+      "source_duration": 1285,
+      "target_clip_count": 5,
+      "remaining_clips": 0
     }
   ],
   "attempted": [
