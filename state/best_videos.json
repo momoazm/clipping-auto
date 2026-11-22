@@ -1,38 +1,38 @@
 {
   "_note": "Most successful video per platform workflow (YouTube / Instagram), auto-refreshed by tools/update_best_videos.py after each real run_daily pass. 'why_most_successful' is computed from the winner's metrics vs account medians -- see the tool docstring for the ranking rule.",
-  "updated_at": "2026-11-20T23:05:01.356029+00:00",
+  "updated_at": "2026-11-22T21:58:25.341090+00:00",
   "ranking_rule": "views desc, then engagement_rate desc, then recency",
   "platforms": {
     "youtube": {
       "account_id": "6a3e6cc19d9472faaef26347",
-      "posts_analyzed": 62,
+      "posts_analyzed": 58,
       "median_views": 0.0,
       "most_successful_video": {
-        "id": "6a89ddaa77555aae016c6397",
-        "url": "https://www.youtube.com/watch?v=Nt1ZDqWtmos",
-        "title": "1 Million Fireworks + Flaming Arrows Attack Now! #Shorts",
-        "published_at": "2026-08-22T16:40:55.000Z",
-        "views": 27,
+        "id": "6aa9b0c43c729a717e0f551d",
+        "url": "https://www.youtube.com/watch?v=N6ebbUebkas",
+        "title": "makes these little paper airplanes, and he's like, Boeing 747. Someone didn' #Shorts",
+        "published_at": "2026-09-15T19:34:54.000Z",
+        "views": 15,
         "likes": 0,
         "comments": 0,
         "shares": 0,
         "saves": 0,
         "engagement_rate": 0,
-        "duration_seconds": 29,
+        "duration_seconds": 36,
         "avg_watch_time_ms": 0,
         "retention_ratio": 0.0,
         "why_most_successful": [
-          "top views of all account posts (27; median is 0)",
+          "top views of all account posts (15; median is 0)",
           "average watch time covers ~0% of the clip -- strong retention, the main distribution signal for Reels/Shorts",
-          "hook uses proven pattern(s): specific_number, conflict_or_challenge"
+          "hook uses proven pattern(s): specific_number"
         ]
       },
-      "runner_up_url": "https://www.youtube.com/watch?v=N6ebbUebkas"
+      "runner_up_url": "https://www.youtube.com/watch?v=94QLmgfwpu4"
     },
     "instagram": {
       "account_id": "6a3d7b8d9d9472faaee69b3b",
-      "posts_analyzed": 93,
-      "median_views": 163,
+      "posts_analyzed": 94,
+      "median_views": 161.0,
       "most_successful_video": {
         "id": "6ab81c784c7887349677ca3c",
         "url": "https://www.instagram.com/reel/DdwvCvMD6t_/",
@@ -48,14 +48,14 @@
         "avg_watch_time_ms": 20800,
         "retention_ratio": 0.594,
         "why_most_successful": [
-          "views 503 = 3.1x the account median (163)",
+          "views 503 = 3.1x the account median (161.0)",
           "average watch time covers ~59% of the clip -- strong retention, the main distribution signal for Reels/Shorts",
-          "engagement rate 1.79% at/above the account median (0.31%)",
+          "engagement rate 1.79% at/above the account median (0.0%)",
           "hook uses proven pattern(s): specific_number",
           "9 interactions (9 likes, 0 saves, 0 shares) signal quality to the algorithm"
         ]
       },
-      "runner_up_url": "https://www.instagram.com/reel/DcWX8SrFH5s/"
+      "runner_up_url": "https://www.instagram.com/reel/Dc1i-q_mrAP/"
     }
   }
 }

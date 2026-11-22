@@ -2571,6 +2571,116 @@
           "effects": "full"
         }
       }
+    },
+    {
+      "post_id": "6b035db7ad242d00366b37a9",
+      "posted_at": "2026-11-22T21:26:11.214960+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "01",
+        "hook": "What could I possibly do here?",
+        "hook_signal_score": 50,
+        "duration_sec": 34.35,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -11.0,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6b035fd3b575c3d87d0d3f99",
+      "posted_at": "2026-11-22T21:34:55.539110+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "02",
+        "hook": "Bank Heist Fail: Bro, You LOST Money?!",
+        "hook_signal_score": 80,
+        "duration_sec": 42.71,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -11.8,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6b03618cb575c3d87d0d4616",
+      "posted_at": "2026-11-22T21:42:16.863019+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "03",
+        "hook": "Dad, I'm Getting You This Car Or Die Trying",
+        "hook_signal_score": 43,
+        "duration_sec": 25.09,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -11.1,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6b03636f80239bc2fccaa0d8",
+      "posted_at": "2026-11-22T21:50:13.506077+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "04",
+        "hook": "Pistol Only Miracle Heist: Quickest Ever?",
+        "hook_signal_score": 42,
+        "duration_sec": 33.55,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -11.9,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6b036557797546ad82b89703",
+      "posted_at": "2026-11-22T21:58:22.522586+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "05",
+        "hook": "Nolan Roasted: $600K Lamborghini vs Garbage SUV",
+        "hook_signal_score": 66,
+        "duration_sec": 35.15,
+        "focus_mode": "speaker",
+        "hook_variant": "specific_claim",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -12.2,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
     }
   ]
 }

@@ -2244,6 +2244,60 @@
       "source_duration": 1285,
       "target_clip_count": 5,
       "remaining_clips": 0
+    },
+    {
+      "source_id": "Ra6sNe8s2Hc",
+      "clip_video_ids": [],
+      "youtube_post_ids": [],
+      "instagram_post_ids": [
+        "6b035db7ad242d00366b37a9",
+        "6b035fd3b575c3d87d0d3f99",
+        "6b03618cb575c3d87d0d4616",
+        "6b03636f80239bc2fccaa0d8",
+        "6b036557797546ad82b89703"
+      ],
+      "tiktok_post_ids": [],
+      "platform_post_ids": [
+        "6b035db7ad242d00366b37a9",
+        "6b035fd3b575c3d87d0d3f99",
+        "6b03618cb575c3d87d0d4616",
+        "6b03636f80239bc2fccaa0d8",
+        "6b036557797546ad82b89703"
+      ],
+      "clip_windows": [
+        {
+          "start": 126.11,
+          "end": 160.46,
+          "video_id": null
+        },
+        {
+          "start": 1106.135,
+          "end": 1148.845,
+          "video_id": null
+        },
+        {
+          "start": 1223.035,
+          "end": 1248.125,
+          "video_id": null
+        },
+        {
+          "start": 1180.235,
+          "end": 1213.785,
+          "video_id": null
+        },
+        {
+          "start": 360.298,
+          "end": 395.448,
+          "video_id": null
+        }
+      ],
+      "source_title": "If You Steal a Car in GTA 6, I’ll Pay For It!",
+      "channel": "MrBeast Gaming",
+      "date": "2026-11-22",
+      "published_at": "2026-11-22T21:58:22.530620+00:00",
+      "source_duration": 1273,
+      "target_clip_count": 5,
+      "remaining_clips": 0
     }
   ],
   "attempted": [
