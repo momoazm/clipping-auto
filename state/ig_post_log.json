@@ -2681,6 +2681,50 @@
           "effects": "full"
         }
       }
+    },
+    {
+      "post_id": "6b04f9a561e1f47a9f0a7dcb",
+      "posted_at": "2026-11-24T02:43:29.605936+00:00",
+      "style": "hormozi",
+      "experiment": true,
+      "resolved": false,
+      "context": {
+        "clip": "01",
+        "hook": "Dirtiest Beach Before/After: 60,000 lbs in 4 Days",
+        "hook_signal_score": 42,
+        "duration_sec": 33.991,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -14.8,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6b04fba4180dcea0ffd7ecb0",
+      "posted_at": "2026-11-24T02:52:38.152745+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "02",
+        "hook": "This 6,000 lbs Trash Bag Weighs 3,000 Cats",
+        "hook_signal_score": 50,
+        "duration_sec": 36.981,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -15.1,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
     }
   ]
 }

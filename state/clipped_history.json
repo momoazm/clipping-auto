@@ -2298,6 +2298,39 @@
       "source_duration": 1273,
       "target_clip_count": 5,
       "remaining_clips": 0
+    },
+    {
+      "source_id": "cV2gBU6hKfY",
+      "clip_video_ids": [],
+      "youtube_post_ids": [],
+      "instagram_post_ids": [
+        "6b04f9a561e1f47a9f0a7dcb",
+        "6b04fba4180dcea0ffd7ecb0"
+      ],
+      "tiktok_post_ids": [],
+      "platform_post_ids": [
+        "6b04f9a561e1f47a9f0a7dcb",
+        "6b04fba4180dcea0ffd7ecb0"
+      ],
+      "clip_windows": [
+        {
+          "start": 174.193,
+          "end": 208.184,
+          "video_id": null
+        },
+        {
+          "start": 121.642,
+          "end": 158.623,
+          "video_id": null
+        }
+      ],
+      "source_title": "I Cleaned The World’s Dirtiest Beach #TeamSeas",
+      "channel": "MrBeast",
+      "date": "2026-11-24",
+      "published_at": "2026-11-24T02:52:38.162000+00:00",
+      "source_duration": 295,
+      "target_clip_count": 2,
+      "remaining_clips": 0
     }
   ],
   "attempted": [
