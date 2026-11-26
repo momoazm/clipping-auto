@@ -2725,6 +2725,94 @@
           "effects": "full"
         }
       }
+    },
+    {
+      "post_id": "6b0774ed84e6e7d241a75ec6",
+      "posted_at": "2026-11-25T23:54:01.931837+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "01",
+        "hook": "A prize for making this far, we're going to give you $10,000 in cash.",
+        "hook_signal_score": 60,
+        "duration_sec": 35.91,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -15.0,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6b0776c884e6e7d241a76527",
+      "posted_at": "2026-11-26T00:01:57.279864+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "02",
+        "hook": "How are you feeling off the TV I and hate me?",
+        "hook_signal_score": 60,
+        "duration_sec": 36.95,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -14.0,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6b0778add331e9c11e960c06",
+      "posted_at": "2026-11-26T00:10:06.233050+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "03",
+        "hook": "You've actually experienced it do you understand how he lost.",
+        "hook_signal_score": 74,
+        "duration_sec": 35.71,
+        "focus_mode": "speaker",
+        "hook_variant": "specific_claim",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -14.8,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6b077a8db9dd5d5b47c55cf9",
+      "posted_at": "2026-11-26T00:19:01.029115+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "04",
+        "hook": "The water bottle falls.",
+        "hook_signal_score": 68,
+        "duration_sec": 37.21,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -14.5,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
     }
   ]
 }

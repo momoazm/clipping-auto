@@ -2331,6 +2331,53 @@
       "source_duration": 295,
       "target_clip_count": 2,
       "remaining_clips": 0
+    },
+    {
+      "source_id": "qIsgdOVGA04",
+      "clip_video_ids": [],
+      "youtube_post_ids": [],
+      "instagram_post_ids": [
+        "6b0774ed84e6e7d241a75ec6",
+        "6b0776c884e6e7d241a76527",
+        "6b0778add331e9c11e960c06",
+        "6b077a8db9dd5d5b47c55cf9"
+      ],
+      "tiktok_post_ids": [],
+      "platform_post_ids": [
+        "6b0774ed84e6e7d241a75ec6",
+        "6b0776c884e6e7d241a76527",
+        "6b0778add331e9c11e960c06",
+        "6b077a8db9dd5d5b47c55cf9"
+      ],
+      "clip_windows": [
+        {
+          "start": 584.837,
+          "end": 620.747,
+          "video_id": null
+        },
+        {
+          "start": 182.69,
+          "end": 219.64,
+          "video_id": null
+        },
+        {
+          "start": 484.557,
+          "end": 520.267,
+          "video_id": null
+        },
+        {
+          "start": 81.13,
+          "end": 118.34,
+          "video_id": null
+        }
+      ],
+      "source_title": "Last To Take Hand Off Lamborghini, Keeps It",
+      "channel": "MrBeast",
+      "date": "2026-11-25",
+      "published_at": "2026-11-26T00:19:01.076954+00:00",
+      "source_duration": 907,
+      "target_clip_count": 4,
+      "remaining_clips": 0
     }
   ],
   "attempted": [
