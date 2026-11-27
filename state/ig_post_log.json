@@ -2813,6 +2813,50 @@
           "effects": "full"
         }
       }
+    },
+    {
+      "post_id": "6b0a176001187e44ef55c664",
+      "posted_at": "2026-11-27T23:52:06.667344+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "01",
+        "hook": "Smashing Glass To Win $100,000 Cash - Nolan's Moment",
+        "hook_signal_score": 76,
+        "duration_sec": 44.93,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -13.8,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
+    },
+    {
+      "post_id": "6b0a1940619d0c3b89569536",
+      "posted_at": "2026-11-27T23:59:41.107548+00:00",
+      "style": "competitor",
+      "experiment": false,
+      "resolved": false,
+      "context": {
+        "clip": "02",
+        "hook": "Blindfolded Race Under Falling Garage Door - Who Makes It?",
+        "hook_signal_score": 68,
+        "duration_sec": 33.814,
+        "focus_mode": "action",
+        "hook_variant": "action_payoff",
+        "audio": {
+          "music": null,
+          "music_mode": "source_audio_only",
+          "source_mean_volume_db": -14.9,
+          "music_volume": 0.0,
+          "effects": "full"
+        }
+      }
     }
   ]
 }

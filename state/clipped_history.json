@@ -2378,6 +2378,39 @@
       "source_duration": 907,
       "target_clip_count": 4,
       "remaining_clips": 0
+    },
+    {
+      "source_id": "cExLQ1o2pDw",
+      "clip_video_ids": [],
+      "youtube_post_ids": [],
+      "instagram_post_ids": [
+        "6b0a176001187e44ef55c664",
+        "6b0a1940619d0c3b89569536"
+      ],
+      "tiktok_post_ids": [],
+      "platform_post_ids": [
+        "6b0a176001187e44ef55c664",
+        "6b0a1940619d0c3b89569536"
+      ],
+      "clip_windows": [
+        {
+          "start": 416.482,
+          "end": 461.412,
+          "video_id": null
+        },
+        {
+          "start": 114.27,
+          "end": 148.084,
+          "video_id": null
+        }
+      ],
+      "source_title": "First To Rob Bank Wins $100,000",
+      "channel": "MrBeast",
+      "date": "2026-11-27",
+      "published_at": "2026-11-27T23:59:41.113355+00:00",
+      "source_duration": 482,
+      "target_clip_count": 2,
+      "remaining_clips": 0
     }
   ],
   "attempted": [
